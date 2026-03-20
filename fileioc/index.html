@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Browser IOC Extractor</title>
+    
+    <script src="./libs/pdf.min.js"></script>
+    <script src="./libs/jszip.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; background-color: #f4f5f7; color: #333; }
+        .header { border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .top-section { display: flex; gap: 20px; margin-bottom: 20px; }
+        .upload-area { flex: 1; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .thumbnail-area { width: 200px; background: #fff; padding: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        
+        #pdf-thumbnail { max-width: 100%; border: 1px solid #ddd; box-shadow: 0 1px 3px rgba(0,0,0,0.2); display: none; }
+        .thumb-placeholder { color: #888; font-size: 13px; }
+
+        .result-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .ioc-box { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .ioc-box h3 { margin-top: 0; color: #2c3e50; font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        textarea { width: 100%; height: 150px; box-sizing: border-box; resize: vertical; font-family: monospace; font-size: 13px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        
+        .status { margin-top: 10px; font-weight: bold; color: #d35400; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>Offline IOC Extractor</h2>
+        <p>Running entirely locally. Extracts text-based IOCs and renders PDF thumbnails.</p>
+    </div>
+
+    <div class="top-section">
+        <div class="upload-area">
+            <input type="file" id="file-upload" accept=".pdf,.docx,.xlsx,.pptx" />
+            <div id="status-msg" class="status">Waiting for file...</div>
+        </div>
+        <div class="thumbnail-area">
+            <span id="thumb-placeholder" class="thumb-placeholder">No PDF loaded</span>
+            <canvas id="pdf-thumbnail"></canvas>
+        </div>
+    </div>
+
+    <div class="result-container">
+        <div class="ioc-box">
+            <h3>URLs & Domains</h3>
+            <textarea id="out-urls" readonly></textarea>
+        </div>
+        <div class="ioc-box">
+            <h3>IPv4 Addresses</h3>
+            <textarea id="out-ips" readonly></textarea>
+        </div>
+        <div class="ioc-box">
+            <h3>Email Addresses</h3>
+            <textarea id="out-emails" readonly></textarea>
+        </div>
+        <div class="ioc-box">
+            <h3>File Hashes (MD5, SHA1, SHA256)</h3>
+            <textarea id="out-hashes" readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = './libs/pdf.worker.min.js';
+
+        const patterns = {
+            urls: /(?:https?:\/\/|www\.)[^\s/$.?#].[^\s>"]*/gi,
+            ips: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
+            emails: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,
+            hashes: /\b([A-Fa-f0-9]{32}|[A-Fa-f0-9]{40}|[A-Fa-f0-9]{64})\b/g
+        };
+
+        const statusMsg = document.getElementById('status-msg');
+        const canvas = document.getElementById('pdf-thumbnail');
+        const placeholder = document.getElementById('thumb-placeholder');
+
+        document.getElementById('file-upload').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            clearOutputs();
+            resetThumbnail();
+            statusMsg.textContent = `Processing ${file.name}...`;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const fileName = file.name.toLowerCase();
+                let extractedText = "";
+
+                if (fileName.endsWith('.pdf')) {
+                    extractedText = await parsePDF(arrayBuffer);
+                } else if (fileName.endsWith('.docx') || fileName.endsWith('.xlsx') || fileName.endsWith('.pptx')) {
+                    extractedText = await parseOfficeDoc(arrayBuffer);
+                    placeholder.textContent = "Preview not available for Office files.";
+                } else {
+                    statusMsg.textContent = "Unsupported file format.";
+                    return;
+                }
+
+                extractAndDisplayIOCs(extractedText);
+                statusMsg.textContent = `Extraction complete for ${file.name}.`;
+
+            } catch (error) {
+                console.error(error);
+                statusMsg.textContent = `Error processing file: ${error.message}`;
+            }
+        });
+
+        async function parsePDF(arrayBuffer) {
+            let fullText = "";
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            
+            // Render the first page to the canvas thumbnail
+            const firstPage = await pdf.getPage(1);
+            renderThumbnail(firstPage);
+
+            // Extract text from all pages
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                fullText += textContent.items.map(item => item.str).join(' ') + " ";
+                const annotations = await page.getAnnotations();
+                annotations.forEach(anno => {
+                    if (anno.subtype === 'Link' && anno.url) fullText += anno.url + " ";
+                });
+            }
+            return fullText;
+        }
+
+        async function renderThumbnail(page) {
+            const viewport = page.getViewport({ scale: 1.0 });
+            // Scale it down to fit the 180px width of our thumbnail box
+            const scale = 180 / viewport.width;
+            const scaledViewport = page.getViewport({ scale: scale });
+
+            canvas.width = scaledViewport.width;
+            canvas.height = scaledViewport.height;
+
+            const renderContext = {
+                canvasContext: canvas.getContext('2d'),
+                viewport: scaledViewport
+            };
+
+            await page.render(renderContext).promise;
+            
+            placeholder.style.display = 'none';
+            canvas.style.display = 'block';
+        }
+
+        async function parseOfficeDoc(arrayBuffer) {
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            let fullText = "";
+            const xmlFiles = Object.keys(zip.files).filter(fn => fn.endsWith('.xml') || fn.endsWith('.rels'));
+            for (const fileName of xmlFiles) {
+                const fileData = await zip.files[fileName].async("string");
+                fullText += fileData.replace(/<[^>]+>/g, ' ') + " ";
+            }
+            return fullText;
+        }
+
+        function extractAndDisplayIOCs(text) {
+            const extract = (regex) => [...new Set((text.match(regex) || []))].sort();
+            document.getElementById('out-urls').value = extract(patterns.urls).join('\n');
+            document.getElementById('out-ips').value = extract(patterns.ips).join('\n');
+            document.getElementById('out-emails').value = extract(patterns.emails).join('\n');
+            document.getElementById('out-hashes').value = extract(patterns.hashes).join('\n');
+        }
+
+        function clearOutputs() {
+            document.querySelectorAll('textarea').forEach(ta => ta.value = '');
+        }
+
+        function resetThumbnail() {
+            canvas.style.display = 'none';
+            placeholder.style.display = 'block';
+            placeholder.textContent = 'Generating preview...';
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>

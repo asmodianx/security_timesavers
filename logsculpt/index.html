@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogSculpt | Unified Schema v3.0</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'none'; object-src 'none';">
+    <style>
+        :root {
+            --bg: #1a1b26; --pnl: #24283b; --txt: #cfc9c2;
+            --org: #ff9e64; --blu: #7aa2f7; --grn: #9ece6a;
+            --red: #f7768e; --brd: #414868;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--txt); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        header { background: var(--pnl); padding: 10px 20px; border-bottom: 1px solid var(--brd); display: flex; justify-content: space-between; align-items: center; gap: 15px; }
+        .meta { display: flex; gap: 10px; align-items: center; }
+        input, select, textarea { background: #16161e; border: 1px solid var(--brd); color: white; padding: 7px; border-radius: 4px; font-size: 0.85rem; }
+        
+        #tag-box { display: flex; gap: 6px; align-items: center; background: #16161e; padding: 4px 10px; border: 1px solid var(--brd); border-radius: 4px; min-height: 34px; flex-wrap: wrap; }
+        .tag { background: rgba(122, 162, 247, 0.1); border: 1px solid var(--blu); color: var(--blu); padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; display: flex; align-items: center; gap: 5px; }
+        .tag span { cursor: pointer; color: var(--red); font-weight: bold; }
+
+        main { display: grid; grid-template-columns: 280px 1fr 450px; flex: 1; overflow: hidden; }
+        .col { display: flex; flex-direction: column; border-right: 1px solid var(--brd); overflow-y: auto; padding: 15px; }
+        .lbl { font-weight: bold; font-size: 0.65rem; margin-bottom: 8px; color: #565f89; text-transform: uppercase; letter-spacing: 0.05em; }
+        
+        .card { background: var(--pnl); border: 1px solid var(--brd); padding: 10px; margin-bottom: 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .card:hover { border-color: var(--blu); background: #2f334d; }
+        
+        .step { background: var(--pnl); border: 1px solid var(--brd); border-left: 4px solid var(--blu); padding: 12px; margin-bottom: 10px; border-radius: 4px; position: relative; }
+        .step.ext { border-left-color: var(--org); }
+        .step.map { border-left-color: var(--grn); }
+        .rm-btn { position: absolute; right: 8px; top: 8px; background: none; border: none; color: var(--red); cursor: pointer; font-size: 1.1rem; }
+        
+        pre { background: #16161e; padding: 12px; border-radius: 4px; white-space: pre-wrap; font-family: 'Consolas', monospace; font-size: 0.8rem; border: 1px solid var(--brd); color: var(--grn); line-height: 1.4; }
+        .f-tag { background: #414868; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; color: #bb9af7; margin-right: 4px; margin-bottom: 4px; display: inline-block; }
+        .btn-exp { background: var(--grn); color: #1a1b26; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="meta">
+        <strong style="color: var(--blu);">LogSculpt</strong>
+        <input type="text" id="pName" placeholder="Source Name" style="width:140px;">
+        <div id="tag-box"><div id="active-tags"></div><input type="text" id="tagIn" placeholder="+ Tags"></div>
+    </div>
+    <div class="meta">
+        <span class="lbl">Schema:</span>
+        <select id="schemaSelect">
+            <option>Elastic ECS</option>
+            <option>Splunk CIM</option>
+            <option>OCSF</option>
+        </select>
+        <span class="lbl">Admiralty:</span>
+        <select id="admR"><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        <select id="admC"><option>1</option><option>2</option><option>3</option><option>4</option></select>
+        <button id="exportBtn" class="btn-exp">Export Project</button>
+    </div>
+</header>
+
+<main>
+    <div class="col">
+        <span class="lbl">Extractors</span>
+        <div class="card" data-t="cef">CEF Parser</div>
+        <div class="card" data-t="json">JSON Parser</div>
+        <div class="card" data-t="xml">XML Parser</div>
+        <div class="card" data-t="regex">Regex (Groups)</div>
+        <span class="lbl" style="margin-top:20px">Normalization</span>
+        <div class="card" data-t="map">Map to Schema</div>
+        <div class="card" data-t="lower">Lowercase</div>
+        <div class="card" data-t="int">To Integer</div>
+        <div class="card" data-t="del">Delete Field</div>
+        <div style="margin-top:30px;"><span class="lbl">Detected Fields</span><div id="f-list"></div></div>
+    </div>
+    <div class="col"><span class="lbl">Recipe Pipeline</span><div id="recipe-list"></div></div>
+    <div class="col" style="border:none;">
+        <span class="lbl">Raw Input</span><textarea id="rawIn" style="height:100px; width:100%; margin-bottom:15px;"></textarea>
+        <span class="lbl">Normalized JSON</span><pre id="jsonOut">{}</pre>
+        <span class="lbl" style="margin-top:15px;">Report Summary</span><pre id="repOut" style="color:#9aa5ce; border-style:dashed;"></pre>
+    </div>
+</main>
+
+<script>
+    /**
+     * SCHEMA LIBRARIES
+     */
+    const SCHEMAS = {
+        "Elastic ECS": ["source.ip", "destination.ip", "source.port", "destination.port", "user.name", "event.action", "event.outcome", "network.protocol", "observer.name", "file.path", "process.name"],
+        "Splunk CIM": ["src", "dest", "src_port", "dest_port", "user", "action", "status", "app", "protocol", "dvc", "file_path", "process"],
+        "OCSF": ["src_endpoint.ip", "dst_endpoint.ip", "src_endpoint.port", "dst_endpoint.port", "actor.user.name", "status_id", "activity_id", "network_traffic.protocol_name", "device.hostname"]
+    };
+
+    let recipe = [];
+    let tags = ['tlp:clear'];
+    let currentSchema = "Elastic ECS";
+
+    /**
+     * THE ENGINE
+     */
+    function run() {
+        const input = String(document.getElementById('rawIn').value);
+        let event = { _raw: input };
+        let errors = [];
+
+        recipe.forEach(step => {
+            try {
+                const text = String(event._raw);
+
+                // CEF SCANNER (Stable Pointer Method)
+                if (step.t === 'cef') {
+                    const start = text.indexOf('CEF:');
+                    if (start !== -1) {
+                        const cefBody = text.substring(start);
+                        let ptr = 0;
+                        const scan = () => {
+                            let next = cefBody.indexOf('|', ptr);
+                            if (next === -1) return null;
+                            let v = cefBody.substring(ptr, next);
+                            ptr = next + 1;
+                            return String(v).trim();
+                        };
+                        const v0 = scan(), v1 = scan(), v2 = scan(), v3 = scan(), v4 = scan(), v5 = scan(), v6 = scan();
+                        if (v6 !== null) {
+                            event.cef_ver = v0.replace('CEF:', '');
+                            event.cef_vendor = v1; event.cef_product = v2; event.cef_prod_ver = v3;
+                            event.cef_id = v4; event.cef_name = v5; event.cef_sev = v6;
+                            const ext = cefBody.substring(ptr);
+                            if (ext) {
+                                const pairs = ext.split(/\s(?=\w+=)/);
+                                pairs.forEach(p => {
+                                    const eq = p.indexOf('=');
+                                    if (eq !== -1) {
+                                        const k = p.substring(0, eq).trim();
+                                        const v = p.substring(eq + 1).trim();
+                                        if (k) event[k] = v;
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }
+                // JSON FLATTENER
+                else if (step.t === 'json') {
+                    const first = text.indexOf('{'), last = text.lastIndexOf('}');
+                    if (first !== -1 && last !== -1) {
+                        const parsed = JSON.parse(text.substring(first, last + 1));
+                        const flatten = (obj, pre = '') => {
+                            for (let k in obj) {
+                                const key = pre ? pre + '.' + k : k;
+                                if (typeof obj[k] === 'object' && obj[k] !== null && !Array.isArray(obj[k])) flatten(obj[k], key);
+                                else event[key] = obj[k];
+                            }
+                        };
+                        flatten(parsed);
+                    }
+                }
+                // XML FLATTENER (Cisco-Hardened)
+                else if (step.t === 'xml') {
+                    const xmlMatch = text.match(/<[a-zA-Z]/), last = text.lastIndexOf('>');
+                    if (xmlMatch && last !== -1) {
+                        const doc = new DOMParser().parseFromString(text.substring(xmlMatch.index, last + 1), "text/xml");
+                        const walk = (node, pre = '') => {
+                            if (node.children.length === 0) {
+                                if (node.textContent.trim()) event[pre + node.nodeName] = node.textContent.trim();
+                            } else {
+                                for (let c of node.children) walk(c, pre + node.nodeName + '.');
+                            }
+                        };
+                        if (doc.documentElement) walk(doc.documentElement);
+                    }
+                }
+                else if (step.t === 'regex' && step.config.p) {
+                    const m = new RegExp(step.config.p).exec(text);
+                    if (m && m.groups) Object.assign(event, m.groups);
+                }
+                else if (step.t === 'map' && event[step.config.f]) { event[step.config.to] = event[step.config.f]; }
+                else if (step.t === 'lower' && event[step.config.f]) { event[step.config.f] = String(event[step.config.f]).toLowerCase(); }
+                else if (step.t === 'int' && event[step.config.f]) { event[step.config.f] = parseInt(event[step.config.f], 10); }
+                else if (step.t === 'del' && event[step.config.f]) { delete event[step.config.f]; }
+            } catch(e) { errors.push(`${step.t.toUpperCase()}: ${e.message}`); }
+        });
+
+        updateUI(event, errors);
+    }
+
+    /**
+     * UI RENDERING
+     */
+    function updateUI(event, errors) {
+        const flds = Object.keys(event);
+        document.getElementById('f-list').innerHTML = flds.map(f => `<span class="f-tag">${f}</span>`).join('');
+        const meta = { tags, adm: document.getElementById('admR').value + document.getElementById('admC').value, schema: currentSchema };
+        document.getElementById('jsonOut').innerText = JSON.stringify({ _meta: meta, event }, null, 2);
+        document.getElementById('repOut').innerText = `Fields: ${flds.length - 1} | Errors: ${errors.join(' | ') || 'None'}`;
+    }
+
+    function renderRecipe() {
+        const list = document.getElementById('recipe-list');
+        list.innerHTML = '';
+        recipe.forEach(s => {
+            const div = document.createElement('div');
+            div.className = `step ${['cef','json','xml','regex'].includes(s.t)?'ext':s.t==='map'?'map':''}`;
+            let h = `<button class="rm-btn" data-id="${s.id}">×</button><span class="lbl">${s.t}</span><div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">`;
+            
+            if(s.t === 'regex') h += `<input type="text" class="cfg" data-id="${s.id}" data-k="p" value="${s.config.p||''}" placeholder="Regex Pattern">`;
+            else if(s.t === 'map') {
+                const opt = SCHEMAS[currentSchema].map(f => `<option ${s.config.to===f?'selected':''}>${f}</option>`).join('');
+                h += `<div style="display:flex; gap:5px;"><input type="text" class="cfg" data-id="${s.id}" data-k="f" value="${s.config.f||''}" placeholder="From"> → <select class="cfg" data-id="${s.id}" data-k="to">${opt}</select></div>`;
+            } else if(['lower','int','del'].includes(s.t)) {
+                h += `<input type="text" class="cfg" data-id="${s.id}" data-k="f" value="${s.config.f||''}" placeholder="Target Field">`;
+            } else h += `<span style="font-size:0.7rem; color:#565f89;">Auto-Parsing Mode</span>`;
+            
+            div.innerHTML = h + `</div>`;
+            list.appendChild(div);
+        });
+        document.querySelectorAll('.rm-btn').forEach(b => b.onclick = (e) => { recipe = recipe.filter(x => x.id != e.target.dataset.id); renderRecipe(); });
+        document.querySelectorAll('.cfg').forEach(i => i.oninput = (e) => {
+            const s = recipe.find(x => x.id == e.target.dataset.id);
+            if(s) { s.config[e.target.dataset.k] = e.target.value; run(); }
+        });
+        run();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.card').forEach(el => el.onclick = () => { 
+            recipe.push({ id: Date.now(), t: el.dataset.t, config: {} }); 
+            renderRecipe(); 
+        });
+        document.getElementById('rawIn').oninput = run;
+        document.getElementById('schemaSelect').onchange = (e) => { currentSchema = e.target.value; renderRecipe(); };
+        document.getElementById('tagIn').onkeydown = (e) => { if(e.key==='Enter') { e.target.value.split(/[ ,]+/).forEach(t=>{if(t && !tags.includes(t)) tags.push(t.toLowerCase())}); e.target.value=''; renderTags(); run(); } };
+        document.getElementById('exportBtn').onclick = () => {
+            const b = new Blob([JSON.stringify({meta: {tags, schema: currentSchema}, recipe}, null, 2)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'logsculpt_project.json'; a.click();
+        };
+        renderTags(); run();
+    });
+
+    function renderTags() {
+        document.getElementById('active-tags').innerHTML = tags.map(t => `<div class="tag">${t} <span data-t="${t}">×</span></div>`).join('');
+        document.querySelectorAll('.tag span').forEach(el => el.onclick = () => { tags = tags.filter(x => x != el.dataset.t); renderTags(); run(); });
+    }
+</script>
+</body>
+</html>

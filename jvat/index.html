@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JVAT 1.0.3 - Jayhawk Vendor Assessment Toolkit</title>
+    <script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.0/dist/openpgp.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #0051ba; 
+            --accent-color: #e8000d;
+            --secondary-color: #f4f7f6;
+            --text-color: #333;
+            --border-color: #ccc;
+            --critical-color: #d9534f;
+            --standard-color: #f0ad4e;
+            --minor-color: #5cb85c;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e9ecef;
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-top: 5px solid var(--accent-color);
+        }
+
+        h1, h2 {
+            color: #0051ba;
+            border-bottom: 2px solid #0051ba;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Form Styles */
+        .general-info, .security-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+            background: #fdfdfd;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+
+        .security-info {
+            grid-template-columns: 1fr;
+            background: #f4f7f6;
+            border-left: 4px solid #0051ba;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .input-group input, .input-group textarea {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        /* Accordion Styles */
+        details {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        summary {
+            padding: 15px 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: var(--secondary-color);
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        summary:hover { background-color: #e2e6e5; }
+        summary::after { content: '▼'; font-size: 0.8em; color: #666; transition: transform 0.3s; }
+        details[open] summary::after { transform: rotate(180deg); }
+        details[open] summary { border-bottom: 1px solid var(--border-color); }
+        summary::-webkit-details-marker { display: none; }
+
+        .details-content {
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        /* Category NA Toggle */
+        .category-na-toggle {
+            background: #e2e8f0;
+            padding: 12px 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #6c757d;
+        }
+        .category-na-toggle label {
+            font-weight: bold;
+            cursor: pointer;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .category-na-toggle input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* Question Cards */
+        .question-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-left: 4px solid #0051ba;
+            border-radius: 4px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: opacity 0.3s;
+        }
+
+        /* When Category is NA, dim the cards */
+        .question-card.disabled {
+            opacity: 0.5;
+            pointer-events: none;
+            border-left-color: #ccc;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .question-id { font-weight: bold; color: #555; font-size: 0.9em; }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .badge.critical { background-color: var(--critical-color); }
+        .badge.standard { background-color: var(--standard-color); }
+        .badge.minor { background-color: var(--minor-color); }
+
+        .question-text { font-size: 1.05em; margin-bottom: 12px; }
+        .options label { display: inline-block; margin-right: 20px; cursor: pointer; font-weight: 500; }
+
+        /* Buttons */
+        .button-group { display: flex; gap: 15px; margin-top: 30px; }
+        button {
+            flex: 1; padding: 15px; color: white; border: none; border-radius: 6px;
+            font-size: 1.1em; font-weight: bold; cursor: pointer; transition: opacity 0.3s;
+        }
+        button:hover { opacity: 0.9; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        
+        .btn-submit { background-color: #0051ba; }
+        .btn-test { background-color: #6c757d; }
+        .btn-dl { background-color: var(--accent-color); margin-top: 20px; width: 100%; display: none; }
+
+        /* Results Section */
+        #results {
+            display: none; margin-top: 40px; padding: 30px; background: white;
+            border: 2px solid #0051ba; border-radius: 8px;
+        }
+        .composite-score { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px dashed #ddd; }
+        .score-circle {
+            width: 160px; height: 160px; border-radius: 50%; background: white; display: flex;
+            flex-direction: column; align-items: center; justify-content: center; margin: 20px auto;
+            font-size: 2.5em; font-weight: bold; border: 8px solid #0051ba; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .score-circle span { font-size: 0.3em; font-weight: normal; color: #666; margin-top: -5px; }
+        .category-results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; }
+        .cat-score-card { background: var(--secondary-color); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); text-align: center; }
+        
+        /* Secure Banner Overlay */
+        .secure-banner {
+            padding: 15px;
+            background: #e2e8f0;
+            border-left: 4px solid #0051ba;
+            border-radius: 4px;
+            font-size: 1.05em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>JVAT 1.0.3 - Jayhawk Vendor Assessment Toolkit</h1>
+    <p>Please provide the product details and complete the evaluation below. Points are awarded strictly based on matching the expected compliant response. <strong>Note: All questions default to a non-compliant status and will negatively impact your score if left unchanged. If a question does not apply to your architecture, or if you utilize a technical workaround/compensating control, select the compliant answer (typically "Yes"). If an entire module does not apply (e.g., AI), use the Category checkbox to exempt it from the calculation.</strong></p>
+
+    <form id="jvatForm">
+        
+        <div class="general-info">
+            <div class="input-group">
+                <label for="companyName">Company / Solution Provider Name *</label>
+                <input type="text" id="companyName" placeholder="e.g. Acme Corp" required>
+            </div>
+            <div class="input-group">
+                <label for="productName">Product / Solution Name *</label>
+                <input type="text" id="productName" placeholder="e.g. Cloud Service v2.0" required>
+            </div>
+            <div class="input-group">
+                <label for="contactName">Primary Contact Name</label>
+                <input type="text" id="contactName" placeholder="e.g. Jane Doe">
+            </div>
+            <div class="input-group">
+                <label for="contactEmail">Contact Email</label>
+                <input type="email" id="contactEmail" placeholder="e.g. jane@acme.com">
+            </div>
+        </div>
+
+        <div id="accordion-container"></div>
+        
+        <div class="security-info" id="security-input-section">
+            <div class="input-group" id="manual-key-input">
+                <label for="gpgPubKey">Institution GPG Public Key (Optional)</label>
+                <p style="font-size: 0.85em; color: #666; margin-top: 0; margin-bottom: 10px;">Paste the evaluating institution's armored PGP public key below. If provided, the final text summary will be securely encrypted locally in your browser before downloading.</p>
+                <textarea id="gpgPubKey" rows="6" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----..." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off" data-gramm="false"></textarea>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button type="button" class="btn-test" onclick="autoFill()">Auto-Fill Compliant Answers</button>
+            <button type="button" class="btn-submit" onclick="calculateScore()">Calculate JVAT Score</button>
+        </div>
+    </form>
+
+    <div id="results">
+        <div class="composite-score">
+            <h2>Overall JVAT Composite Score</h2>
+            <div class="score-circle" id="scoreDisplay">0%<br><span id="scoreDetails">0 / 0 pts</span></div>
+        </div>
+        
+        <h2>Category Breakdown</h2>
+        <div id="categoryResults" class="category-results-grid"></div>
+
+        <button type="button" class="btn-dl" id="btnDownloadTxt" onclick="downloadTextSummary()">Download Assessment Report (.txt)</button>
+    </div>
+</div>
+
+<script>
+    // =========================================================================
+    // CONFIGURATION: EMBED YOUR INSTITUTION'S PGP PUBLIC KEY HERE
+    // =========================================================================
+    const INSTITUTION_PUB_KEY = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEZyugIRYJKwYBBAHaRw8BAQdAWE5vgLJw+ZAbCKURhHG/Ry7MhHrgFWHUG26K
+8qjU1/m0J0tlcnNobmVyLCBKb2VsIEEgPGpvZWwua2Vyc2huZXJAa3UuZWR1PoiZ
+BBMWCgBBFiEEGM5bmGHci1vjihHh1x5Q18jZJwIFAmcroCECGwMFCQWjmu8FCwkI
+BwICIgIGFQoJCAsCBBYCAwECHgcCF4AACgkQ1x5Q18jZJwJnmQD+LbYCa9S8n91N
+QGQXHb8zs3/sxmjPH1G08VZ7v5EzxxMBAOMaKO/VuuwPDUokFJFVP7upZ5aerMe5
+vJ5OOva8pd0IuDgEZyugIRIKKwYBBAGXVQEFAQEHQBtjvFx/jgybKBVVd5oSleau
+5tl47y1JGdeacdXeVy5TAwEIB4h+BBgWCgAmFiEEGM5bmGHci1vjihHh1x5Q18jZ
+JwIFAmcroCECGwwFCQWjmu8ACgkQ1x5Q18jZJwKMNQEAxogDO8+8lK5UIY1uTFNg
+1QpPEKTqfxniz7eK3WuWCtgA/1Y3tmXMac3lGg3RTgrvvq7LBtKb8UWpz/iYaB+L
+bhUO
+=EO90
+-----END PGP PUBLIC KEY BLOCK-----`;
+    const INSTITUTION_NAME = `University of Kansas`;
+    // =========================================================================
+
+    let currentAssessmentData = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+        if (INSTITUTION_PUB_KEY.trim() !== '') {
+            const securitySection = document.getElementById('security-input-section');
+            securitySection.innerHTML = `
+                <div class="secure-banner">
+                    <strong>🔒 Secure Submission Enabled</strong><br>
+                    Your responses will be automatically encrypted using the ${INSTITUTION_NAME}'s public key before downloading.
+                </div>
+            `;
+        }
+    });
+
+    // Full JVAT Question Data
+const questions = [
+  // --- START HERE ---
+  { id: "COMP-01", category: "Start Here", text: "Do you have a dedicated software and system development team(s) (e.g., customer support, implementation, product management, etc.)?*", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "COMP-03", category: "Start Here", text: "Have you operated without unplanned disruptions to this solution in the past 12 months?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "COMP-04", category: "Start Here", text: "Do you have a dedicated information security staff or office?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+
+  // --- ORGANIZATION ---
+  { id: "DOCU-01", category: "Organization", text: "Do you have a well-documented business continuity plan (BCP), with a clear owner, that is tested annually?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DOCU-02", category: "Organization", text: "Do you have a well-documented disaster recovery plan (DRP), with a clear owner, that is tested annually?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DOCU-03", category: "Organization", text: "Have you undergone a SSAE 18/SOC 2 audit?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DOCU-04", category: "Organization", text: "Do you conform with a specific industry standard security framework (e.g., NIST Cybersecurity Framework, CIS Controls, ISO 27001, etc.)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DOCU-05", category: "Organization", text: "Can you provide overall system and/or application architecture diagrams, including a full description of the data flow for all components of the system?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DOCU-06", category: "Organization", text: "Does your organization have a data privacy policy?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DOCU-07", category: "Organization", text: "Do you have a documented, and currently implemented, employee onboarding and offboarding policy?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "THRD-02", category: "Organization", text: "Do you have contractual language in place with third parties governing access to institutional data?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "THRD-01", category: "Organization", text: "Do you perform security assessments of third-party companies with which you share data (e.g., hosting providers, cloud services, PaaS, IaaS, SaaS)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "THRD-03", category: "Organization", text: "Do the contracts in place with these third parties address liability in the event of a data breach?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "THRD-04", category: "Organization", text: "Do you have an implemented third-party management strategy?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "THRD-05", category: "Organization", text: "Do you have a process and implemented procedures for managing your hardware supply chain (e.g., telecommunications equipment, export licensing, computing devices)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "CHNG-01", category: "Organization", text: "Will the institution be notified of major changes to your environment that could impact the institution's security posture?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "CHNG-02", category: "Organization", text: "Does the system support client customizations from one release to another?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "CHNG-03", category: "Organization", text: "Do you have an implemented system configuration management process (e.g., secure 'gold' images, etc.)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "CHNG-04", category: "Organization", text: "Do you have a documented change management process?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "CHNG-05", category: "Organization", text: "Does your change management process minimally include authorization, impact analysis, testing, and validation before moving changes to production?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "CHNG-06", category: "Organization", text: "Does your change management process verify that all required third-party libraries and dependencies are still supported with each major change?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "CHNG-07", category: "Organization", text: "Do you have policy and procedure, currently implemented, managing how critical patches are applied to all systems and applications?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "CHNG-08", category: "Organization", text: "Have you implemented policies and procedures that guide how security risks are mitigated until patches can be applied?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "CHNG-09", category: "Organization", text: "Do clients have the option to not participate in or postpone an upgrade to a new release?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-10", category: "Organization", text: "Do you have a fully implemented solution support strategy that defines how many concurrent versions you support?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-11", category: "Organization", text: "Do you have a release schedule for product updates?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-12", category: "Organization", text: "Do you have a technology roadmap, for at least the next two years, for enhancements and bug fixes for the solution being assessed?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-13", category: "Organization", text: "Can solution updates be completed without institutional involvement (i.e., technically or organizationally)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-14", category: "Organization", text: "Are upgrades or system changes installed during off-peak hours or in a manner that does not impact the customer?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-15", category: "Organization", text: "Do procedures exist to provide that emergency changes are documented and authorized (including after-the-fact approval)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "CHNG-16", category: "Organization", text: "Do you have a systems management and configuration strategy that encompasses servers, appliances, cloud services, applications, and mobile devices (company and employee owned)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-01", category: "Organization", text: "Do you have a documented patch management process?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "PPPR-02", category: "Organization", text: "Can your organization comply with institutional policies on privacy and data protection with regard to users of institutional systems, if required?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "PPPR-03", category: "Organization", text: "Is your company subject to the institution's geographic region's laws and regulations?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "PPPR-04", category: "Organization", text: "Can you accommodate encryption requirements using open standards?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PPPR-05", category: "Organization", text: "Do you have a documented systems development life cycle (SDLC)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PPPR-06", category: "Organization", text: "Do you perform background screenings or multi-state background checks on all employees prior to their first day of work?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PPPR-07", category: "Organization", text: "Do you require new employees to fill out agreements and review policies?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PPPR-08", category: "Organization", text: "Do you have a documented information security policy?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PPPR-09", category: "Organization", text: "Are information security principles designed into the product lifecycle?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-10", category: "Organization", text: "Will you comply with applicable breach notification laws?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-11", category: "Organization", text: "Do you have an information security awareness program?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-12", category: "Organization", text: "Is security awareness training mandatory for all employees?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-13", category: "Organization", text: "Do you have process and procedure(s) documented, and currently followed, that require a review and update of the access list(s) for privileged accounts?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-14", category: "Organization", text: "Do you have documented, and currently implemented, internal audit processes and procedures?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PPPR-15", category: "Organization", text: "Does your organization have physical security controls and policies in place?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+
+  // --- IT ACCESSIBILITY ---
+  { id: "ITAC-06", category: "IT Accessibility", text: "Has a VPAT or ACR been created or updated for the solution and version under consideration within the past 12 months?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "ITAC-07", category: "IT Accessibility", text: "Will your company agree to meet your stated accessibility standard or WCAG 2.1 AA as part of your contractual agreement for the solution?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "ITAC-08", category: "IT Accessibility", text: "Does the solution substantially conform to WCAG 2.1 AA?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "ITAC-09", category: "IT Accessibility", text: "Do you have a documented and implemented process for reporting and tracking accessibility issues?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "ITAC-10", category: "IT Accessibility", text: "Do you have documentation to support the accessibility features of your solution?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-11", category: "IT Accessibility", text: "Has a third-party expert conducted an audit of the most recent version of your solution?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-12", category: "IT Accessibility", text: "Do you have a documented and implemented process for verifying accessibility conformance?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-13", category: "IT Accessibility", text: "Have you adopted a technical or legal standard of conformance for the solution?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-14", category: "IT Accessibility", text: "Can you provide a current, detailed accessibility roadmap with delivery timelines?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-15", category: "IT Accessibility", text: "Do you expect your staff to maintain a current skill set in IT accessibility?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-16", category: "IT Accessibility", text: "Do you have documented processes and procedures for implementing accessibility into your development lifecycle?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-17", category: "IT Accessibility", text: "Can all functions of the application or service be performed using only the keyboard?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "ITAC-18", category: "IT Accessibility", text: "Does your product rely on activating a special 'accessibility mode', a 'lite version', or using an alternate interface (including 'overlay' or AI-based alternates) for accessibility purposes?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+
+  // --- INFRASTRUCTURE ---
+  { id: "APPL-01", category: "Infrastructure", text: "Are access controls for institutional accounts based on structured rules, such as role-based access control (RBAC), attribute-based access control (ABAC), or policy-based access control (PBAC)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "APPL-02", category: "Infrastructure", text: "Are you using a web application firewall (WAF)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "APPL-03", category: "Infrastructure", text: "Are only currently supported operating system(s), software, and libraries leveraged by the system(s)/application(s) that will have access to institution's data?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "APPL-04", category: "Infrastructure", text: "Does your application require access to location or GPS data?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "APPL-05", category: "Infrastructure", text: "Does your application provide separation of duties between security administration, system administration, and standard user functions?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "APPL-06", category: "Infrastructure", text: "Do you subject your code to static code analysis and/or static application security testing prior to release?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "APPL-07", category: "Infrastructure", text: "Do you have software testing processes (dynamic or static) that are established and followed?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "APPL-08", category: "Infrastructure", text: "Are access controls for staff within your organization based on structured rules, such as RBAC, ABAC, or PBAC?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "APPL-09", category: "Infrastructure", text: "Does the system provide data input validation and error messages?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "APPL-10", category: "Infrastructure", text: "Do you have a process and implemented procedures for managing your software supply chain (e.g., libraries, repositories, frameworks, etc.)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "APPL-11", category: "Infrastructure", text: "Have your developers been trained in secure coding techniques?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "APPL-12", category: "Infrastructure", text: "Was your application developed using secure coding techniques?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "APPL-13", category: "Infrastructure", text: "If mobile, is the application available from a trusted source (e.g., App Store, Google Play Store)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "APPL-14", category: "Infrastructure", text: "Do you have a fully implemented policy or procedure that details how your employees obtain administrator access to institutional instance of the application?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DCTR-02", category: "Infrastructure", text: "Is a SOC 2 Type 2 report available for the hosting environment?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-03", category: "Infrastructure", text: "Are you generally able to accommodate storing each institution's data within its geographic region?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-04", category: "Infrastructure", text: "Are the data centers staffed 24 hours a day, seven days a week (i.e., 24 x 7 x 365)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-05", category: "Infrastructure", text: "Are your servers separated from other companies via a physical barrier, such as a cage or hard walls?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-06", category: "Infrastructure", text: "Does a physical barrier fully enclose the physical space, preventing unauthorized physical contact with any of your devices?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DCTR-07", category: "Infrastructure", text: "Are your primary and secondary data centers geographically diverse?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-08", category: "Infrastructure", text: "Is the service hosted in a high-availability environment?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-09", category: "Infrastructure", text: "Is redundant power available for all data centers where institutional data will reside?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-10", category: "Infrastructure", text: "Are redundant power strategies tested?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DCTR-11", category: "Infrastructure", text: "Does the center where the data will reside have cooling and fire-suppression systems that are active and regularly tested?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-12", category: "Infrastructure", text: "Do you have Internet Service Provider (ISP) redundancy?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-13", category: "Infrastructure", text: "Does every data center where the institution's data will reside have multiple telephone company or network provider entrances to the facility?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-14", category: "Infrastructure", text: "Do you require multifactor authentication for all administrative accounts in your environment?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-15", category: "Infrastructure", text: "Are you using your cloud provider's available hardening tools or pre-hardened images?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DCTR-16", category: "Infrastructure", text: "Does your cloud solution provider have access to your encryption keys?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "FIDP-01", category: "Infrastructure", text: "Are you utilizing a stateful packet inspection (SPI) firewall?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "FIDP-02", category: "Infrastructure", text: "Do you have a documented policy for firewall change requests?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "FIDP-03", category: "Infrastructure", text: "Have you implemented an intrusion detection system (network-based)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "FIDP-04", category: "Infrastructure", text: "Do you employ host-based intrusion detection?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "FIDP-05", category: "Infrastructure", text: "Are audit logs available for all changes to the network, firewall, IDS, and IPS systems?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "FIDP-06", category: "Infrastructure", text: "Is authority for firewall change approval documented?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "FIDP-07", category: "Infrastructure", text: "Have you implemented an intrusion prevention system (network-based)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "FIDP-08", category: "Infrastructure", text: "Do you employ host-based intrusion prevention?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "FIDP-09", category: "Infrastructure", text: "Are you employing any next-generation persistent threat (NGPT) monitoring?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "FIDP-11", category: "Infrastructure", text: "Do you monitor for intrusions on a 24 x 7 x 365 basis?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "HFIH-01", category: "Infrastructure", text: "Do you have a formal incident response plan?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HFIH-02", category: "Infrastructure", text: "Do you either have an internal incident response team or retain an external team?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "HFIH-03", category: "Infrastructure", text: "Do you have the capability to respond to incidents on a 24 x 7 x 365 basis?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "HFIH-04", category: "Infrastructure", text: "Do you carry cyber-risk insurance to protect against unforeseen service outages, data that is lost or stolen, and security incidents?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "VULN-01", category: "Infrastructure", text: "Are your systems and applications scanned with an authenticated user account for vulnerabilities (that are remediated) prior to new releases?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "VULN-02", category: "Infrastructure", text: "Will you provide results of application and system vulnerability scans to the institution?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "VULN-03", category: "Infrastructure", text: "Will you allow the institution to perform its own vulnerability testing and/or scanning of your systems and/or application, provided that testing is performed at a mutually agreed upon time and date?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "VULN-04", category: "Infrastructure", text: "Have your systems and applications had a third-party security assessment completed in the last year?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "VULN-05", category: "Infrastructure", text: "Do you regularly scan for common web application security vulnerabilities (e.g., SQL injection, XSS, XSRF, etc.)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "VULN-06", category: "Infrastructure", text: "Are your systems and applications regularly scanned externally for vulnerabilities?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+
+  // --- PRODUCT ---
+  { id: "AAAI-01", category: "Product", text: "Does your solution support single sign-on (SSO) protocols for user and administrator authentication?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-02", category: "Product", text: "For customers not using SSO, does your solution support local authentication protocols for user and administrator authentication?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-03", category: "Product", text: "For customers not using SSO, can you enforce password/passphrase complexity requirements (provided by the institution)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-04", category: "Product", text: "For customers not using SSO, does the system have password complexity or length limitations and/or restrictions?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "AAAI-05", category: "Product", text: "For customers not using SSO, do you have documented password/passphrase reset procedures that are currently implemented in the system and/or customer support?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-06", category: "Product", text: "Does your organization participate in InCommon or another eduGAIN-affiliated trust federation?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-07", category: "Product", text: "Are there any passwords/passphrases hard-coded into your systems or solutions?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "AAAI-08", category: "Product", text: "Are you storing any passwords in plaintext?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "AAAI-09", category: "Product", text: "Are audit logs available that include AT LEAST all of the following: login, logout, actions performed, and source IP address?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-11", category: "Product", text: "Can you provide the institution documentation regarding the retention period for those logs, how logs are protected, and whether they are accessible to the customer (and if so, how)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AAAI-12", category: "Product", text: "For customers not using SSO, does your application support integration with other authentication and authorization systems?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AAAI-13", category: "Product", text: "Do you allow the customer to specify attribute mappings for any needed information beyond a user identifier?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AAAI-14", category: "Product", text: "For customers not using SSO, does your application support directory integration for user accounts?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AAAI-15", category: "Product", text: "Does your solution support any of the following web SSO standards: SAML2 (with redirect flow), OIDC, CAS, or other?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AAAI-16", category: "Product", text: "Do you support differentiation between email address and user identifier?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AAAI-17", category: "Product", text: "For customers not using SSO, does your application and/or user frontend/portal support multifactor authentication (e.g., Duo, Google Authenticator, OTP, etc.)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AAAI-18", category: "Product", text: "Does your application automatically lock the session or log out an account after a period of inactivity?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DATA-01", category: "Product", text: "Will the institution's data be stored on any devices (database servers, file servers, SAN, NAS, etc.) configured with non-RFC 1918/4193 (i.e., publicly routable) IP addresses?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "DATA-02", category: "Product", text: "Is the transport of sensitive data encrypted using security protocols/algorithms (e.g., system-to-client)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DATA-03", category: "Product", text: "Is the storage of sensitive data encrypted using security protocols/algorithms (e.g., disk encryption, at-rest, files, and within a running database)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DATA-04", category: "Product", text: "Do all cryptographic modules in use in your solution conform to the Federal Information Processing Standards (FIPS PUB 140-2 or 140-3)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DATA-05", category: "Product", text: "Will the institution's data be available within the system for a period of time at the completion of this contract?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DATA-06", category: "Product", text: "Are ownership rights to all data, inputs, outputs, and metadata retained even through a provider acquisition or bankruptcy event?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DATA-07", category: "Product", text: "Do backups containing the institution's data ever leave the institution's data zone either physically or via network routing?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "DATA-08", category: "Product", text: "Is media used for long-term retention of business data and archival purposes stored in a secure, environmentally protected area?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DATA-09", category: "Product", text: "At the completion of this contract, will data be returned to the institution and/or deleted from all your systems and archives?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-10", category: "Product", text: "Can the institution extract a full or partial backup of data?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-11", category: "Product", text: "Do current backups include all operating system software, utilities, security software, application software, and data files necessary for recovery?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-12", category: "Product", text: "Are you performing off-site backups (i.e., digitally moved off site)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-13", category: "Product", text: "Are physical backups taken off-site (i.e., physically moved off site)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-14", category: "Product", text: "Are data backups encrypted?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DATA-15", category: "Product", text: "Do you have a media handling process that is documented and currently implemented that meets established business needs and regulatory requirements, including end-of-life, repurposing, and data-sanitization procedures?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-16", category: "Product", text: "Does the process described in DATA-15 adhere to DoD 5220.22-M and/or NIST SP 800-88 standards?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-17", category: "Product", text: "Does your staff (or third party) have access to institutional data (e.g., financial, PHI, or other sensitive information) through any means?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "DATA-18", category: "Product", text: "Do you have a documented and currently implemented strategy for securing employee workstations when they work remotely (i.e., not in a trusted computing environment)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DATA-19", category: "Product", text: "Does the environment provide for dedicated single-tenant capabilities?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DATA-20", category: "Product", text: "Are ownership rights to all data, inputs, outputs, and metadata retained by the institution?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DATA-21", category: "Product", text: "In the event of imminent bankruptcy, closing of business, or retirement of service, will you provide 90 days for customers to get their data out of the system and migrate applications?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DATA-22", category: "Product", text: "Are involatile backup copies made according to predefined schedules and securely stored and protected?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DATA-23", category: "Product", text: "Do you have a cryptographic key management process (generation, exchange, storage, safeguards, use, vetting, and replacement) that is documented and currently implemented, for all system components (e.g., database, system, web, etc.)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+
+  // --- CASE-SPECIFIC (CONSULTANT / OPEM / PCI / HIPAA) ---
+  { id: "CONS-01", category: "Case-Specific", text: "Will the consultant require access to the institution's network resources?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "CONS-02", category: "Case-Specific", text: "Has the consultant received training on (sensitive, HIPAA, PCI, etc.) data handling?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "CONS-03", category: "Case-Specific", text: "Is the data encrypted (at rest) while in the consultant's possession?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "CONS-04", category: "Case-Specific", text: "Can access be restricted based on source IP address?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "CONS-05", category: "Case-Specific", text: "Will the consulting take place on-premises?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "CONS-06", category: "Case-Specific", text: "Will the consultant require access to hardware in the institution's data centers?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "CONS-07", category: "Case-Specific", text: "Will the consultant require an account within the institution's domain (@*.edu)?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "CONS-08", category: "Case-Specific", text: "Will any data be transferred to the consultant's possession?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "CONS-09", category: "Case-Specific", text: "Will the consultant need remote access to the institution's network or systems?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "OPEM-01", category: "Case-Specific", text: "Do you support role-based access control (RBAC) for system administrators?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "OPEM-02", category: "Case-Specific", text: "Can your employees access customer systems remotely?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "OPEM-03", category: "Case-Specific", text: "Can you provide overall system and/or application architecture diagrams including a full description of the data communications architecture for all components of the system?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "OPEM-04", category: "Case-Specific", text: "Do you require remote management of the system?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "OPEM-05", category: "Case-Specific", text: "If you answered 'yes' to OPEM-04, are your remote actions and changes logged or otherwise visible to the campus?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "OPEM-06", category: "Case-Specific", text: "If you maintain remote access to the system, will you handle data in a FERPA-compliant manner?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "OPEM-07", category: "Case-Specific", text: "Do you support campus status monitoring through SNMPv3 or other means?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "OPEM-10", category: "Case-Specific", text: "Do you have existing higher education customers?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "HIPA-01", category: "Case-Specific", text: "Do your workforce members receive regular training related to the Health Insurance Portability and Accountability Act (HIPAA) Privacy and Security Rules and the HITECH Act?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "HIPA-02", category: "Case-Specific", text: "Have you identified areas of risk?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "HIPA-03", category: "Case-Specific", text: "Have the relevant policies/plans been tested?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "HIPA-04", category: "Case-Specific", text: "Have you entered into a Business Associate Agreements with all subcontractors who may have access to protected health information (PHI)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "HIPA-05", category: "Case-Specific", text: "Do you monitor or receive information regarding changes in HIPAA regulations?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-06", category: "Case-Specific", text: "Has your organization designated HIPAA Privacy and Security officers as required by the rules?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-07", category: "Case-Specific", text: "Do you comply with the requirements of the Health Information Technology for Economic and Clinical Health Act (HITECH)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-08", category: "Case-Specific", text: "Have you conducted a risk analysis as required under the HIPAA Security Rule?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-09", category: "Case-Specific", text: "Have you taken actions to mitigate the identified risks?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-10", category: "Case-Specific", text: "Does your application require user and system administrator password changes at a frequency no greater than 90 days?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-11", category: "Case-Specific", text: "Does your application require users to set their own password after an administrator reset or on first use of the account?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-12", category: "Case-Specific", text: "Does your application lock out an account after a number of failed login attempts?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-13", category: "Case-Specific", text: "Does your application automatically lock or log-out an account after a period of inactivity?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-14", category: "Case-Specific", text: "Are passwords visible in plain text, whether when stored or entered, including service level accounts (i.e., database accounts, etc.)?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "HIPA-15", category: "Case-Specific", text: "If the application is institution-hosted, can all service level and administrative account passwords be changed by the institution?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-16", category: "Case-Specific", text: "Does your application provide the ability to define user access levels?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-17", category: "Case-Specific", text: "Does your application support varying levels of access to administrative tasks defined individually per user?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-18", category: "Case-Specific", text: "Does your application support varying levels of access to records based on user ID?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "HIPA-19", category: "Case-Specific", text: "Is there a limit to the number of groups to which a user can be assigned?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-20", category: "Case-Specific", text: "Do accounts used for solution provider-supplied remote support abide by the same authentication policies and access logging as the rest of the system?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-21", category: "Case-Specific", text: "Does the application log record access including specific user, date/time of access, and originating IP or device?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-22", category: "Case-Specific", text: "Does the application log administrative activity, such as user account access changes and password changes, including specific user, date/time of changes, and originating IP or device?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-23", category: "Case-Specific", text: "Do you retain logs for at least as long as required by HIPAA regulations?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-24", category: "Case-Specific", text: "Can the application logs be archived?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-25", category: "Case-Specific", text: "Can the application logs be saved externally?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-26", category: "Case-Specific", text: "Do you have a disaster recovery plan and emergency mode operation plan?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-27", category: "Case-Specific", text: "Can you provide a HIPAA compliance attestation document?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-28", category: "Case-Specific", text: "Are you willing to enter into a Business Associate Agreement (BAA)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "HIPA-29", category: "Case-Specific", text: "Do your data backup and retention policies and practices meet HIPAA requirements?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PCID-01", category: "Case-Specific", text: "Do you have a current, executed within the past year, Attestation of Compliance (AoC) or Report on Compliance (RoC)?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "PCID-02", category: "Case-Specific", text: "Is the application listed as an approved Payment Application Data Security Standard (PA-DSS) application?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PCID-03", category: "Case-Specific", text: "Does the system or solutions use a third party to collect, store, process, or transmit cardholder (payment/credit/debt card) data?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PCID-04", category: "Case-Specific", text: "Do your systems or solutions store, process, or transmit cardholder (payment/credit/debt card) data?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PCID-05", category: "Case-Specific", text: "Are you compliant with the Payment Card Industry Data Security Standard (PCI DSS)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PCID-06", category: "Case-Specific", text: "Are you classified as a service provider?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PCID-07", category: "Case-Specific", text: "Are you on the list of Visa approved service providers?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PCID-08", category: "Case-Specific", text: "Are you classified as a merchant? If so, what level (1, 2, 3, 4)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PCID-11", category: "Case-Specific", text: "Can the application be installed in a PCI DSS–compliant manner?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+
+  // --- PRIVACY ---
+  { id: "PCOM-01", category: "Privacy", text: "Have you had a personal data breach in the past three years that involved reporting to a governmental agency, notice to individuals (including voluntary notice), or notice to another organization or institution?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PCOM-03", category: "Privacy", text: "Have you had any violations of your internal privacy policies or violations of applicable privacy law in the past 36 months?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "PCOM-04", category: "Privacy", text: "Do you have a dedicated data privacy staff or office?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PDOC-03", category: "Privacy", text: "Does your employee onboarding and offboarding policy include training of employees on information security and data privacy?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PTHP-01", category: "Privacy", text: "Do you have contractual agreements with third parties that require them to maintain standards and to comply with all regulatory requirements?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "PTHP-02", category: "Privacy", text: "Do you perform privacy impact assessments of third parties that collect, process, or have access to personal data to ensure they meet industry and regulatory standards and to mitigate harmful, unethical, or discriminatory impacts on data subjects?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PCHG-01", category: "Privacy", text: "Does your change management process include privacy review and approval?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PCHG-02", category: "Privacy", text: "Do you have policy and procedure, currently implemented, guiding how privacy risks are mitigated until they can be resolved?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PDAT-01", category: "Privacy", text: "Do you collect, process, or store demographic information?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PDAT-02", category: "Privacy", text: "Do you capture or create genetic, biometric, or behaviometric information (e.g., facial recognition or fingerprints)?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PDAT-03", category: "Privacy", text: "Do you combine institutional data (including 'de-identified', 'anonymized', or otherwise masked data) with personal data from any other sources?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PDAT-04", category: "Privacy", text: "Is institutional data coming into or going out of the United States at any point during collection, processing, storage, or archiving?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "PDAT-05", category: "Privacy", text: "Do you capture device information (e.g., IP address, MAC address)?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "PDAT-06", category: "Privacy", text: "Does any part of this service/project involve a web/app tracking component (e.g., use of web-tracking pixels, cookies)?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "PDAT-07", category: "Privacy", text: "Does your staff (or a third party) have access to institutional data (e.g., financial, PHI, or other sensitive information) through any means?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "PRPO-01", category: "Privacy", text: "Do you have a documented privacy management process?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-02", category: "Privacy", text: "Are privacy principles designed into the product lifecycle (i.e., privacy-by-design)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-03", category: "Privacy", text: "Will you comply with applicable breach notification laws?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "PRPO-04", category: "Privacy", text: "Will you comply with the institution's policies regarding user privacy and data protection?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-05", category: "Privacy", text: "Is your company subject to the laws and regulations of the institution's geographic region?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-06", category: "Privacy", text: "Do you have a privacy awareness/training program?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "PRPO-07", category: "Privacy", text: "Is privacy awareness training mandatory for all employees?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-08", category: "Privacy", text: "Is AI privacy and ethics awareness/training required for all employees who work with AI?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-09", category: "Privacy", text: "Do you have any decision-making processes that are completely automated (i.e., there is no human involvement)?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "PRPO-10", category: "Privacy", text: "Do you have a documented process for managing automated processing, including validations, monitoring, and data subject requests?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-11", category: "Privacy", text: "Do you have a documented policy for sharing information with law enforcement?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "PRPO-12", category: "Privacy", text: "Do you share any institutional data with law enforcement without a valid warrant or subpoena?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "PRPO-13", category: "Privacy", text: "Does your incident response team include a privacy analyst/officer?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "INTL-01", category: "Privacy", text: "Will data be collected from or processed in or stored in the European Economic Area (EEA)?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "INTL-02", category: "Privacy", text: "Do you have a data protection officer (DPO)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "INTL-03", category: "Privacy", text: "Will you sign appropriate GDPR Standard Contractual Clauses (SCCs) with the institution?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "INTL-04", category: "Privacy", text: "Will data be collected from or processed in or stored in China?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "INTL-05", category: "Privacy", text: "Do you comply with PIPL security, privacy, and data localization requirements?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-01", category: "Privacy", text: "Have you performed a Data Privacy Impact Assessment for the solution/project?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-02", category: "Privacy", text: "Do you provide an end-user privacy notice about privacy policies and procedures that identify the purpose(s) for which personal information is collected, used, retained, and disclosed?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-03", category: "Privacy", text: "Do you describe the choices available to the individual and obtain implicit or explicit consent with respect to the collection, use, and disclosure of personal information?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-04", category: "Privacy", text: "Do you collect personal information only for the purpose(s) identified in the agreement with an institution or, if there is none, the purpose(s) identified in the privacy notice?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-05", category: "Privacy", text: "Do you have a documented list of personal data your service maintains?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-06", category: "Privacy", text: "Do you retain personal information for only as long as necessary to fulfill the stated purpose(s) or as required by law or regulation and thereafter appropriately dispose of such information?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-07", category: "Privacy", text: "Do you provide individuals with access to their personal information for review and update (i.e., data subject rights)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-08", category: "Privacy", text: "Do you disclose personal information to third parties only for the purpose(s) identified in the privacy notice or with the implicit or explicit consent of the individual?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-09", category: "Privacy", text: "Do you protect personal information against unauthorized access (both physical and logical)?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-10", category: "Privacy", text: "Do you maintain accurate, complete, and relevant personal information for the purposes identified in the privacy notice?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-11", category: "Privacy", text: "Do you have procedures to address privacy-related noncompliance complaints and disputes?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-12", category: "Privacy", text: "Do you 'anonymize', 'de-identify', or otherwise mask personal data?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-13", category: "Privacy", text: "Do you or your subprocessors use or disclose 'anonymized', 'de-identified', or otherwise masked data for any purpose other than those identified in the agreement with an institution (e.g., sharing with ad networks or data brokers, marketing, creation of profiles, analytics unrelated to services provided to institution)?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "DRPV-14", category: "Privacy", text: "Do you certify stop-processing requests, including any data that is processed by a third party on your behalf?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DRPV-15", category: "Privacy", text: "Do you have a process to review code for ethical considerations?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "DPAI-01", category: "Privacy", text: "Does your service use AI for the processing of institutional data?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "DPAI-02", category: "Privacy", text: "Is any institutional data retained in AI processing?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "DPAI-03", category: "Privacy", text: "Do you have agreements in place with third parties or subprocessors regarding the protection of customer data and use of AI?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "DPAI-04", category: "Privacy", text: "Will institutional data be processed through a third party or subprocessor that also uses AI?", importance: "Standard", weight: 10, compliantAnswer: "No" },
+  { id: "DPAI-05", category: "Privacy", text: "Is AI processing limited to fully licensed commercial enterprise AI services?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DPAI-06", category: "Privacy", text: "Will institutional data be used or processed by any shared AI services?", importance: "Minor", weight: 5, compliantAnswer: "No" },
+  { id: "DPAI-07", category: "Privacy", text: "Do you have safeguards in place to protect institutional data and data privacy from unintended AI queries or processing?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "DPAI-08", category: "Privacy", text: "Do you provide choice to the user to opt out of AI use?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+
+  // --- AI ---
+  { id: "AIGN-01", category: "AI", text: "Does your solution have an AI risk model when developing or implementing your solution's AI model?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIGN-02", category: "AI", text: "Can your solution's AI features be disabled by tenant and/or user?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIGN-03", category: "AI", text: "Have your staff completed responsible AI training?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIGN-05", category: "AI", text: "Does your solution support business rules to protect sensitive data from being ingested by the AI model?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AIPL-01", category: "AI", text: "Are your AI developer's policies, processes, procedures, and practices across the organization related to the mapping, measuring, and managing of AI risks conspicuously posted, unambiguous, and implemented effectively?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIPL-02", category: "AI", text: "Have you identified and measured AI risks?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIPL-03", category: "AI", text: "In the event of an incident, can your solution's AI features be disabled in a timely manner?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIPL-04", category: "AI", text: "If disabled because of an incident, can your solution's AI features be re-enabled in a timely manner?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIPL-05", category: "AI", text: "Do you have documented technical and procedural processes to address potential negative impacts of AI as described by the AI Risk Management Framework (RMF)?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AISC-01", category: "AI", text: "If sensitive data is introduced to your solution's AI model, can the data be removed from the AI model by request?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AISC-02", category: "AI", text: "Is user input data used to influence your solution's AI model?*", importance: "Critical", weight: 20, compliantAnswer: "No" },
+  { id: "AISC-03", category: "AI", text: "Do you provide logging for your solution's AI feature(s) that includes user, date, and action taken?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AISC-05", category: "AI", text: "Do you plan for and mitigate supply-chain risk related to your AI features?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AIML-01", category: "AI", text: "Do you separate ML training data from your ML solution data?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIML-02", category: "AI", text: "Do you authenticate and verify your ML model's feedback?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AIML-03", category: "AI", text: "Is your ML training data vetted, validated, and verified before training the solution's AI model?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AIML-04", category: "AI", text: "Is your ML training data monitored and audited?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AIML-05", category: "AI", text: "Have you limited access to your ML training data to only staff with an explicit business need?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AIML-06", category: "AI", text: "Have you implemented adversarial training or other model defense mechanisms to protect your ML-related features?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AIML-07", category: "AI", text: "Do you make your ML model transparent through documentation and log inputs and outputs?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AIML-08", category: "AI", text: "Do you watermark your ML training data?", importance: "Minor", weight: 5, compliantAnswer: "Yes" },
+  { id: "AILM-01", category: "AI", text: "Do you limit your solution's LLM privileges by default?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AILM-02", category: "AI", text: "Is your LLM training data vetted, validated, and verified before training the solution's AI model?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AILM-03", category: "AI", text: "Do any actions taken by your solution's LLM features or plugins require human intervention?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AILM-04", category: "AI", text: "Do you limit multiple LLM model plugins being called as part of a single input?*", importance: "Critical", weight: 20, compliantAnswer: "Yes" },
+  { id: "AILM-05", category: "AI", text: "Do you limit your solution's LLM resource use per request, per step, and per action?", importance: "Standard", weight: 10, compliantAnswer: "Yes" },
+  { id: "AILM-06", category: "AI", text: "Do you leverage LLM model tuning or other model validation mechanisms?", importance: "Standard", weight: 10, compliantAnswer: "Yes" }
+];
+    const groupedQuestions = questions.reduce((acc, q) => {
+        if (!acc[q.category]) acc[q.category] = [];
+        acc[q.category].push(q);
+        return acc;
+    }, {});
+
+    const container = document.getElementById('accordion-container');
+    const categoryOrder = ["Start Here", "Organization", "IT Accessibility", "Infrastructure", "Product", "Case-Specific", "Privacy", "AI"];
+
+    window.toggleCategoryNA = function(checkbox) {
+        const catName = checkbox.getAttribute('data-category');
+        const contentDiv = document.getElementById(`cat-${catName.replace(/\s+/g, '-')}`);
+        const qCards = contentDiv.querySelectorAll('.question-card');
+        const radios = contentDiv.querySelectorAll('input[type="radio"]');
+        
+        qCards.forEach(card => {
+            if(checkbox.checked) {
+                card.classList.add('disabled');
+            } else {
+                card.classList.remove('disabled');
+            }
+        });
+        
+        radios.forEach(r => r.disabled = checkbox.checked);
+    };
+
+    categoryOrder.forEach(category => {
+        if (!groupedQuestions[category]) return;
+        
+        const details = document.createElement('details');
+        const qCount = groupedQuestions[category].length;
+        
+        details.innerHTML = `
+            <summary>${category} <span style="font-weight: normal; font-size: 0.85em; color: #666;">(${qCount} Questions)</span></summary>
+            <div class="details-content" id="cat-${category.replace(/\s+/g, '-')}">
+                <div class="category-na-toggle">
+                    <label>
+                        <input type="checkbox" class="cat-na-checkbox" data-category="${category}" onchange="toggleCategoryNA(this)">
+                        Mark this entire category as Not Applicable
+                    </label>
+                </div>
+            </div>
+        `;
+        container.appendChild(details);
+
+        const contentDiv = details.querySelector('.details-content');
+
+        groupedQuestions[category].forEach(q => {
+            let badgeClass = q.importance.toLowerCase();
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            
+            // Set the default radio to the non-compliant answer
+            const yesDefault = q.compliantAnswer === 'No' ? 'checked' : '';
+            const noDefault = q.compliantAnswer === 'Yes' ? 'checked' : '';
+
+            card.innerHTML = `
+                <div class="question-header">
+                    <span class="question-id">${q.id}</span>
+                    <span class="badge ${badgeClass}">${q.importance} (${q.weight} pts)</span>
+                </div>
+                <div class="question-text">${q.text}</div>
+                <div class="options">
+                    <label><input type="radio" name="${q.id}" value="Yes" ${yesDefault}> Yes</label>
+                    <label><input type="radio" name="${q.id}" value="No" ${noDefault}> No</label>
+                </div>
+            `;
+            contentDiv.appendChild(card);
+        });
+    });
+
+    function autoFill() {
+        if(!document.getElementById('companyName').value) document.getElementById('companyName').value = "Test Vendor Inc.";
+        if(!document.getElementById('productName').value) document.getElementById('productName').value = "EdTech Platform Pro";
+        if(!document.getElementById('contactName').value) document.getElementById('contactName').value = "John Doe";
+        if(!document.getElementById('contactEmail').value) document.getElementById('contactEmail').value = "john@testvendor.com";
+
+        questions.forEach(q => {
+            const compliantRadio = document.querySelector(`input[name="${q.id}"][value="${q.compliantAnswer}"]`);
+            if(compliantRadio) compliantRadio.checked = true;
+        });
+        document.querySelectorAll('details').forEach(d => d.open = true);
+    }
+
+    function calculateScore() {
+        const company = document.getElementById('companyName').value.trim();
+        const product = document.getElementById('productName').value.trim();
+        const contact = document.getElementById('contactName').value.trim() || 'N/A';
+        const email = document.getElementById('contactEmail').value.trim() || 'N/A';
+        
+        if (!company || !product) {
+            alert("Please enter the Company Name and Product Name in the General Information section before calculating.");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        let totalActual = 0;
+        let totalPossible = 0;
+        let categoryResultsData = {};
+        let rawAnswers = [];
+        
+        let categoryExemptStatus = {};
+        document.querySelectorAll('.cat-na-checkbox').forEach(cb => {
+            categoryExemptStatus[cb.getAttribute('data-category')] = cb.checked;
+        });
+
+        Object.keys(groupedQuestions).forEach(cat => {
+            categoryResultsData[cat] = { actual: 0, possible: 0, exempt: categoryExemptStatus[cat] };
+        });
+
+        questions.forEach(q => {
+            if (categoryExemptStatus[q.category]) {
+                rawAnswers.push({
+                    id: q.id,
+                    category: q.category,
+                    answer: "Category Exempt",
+                    compliant: q.compliantAnswer
+                });
+                return;
+            }
+
+            // Because every question defaults to the non-compliant answer, it will always be found.
+            const selectedOption = document.querySelector(`input[name="${q.id}"]:checked`);
+            const answerVal = selectedOption.value;
+            
+            rawAnswers.push({
+                id: q.id,
+                category: q.category,
+                answer: answerVal,
+                compliant: q.compliantAnswer
+            });
+
+            // STRICT MODE: Every non-exempt question is automatically factored into the total possible.
+            totalPossible += q.weight;
+            categoryResultsData[q.category].possible += q.weight;
+            
+            if (answerVal === q.compliantAnswer) {
+                totalActual += q.weight;
+                categoryResultsData[q.category].actual += q.weight;
+            }
+        });
+
+        const percentage = totalPossible > 0 ? Math.round((totalActual / totalPossible) * 100) : 0;
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        
+        scoreDisplay.innerHTML = `${percentage}%<br><span id="scoreDetails">${totalActual} / ${totalPossible} pts</span>`;
+        
+        let color = percentage >= 80 ? "var(--minor-color)" : (percentage >= 60 ? "var(--standard-color)" : "var(--critical-color)");
+        scoreDisplay.style.color = color;
+        scoreDisplay.style.borderColor = color;
+
+        const catGrid = document.getElementById('categoryResults');
+        catGrid.innerHTML = ''; 
+
+        currentAssessmentData = {
+            company, product, contact, email,
+            date: new Date().toLocaleDateString(),
+            percentage, totalActual, totalPossible,
+            categories: [],
+            answers: rawAnswers
+        };
+
+        categoryOrder.forEach(cat => {
+            if(!categoryResultsData[cat]) return;
+            const data = categoryResultsData[cat];
+            
+            let displayPercent, catColor, fractionText;
+            
+            if (data.exempt) {
+                displayPercent = "N/A";
+                catColor = "#666";
+                fractionText = "Category Exempt";
+            } else {
+                const catPercentage = data.possible > 0 ? Math.round((data.actual / data.possible) * 100) : 0;
+                displayPercent = data.possible > 0 ? `${catPercentage}%` : `0%`;
+                catColor = catPercentage >= 80 ? "var(--minor-color)" : (catPercentage >= 60 ? "var(--standard-color)" : "var(--critical-color)");
+                fractionText = `${data.actual} / ${data.possible} pts`;
+            }
+
+            const catCard = document.createElement('div');
+            catCard.className = 'cat-score-card';
+            catCard.innerHTML = `
+                <h4>${cat}</h4>
+                <div class="cat-percentage" style="color: ${catColor}">${displayPercent}</div>
+                <div class="cat-fraction">${fractionText}</div>
+            `;
+            catGrid.appendChild(catCard);
+
+            currentAssessmentData.categories.push({
+                name: cat,
+                percentage: displayPercent,
+                actual: data.actual,
+                possible: data.possible,
+                isExempt: data.exempt
+            });
+        });
+
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.style.display = 'block';
+        
+        const manualKeyInput = document.getElementById('gpgPubKey') ? document.getElementById('gpgPubKey').value.trim() : '';
+        const btnDl = document.getElementById('btnDownloadTxt');
+        
+        if (INSTITUTION_PUB_KEY.trim() !== '' || manualKeyInput !== '') {
+            btnDl.innerText = "Encrypt & Download Assessment Report (.asc)";
+        } else {
+            btnDl.innerText = "Download Assessment Report (.txt)";
+        }
+        
+        btnDl.style.display = 'block';
+        resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function downloadTextSummary() {
+        if (!currentAssessmentData) return;
+
+        const btnDl = document.getElementById('btnDownloadTxt');
+        btnDl.disabled = true;
+
+        let activeKey = INSTITUTION_PUB_KEY.trim();
+        if (activeKey === '' && document.getElementById('gpgPubKey')) {
+            activeKey = document.getElementById('gpgPubKey').value.trim();
+        }
+
+        if (typeof openpgp === 'undefined' && activeKey !== '') {
+            alert("Security Error: The OpenPGP encryption library failed to load. This is usually caused by running the HTML file locally while a strict ad-blocker or Safari's privacy settings are active. Please disable tracking protection for this file or run it via a web server.");
+            btnDl.disabled = false;
+            return;
+        }
+
+        let content = "========================================================\n";
+        content +=    "       JVAT 1.0.3 - Jayhawk Vendor Assessment Toolkit   \n";
+        content +=    "                 ASSESSMENT SUMMARY REPORT              \n";
+        content +=    "========================================================\n\n";
+
+        content +=    "VENDOR & PRODUCT INFORMATION\n";
+        content +=    "--------------------------------------------------------\n";
+        content +=    `Company Name : ${currentAssessmentData.company}\n`;
+        content +=    `Product Name : ${currentAssessmentData.product}\n`;
+        content +=    `Primary Cont.: ${currentAssessmentData.contact}\n`;
+        content +=    `Contact Email: ${currentAssessmentData.email}\n`;
+        content +=    `Eval Date    : ${currentAssessmentData.date}\n\n`;
+
+        content +=    "INSTITUTIONAL COMPLIANCE SCORE\n";
+        content +=    "--------------------------------------------------------\n";
+        content +=    `Composite Score: ${currentAssessmentData.percentage}%\n`;
+        content +=    `Points Awarded : ${currentAssessmentData.totalActual} out of ${currentAssessmentData.totalPossible} Possible Points\n\n`;
+
+        content +=    "CATEGORY BREAKDOWN\n";
+        content +=    "--------------------------------------------------------\n";
+        
+        currentAssessmentData.categories.forEach(cat => {
+            let paddedName = cat.name.padEnd(25, ' ');
+            if (cat.isExempt) {
+                content += `${paddedName}:  N/A  (Category Exempt)\n`;
+            } else {
+                content += `${paddedName}: ${cat.percentage.padStart(4, ' ')}  (${cat.actual}/${cat.possible} pts)\n`;
+            }
+        });
+
+        content +=    "\nQUESTION RESPONSES BY CODE\n";
+        content +=    "--------------------------------------------------------\n";
+        
+        currentAssessmentData.answers.forEach(q => {
+            if (q.answer === "Category Exempt") {
+                content += `[${q.id}] ${q.category} - Answer: Exempt\n`;
+            } else {
+                let flag = (q.answer !== q.compliant) ? " [FLAG]" : "";
+                content += `[${q.id}] ${q.category} - Answer: ${q.answer}${flag}\n`;
+            }
+        });
+
+        content +=    "\n========================================================\n";
+        content +=    "This text summary was automatically generated by the JVAT\n";
+        content +=    "evaluation tool based on vendor-provided inputs.\n";
+        content +=    "========================================================\n";
+
+        let finalOutput = content;
+        let fileExtension = ".txt";
+        let mimeType = "text/plain";
+
+        if (activeKey !== '') {
+            activeKey = activeKey.replace(/[\u2013\u2014\u2012\u2015]/g, "--");
+            
+            try {
+                const publicKey = await openpgp.readKey({ armoredKey: activeKey });
+                const message = await openpgp.createMessage({ text: content });
+                
+                finalOutput = await openpgp.encrypt({
+                    message: message,
+                    encryptionKeys: publicKey
+                });
+                
+                fileExtension = ".asc";
+            } catch (error) {
+                console.error(error);
+                alert("Encryption Failed: " + error.message + "\n\nPlease ensure the full key block is present and properly formatted.");
+                btnDl.disabled = false;
+                return;
+            }
+        }
+
+        const blob = new Blob([finalOutput], { type: mimeType });
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        
+        const safeCompanyName = currentAssessmentData.company.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        a.download = `JVAT_Summary_${safeCompanyName}${fileExtension}`;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            btnDl.disabled = false;
+        }, 0); 
+    }
+</script>
+
+</body>
+</html>

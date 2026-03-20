@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Complete Email Header Extractor (Standalone)</title>
+    <style>
+        :root { --primary: #0078d4; --bg: #f3f2f1; --card: #ffffff; --text: #323130; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.6; }
+        .wrapper { max-width: 1000px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 4px; box-shadow: 0 1.6px 3.6px 0 rgba(0,0,0,0.132); }
+        h1 { font-weight: 600; font-size: 20px; margin-bottom: 20px; color: var(--primary); border-bottom: 1px solid #edebe9; padding-bottom: 10px; }
+        .drop-area { border: 2px dashed #a19f9d; padding: 40px; text-align: center; cursor: pointer; background: #faf9f8; border-radius: 2px; transition: 0.2s; }
+        .drop-area:hover { background: #f3f2f1; border-color: var(--primary); }
+        .meta-grid { display: grid; grid-template-columns: 180px 1fr; border: 1px solid #edebe9; margin-top: 20px; }
+        .meta-label { background: #f3f2f1; padding: 10px; font-weight: 600; border-bottom: 1px solid #edebe9; font-size: 13px; }
+        .meta-value { padding: 10px; border-bottom: 1px solid #edebe9; word-break: break-all; font-size: 14px; }
+        .header-raw-container { margin-top: 30px; }
+        .header-raw-container h2 { font-size: 16px; font-weight: 600; }
+        pre { background: #252526; color: #d4d4d4; padding: 15px; border-radius: 4px; overflow-x: auto; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; white-space: pre-wrap; line-height: 1.4; border-left: 4px solid var(--primary); }
+        .info-tag { font-size: 11px; background: #dff6dd; color: #107c10; padding: 2px 8px; border-radius: 10px; font-weight: bold; margin-bottom: 10px; display: inline-block; }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <h1>Email Header Analyzer</h1>
+    <div class="drop-area" id="dropArea">
+        <strong>Drag & Drop</strong> or Click to select a <strong>.msg</strong> or <strong>.eml</strong> file
+        <input type="file" id="fileIn" style="display:none" accept=".msg,.eml">
+    </div>
+
+    <div id="results" style="display:none">
+        <div id="typeTag" class="info-tag"></div>
+        <div class="meta-grid" id="mainHeaders"></div>
+        
+        <div class="header-raw-container">
+            <h2>Full Technical Headers</h2>
+            <pre id="rawOutput"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+const dropArea = document.getElementById('dropArea');
+const fileIn = document.getElementById('fileIn');
+const results = document.getElementById('results');
+
+dropArea.onclick = () => fileIn.click();
+fileIn.onchange = (e) => handleFile(e.target.files[0]);
+
+// Global drag/drop handlers
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => {
+    e.preventDefault();
+    handleFile(e.dataTransfer.files[0]);
+});
+
+function handleFile(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    const isMsg = file.name.toLowerCase().endsWith('.msg');
+
+    reader.onload = function(e) {
+        let rawContent = "";
+        if (isMsg) {
+            rawContent = parseMsgBinary(e.target.result);
+        } else {
+            // EML is easy - it's just text
+            rawContent = e.target.result.split(/\r?\n\r?\n/)[0];
+        }
+        displayResults(rawContent, isMsg ? "Outlook MSG File" : "Standard EML File");
+    };
+
+    if (isMsg) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file);
+}
+
+/**
+ * Robust .msg binary scanner.
+ * It searches the binary array for common header start-patterns and 
+ * handles both ASCII and UTF-16LE variants often found in .msg files.
+ */
+function parseMsgBinary(buffer) {
+    const u8 = new Uint8Array(buffer);
+    const decoderUTF16 = new TextDecoder("utf-16le");
+    const decoderUTF8 = new TextDecoder("utf-8");
+    
+    // Convert a larger chunk of the file to strings to find the header stream
+    const fullUTF16 = decoderUTF16.decode(u8);
+    const fullUTF8 = decoderUTF8.decode(u8);
+
+    // Common header start identifiers
+    const markers = ["Received:", "Return-Path:", "MIME-Version:", "Delivered-To:"];
+    
+    let extracted = "";
+
+    // Strategy 1: Check UTF-16LE (Standard for modern MSG internal properties)
+    for (let m of markers) {
+        let idx = fullUTF16.indexOf(m);
+        if (idx !== -1) {
+            // Slice until we hit a large block of nulls or non-header text
+            let chunk = fullUTF16.substring(idx, idx + 20000);
+            extracted = chunk.split('\0')[0]; 
+            break;
+        }
+    }
+
+    // Strategy 2: Check UTF-8/ASCII fallback
+    if (!extracted || extracted.length < 50) {
+        for (let m of markers) {
+            let idx = fullUTF8.indexOf(m);
+            if (idx !== -1) {
+                let chunk = fullUTF8.substring(idx, idx + 20000);
+                extracted = chunk.split('\0')[0];
+                break;
+            }
+        }
+    }
+
+    return extracted || "Error: Could not extract headers. The file may be encrypted or corrupted.";
+}
+
+function displayResults(raw, type) {
+    results.style.display = "block";
+    document.getElementById('typeTag').innerText = type;
+    document.getElementById('rawOutput').innerText = raw;
+
+    const mainHeaders = document.getElementById('mainHeaders');
+    mainHeaders.innerHTML = "";
+
+    // Define keys we want to highlight in the table
+    const keysToFind = ["Subject", "From", "To", "Date", "Message-ID", "Return-Path", "X-Originating-IP"];
+    const parsedMap = {};
+
+    // Basic regex extraction for the table
+    raw.split(/\r?\n/).forEach(line => {
+        const colonIdx = line.indexOf(':');
+        if (colonIdx > 0) {
+            const k = line.substring(0, colonIdx).trim();
+            const v = line.substring(colonIdx + 1).trim();
+            if (!parsedMap[k]) parsedMap[k] = v;
+        }
+    });
+
+    keysToFind.forEach(key => {
+        if (parsedMap[key] || parsedMap[key.toLowerCase()]) {
+            const val = parsedMap[key] || parsedMap[key.toLowerCase()];
+            mainHeaders.innerHTML += `
+                <div class="meta-label">${key}</div>
+                <div class="meta-value">${val}</div>
+            `;
+        }
+    });
+}
+</script>
+
+</body>
+</html>
