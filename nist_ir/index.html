@@ -851,10 +851,30 @@ Turn “pain” into durable improvements. Make sure changes are owned, tracked,
   // Helpers
   // ----------------------------
 
-  function nowISO(){
-    const d = new Date();
-    return d.toISOString().replace("T"," ").replace("Z"," UTC");
-  }
+function pad2(n){ return String(n).padStart(2,"0"); }
+
+function tzOffset(d){
+  // minutes east of UTC (JS gives minutes *behind* UTC as positive)
+  const off = -d.getTimezoneOffset();
+  const sign = off >= 0 ? "+" : "-";
+  const abs = Math.abs(off);
+  return sign + pad2(Math.floor(abs/60)) + ":" + pad2(abs % 60);
+}
+
+function nowStamp(){
+  // Local time with explicit UTC offset, e.g. "2026-03-23 12:46:01 UTC-05:00"
+  const d = new Date();
+  return (
+    d.getFullYear() + "-" +
+    pad2(d.getMonth()+1) + "-" +
+    pad2(d.getDate()) + " " +
+    pad2(d.getHours()) + ":" +
+    pad2(d.getMinutes()) + ":" +
+    pad2(d.getSeconds()) + " " +
+    "UTC" + tzOffset(d)
+  );
+}
+
 
   function currentPhase(){
     return PHASES.find(p => p.id === state.phaseId) || PHASES[0];
@@ -905,23 +925,44 @@ Turn “pain” into durable improvements. Make sure changes are owned, tracked,
     return n;
   }
 
-  function addAutoNote(text){
-    state.notes.unshift({ ts: nowISO(), phaseId: state.phaseId, text: text });
-    saveState();
-    renderNotes();
-    updateKPIs();
-  }
+function addAutoNote(text){
+  const stamp = nowStamp();
+  const t = (text || "").trim();
+  const stampedText = `[${stamp}] ${t}`;
 
-  function addNote(text){
-    const t = (text || "").trim();
-    if(!t) return;
-    state.notes.unshift({ ts: nowISO(), phaseId: state.phaseId, text: t });
-    noteText.value = "";
-    saveState();
-    renderNotes();
-    updateKPIs();
-    toast("Note added", "Saved locally (offline).");
-  }
+  state.notes.unshift({
+    ts: stamp,                 // display stamp
+    tsISO: new Date().toISOString(), // stable sort/search if you later need it
+    phaseId: state.phaseId,
+    text: stampedText
+  });
+
+  saveState();
+  renderNotes();
+  updateKPIs();
+}
+
+
+function addNote(text){
+  const t = (text || "").trim();
+  if(!t) return;
+
+  const stamp = nowStamp();
+  const stampedText = `[${stamp}] ${t}`;
+
+  state.notes.unshift({
+    ts: stamp,
+    tsISO: new Date().toISOString(),
+    phaseId: state.phaseId,
+    text: stampedText
+  });
+
+  noteText.value = "";
+  saveState();
+  renderNotes();
+  updateKPIs();
+  toast("Note added", "Saved locally (offline).");
+}
 
   function markLoop(phaseId){
     state.loops[phaseId] = (state.loops[phaseId] || 0) + 1;
@@ -1311,11 +1352,17 @@ Evidence retained / location:`;
 
   addNoteBtn.addEventListener("click", () => addNote(noteText.value));
 
-  addTemplateNoteBtn.addEventListener("click", () => {
-    const t = templateForPhase(state.phaseId);
-    noteText.value = noteText.value ? (noteText.value + "\n\n" + t) : t;
-    noteText.focus();
-  });
+addTemplateNoteBtn.addEventListener("click", () => {
+  const stamp = nowStamp();
+  const phaseName = PHASES.find(p => p.id === state.phaseId)?.short || state.phaseId;
+
+  const header = `[${stamp}] Template inserted (${phaseName})`;
+  const t = templateForPhase(state.phaseId);
+
+  const block = `${header}\n${t}`;
+  noteText.value = noteText.value ? (noteText.value + "\n\n" + block) : block;
+  noteText.focus();
+});
 
   clearNotesBtn.addEventListener("click", () => {
     state.notes = [];
