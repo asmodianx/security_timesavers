@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>NIST Incident Response Walkthrough (Standalone)</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#111a2e;
+      --panel2:#0f1930;
+      --text:#e9eefc;
+      --muted:#a9b5d6;
+      --accent:#7aa2ff;
+      --accent2:#6ef0c2;
+      --warn:#ffcf5c;
+      --bad:#ff6b6b;
+      --ok:#59ffa1;
+      --border:rgba(255,255,255,.12);
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(122,162,255,.16), transparent 60%),
+                  radial-gradient(900px 500px at 80% 10%, rgba(110,240,194,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+    }
+    a{color:var(--accent)}
+    .wrap{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:18px;
+      padding:18px;
+      min-height:100vh;
+    }
+    @media (max-width: 980px){
+      .wrap{grid-template-columns: 1fr}
+      .sidebar{position:relative}
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .sidebar{
+      padding:16px;
+      position:sticky;
+      top:18px;
+      height: fit-content;
+    }
+    .main{
+      padding:16px;
+    }
+    h1{
+      font-size:18px;
+      margin: 0 0 8px 0;
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:14px;
+      line-height:1.35;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill b{color:var(--text); font-weight:600}
+    .btn{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      transition: transform .05s ease, background .15s ease;
+      font-weight:600;
+      font-size:13px;
+    }
+    .btn:hover{background: rgba(255,255,255,.06)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      background: linear-gradient(180deg, rgba(122,162,255,.24), rgba(122,162,255,.12));
+      border-color: rgba(122,162,255,.38);
+    }
+    .btn.good{
+      background: linear-gradient(180deg, rgba(110,240,194,.20), rgba(110,240,194,.10));
+      border-color: rgba(110,240,194,.34);
+    }
+    .btn.warn{
+      background: linear-gradient(180deg, rgba(255,207,92,.20), rgba(255,207,92,.10));
+      border-color: rgba(255,207,92,.34);
+    }
+    .btn.bad{
+      background: linear-gradient(180deg, rgba(255,107,107,.20), rgba(255,107,107,.10));
+      border-color: rgba(255,107,107,.34);
+    }
+    .btn.small{padding:8px 10px; font-size:12px; border-radius:10px}
+    .hr{
+      height:1px;
+      background: var(--border);
+      margin:14px 0;
+    }
+    .progress{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-top:10px;
+    }
+    .stepBtn{
+      width:100%;
+      text-align:left;
+      padding:10px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      cursor:pointer;
+      display:flex;
+      align-items:flex-start;
+      gap:10px;
+      transition: background .15s ease;
+    }
+    .stepBtn:hover{background: rgba(255,255,255,.05)}
+    .stepBtn.active{
+      background: linear-gradient(180deg, rgba(122,162,255,.18), rgba(122,162,255,.06));
+      border-color: rgba(122,162,255,.40);
+    }
+    .badge{
+      width:22px; height:22px;
+      border-radius:7px;
+      display:grid;
+      place-items:center;
+      font-weight:800;
+      font-size:12px;
+      flex:0 0 auto;
+      margin-top:1px;
+      background: rgba(255,255,255,.06);
+      border:1px solid var(--border);
+    }
+    .badge.done{ background: rgba(89,255,161,.14); border-color: rgba(89,255,161,.30); }
+    .badge.loop{ background: rgba(255,207,92,.14); border-color: rgba(255,207,92,.30); }
+    .stepMeta{
+      display:flex; flex-direction:column; gap:3px;
+      min-width:0;
+    }
+    .stepTitle{
+      font-weight:800;
+      font-size:13px;
+      color:var(--text);
+      line-height:1.2;
+    }
+    .stepDesc{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.25;
+    }
+    .panelTitle{
+      font-size:18px;
+      margin:0 0 6px 0;
+    }
+    .panelLead{
+      margin:0 0 14px 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 980px){
+      .grid2{grid-template-columns: 1fr}
+    }
+    .box{
+      padding:14px;
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      background: rgba(0,0,0,.12);
+    }
+    .box h3{
+      margin:0 0 8px 0;
+      font-size:14px;
+    }
+    .hint{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .checklist{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+    label.item{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      font-size:13px;
+      line-height:1.3;
+      cursor:pointer;
+    }
+    label.item input{
+      margin-top:3px;
+      transform: scale(1.1);
+    }
+    .textarea{
+      width:100%;
+      min-height:100px;
+      resize:vertical;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      padding:10px;
+      font-family:var(--sans);
+      font-size:13px;
+      outline:none;
+    }
+    .textarea.mono{font-family:var(--mono); font-size:12px}
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:7px;
+      margin-top:10px;
+    }
+    .field .lbl{
+      font-size:12px;
+      color:var(--muted);
+    }
+    .select, .input{
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      color:var(--text);
+      padding:10px;
+      outline:none;
+      font-size:13px;
+    }
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+      margin-top:12px;
+    }
+    @media (max-width: 980px){
+      .kpi{grid-template-columns: 1fr}
+    }
+    .kpi .k{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+    }
+    .k .n{font-weight:900; font-size:16px}
+    .k .t{font-size:12px; color:var(--muted)}
+    .toast{
+      position:fixed;
+      right:14px;
+      bottom:14px;
+      max-width: 520px;
+      padding:12px 14px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(17,26,46,.85);
+      backdrop-filter: blur(8px);
+      box-shadow:var(--shadow);
+      display:none;
+      z-index:9999;
+    }
+    .toast strong{display:block; margin-bottom:4px}
+    .toast .small{color:var(--muted); font-size:12px; line-height:1.3}
+    .noteList{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:10px;
+    }
+    .note{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.03);
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .note .meta{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:11px;
+      color:var(--muted);
+      font-family:var(--mono);
+      margin-bottom:6px;
+    }
+    .note .txt{
+      white-space:pre-wrap;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .footerRow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:14px;
+    }
+    .mini{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+    .tag{
+      display:inline-flex;
+      padding:3px 8px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      font-size:11px;
+      color:var(--muted);
+      margin-right:6px;
+    }
+    .callout{
+      border-left: 4px solid rgba(122,162,255,.55);
+      background: rgba(122,162,255,.06);
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid rgba(122,162,255,.20);
+      color: var(--text);
+      font-size:13px;
+      line-height:1.35;
+      margin-top:12px;
+    }
+    .callout.warn{
+      border-left-color: rgba(255,207,92,.65);
+      border-color: rgba(255,207,92,.22);
+      background: rgba(255,207,92,.07);
+    }
+    .callout.good{
+      border-left-color: rgba(110,240,194,.60);
+      border-color: rgba(110,240,194,.22);
+      background: rgba(110,240,194,.06);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="sidebar card" aria-label="Walkthrough sidebar">
+      <h1>NIST IR Walkthrough</h1>
+      <div class="subtitle">
+        Offline, standalone guide through the incident response lifecycle.
+        Includes the iterative loop between <b>Detect/Analyze</b> and <b>Contain/Eradicate/Recover</b>, and a feedback loop from <b>Post‑Incident</b> into <b>Preparation</b>.
+      </div>
+
+      <div class="row" style="justify-content:space-between">
+        <div class="pill" title="Your selected depth level">
+          Mode: <b id="modeLabel">Analyst</b>
+        </div>
+        <select id="modeSelect" class="select" aria-label="Select mode">
+          <option value="analyst">Analyst</option>
+          <option value="lay">Layperson</option>
+        </select>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="row" style="justify-content:space-between">
+        <button class="btn small" id="newIncidentBtn" title="Start a new incident notebook">New Incident</button>
+        <button class="btn small" id="resetBtn" title="Reset walkthrough progress and notes">Reset</button>
+        <button class="btn small" id="exportBtn" title="Export your notes to a JSON file">Export</button>
+        <label class="btn small" for="importFile" style="cursor:pointer" title="Import a previously exported JSON file">Import</label>
+        <input id="importFile" type="file" accept="application/json" style="display:none" />
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="field">
+        <div class="lbl">Incident name / short label</div>
+        <input id="incidentName" class="input" placeholder="e.g., Suspicious PowerShell on HR laptop" />
+      </div>
+
+      <div class="field">
+        <div class="lbl">Severity (rough)</div>
+        <select id="severity" class="select">
+          <option value="unknown">Unknown / Not yet assessed</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+        </select>
+      </div>
+
+      <div class="kpi" aria-label="Progress indicators">
+        <div class="k">
+          <div class="n" id="kpiPhase">1/4</div>
+          <div class="t">Phase</div>
+        </div>
+        <div class="k">
+          <div class="n" id="kpiChecks">0</div>
+          <div class="t">Checks done</div>
+        </div>
+        <div class="k">
+          <div class="n" id="kpiNotes">0</div>
+          <div class="t">Notes</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="progress" id="phaseButtons" aria-label="Phase navigation"></div>
+
+      <div class="hr"></div>
+
+      <div class="mini">
+        <span class="tag">Offline</span>
+        <span class="tag">No CDN</span>
+        <span class="tag">No network calls</span>
+        <br/>
+        Autosaves locally in your browser unless you reset.
+      </div>
+    </aside>
+
+    <main class="main card" aria-label="Walkthrough content">
+      <h2 class="panelTitle" id="phaseTitle">Phase</h2>
+      <p class="panelLead" id="phaseLead"></p>
+
+      <div class="grid2">
+        <section class="box" aria-label="Guidance and checklist">
+          <h3 id="guideTitle">What to do</h3>
+          <div class="hint" id="guideText"></div>
+
+          <div class="callout warn" id="loopCallout" style="display:none">
+            <b>Iterative loop:</b> You can jump back and forth between <b>Detection & Analysis</b> and <b>Contain/Eradicate/Recover</b> as new evidence appears.
+          </div>
+
+          <div class="checklist" id="checklist"></div>
+
+          <div class="field">
+            <div class="lbl" id="decisionLabel">Decision point</div>
+            <div class="row" id="decisionButtons"></div>
+            <div class="hint" id="decisionHint"></div>
+          </div>
+        </section>
+
+        <section class="box" aria-label="Incident notebook">
+          <h3>Incident notebook</h3>
+          <div class="hint">
+            Add short entries as you go. Everything is local/offline. Entries are timestamped.
+          </div>
+
+          <div class="field">
+            <div class="lbl">Add a note</div>
+            <textarea id="noteText" class="textarea" placeholder="What did you observe? What did you do? What did you decide?"></textarea>
+            <div class="row">
+              <button class="btn primary" id="addNoteBtn">Add note</button>
+              <button class="btn" id="addTemplateNoteBtn" title="Insert a quick template for this phase">Insert template</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="lbl">Key artifacts (paste paths, URLs, ticket IDs, hashes, etc.)</div>
+            <textarea id="artifactsText" class="textarea mono" placeholder="e.g., Ticket: INC-12345&#10;Host: PC-0142&#10;SHA256: ...&#10;Log query: ..."></textarea>
+          </div>
+
+          <div class="noteList" id="noteList"></div>
+
+          <div class="footerRow">
+            <div class="mini" id="autosaveLabel">Autosave: on</div>
+            <div class="row">
+              <button class="btn small" id="clearNotesBtn">Clear notes</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="footerRow">
+        <div class="mini" id="phaseFooterHint"></div>
+        <div class="row">
+          <button class="btn" id="prevBtn">← Previous</button>
+          <button class="btn good" id="nextBtn">Next →</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <strong id="toastTitle">Saved</strong>
+    <div class="small" id="toastBody"></div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ----------------------------
+  // Data model (phases & content)
+  // ----------------------------
+
+  const PHASES = [
+    {
+      id: "prep",
+      short: "Preparation",
+      icon: "1",
+      loop: false,
+      lead: {
+        analyst: "Build readiness: people, process, tools, communications, logging, and playbooks so you can respond fast and consistently.",
+        lay: "Get ready before anything bad happens: know who to call, what to protect, and how you’ll respond."
+      },
+      guide: {
+        analyst:
+`Focus areas:
+• Roles & contacts (IR lead, comms, legal/HR, IT ops, vendor support)
+• Asset inventory & logging coverage (endpoints, servers, cloud, identity)
+• Detection & triage playbooks (phishing, malware, account compromise, webshell, data exposure)
+• Evidence handling (time sync, log retention, imaging procedures)
+• Containment options pre-approved (isolation, account disable, IP blocks)
+• Communications (internal escalation & external reporting rules)
+• Exercises and lessons learned integration`,
+        lay:
+`What to prepare:
+• A contact list (IT helpdesk, security, manager, vendor)
+• A simple “what to do first” checklist
+• Backups and how to restore them
+• Where important logs are kept (or who has them)
+• Basic rules for reporting suspicious activity quickly`
+      },
+      checklist: [
+        { id:"p1", analyst:"Confirm IR roles + on-call contacts are current (incl. vendors).", lay:"Make sure you know who to contact for security issues." },
+        { id:"p2", analyst:"Confirm log sources + retention meet needs (identity, endpoint, server, network).", lay:"Make sure you can look back at what happened (logs/backups exist)." },
+        { id:"p3", analyst:"Review playbooks/runbooks for common incidents.", lay:"Have a basic checklist for common problems (phishing, lost device, malware)." },
+        { id:"p4", analyst:"Validate backup/restore process with a recent test restore.", lay:"Check that backups work by doing a small test restore." },
+        { id:"p5", analyst:"Pre-authorize containment actions and communications paths.", lay:"Agree ahead of time on emergency actions (disconnect device, reset passwords, etc.)." },
+        { id:"p6", analyst:"Ensure time synchronization (NTP) and evidence handling procedures.", lay:"Make sure devices have correct time and you know how to keep evidence." }
+      ],
+      decisions: (state) => ([
+        {
+          id:"prep_to_detect",
+          label:"Start incident / suspicious activity detected",
+          hint:"Move into Detection & Analysis when an alert, report, or anomaly appears.",
+          action: () => goToPhase("detect")
+        }
+      ]),
+      footer: {
+        analyst:"Tip: Preparation is never “done.” Improvements from Post‑Incident should land here as concrete changes (controls, training, logging, playbooks).",
+        lay:"Tip: The best time to plan is before you need it. After an incident, update this phase with what you learned."
+      }
+    },
+
+    {
+      id: "detect",
+      short: "Detection & Analysis",
+      icon: "2",
+      loop: true,
+      lead: {
+        analyst: "Confirm whether an incident is occurring, scope it, prioritize, and decide on containment strategy. Iterate as evidence changes.",
+        lay: "Figure out what’s happening, how serious it is, and what systems or people are involved."
+      },
+      guide: {
+        analyst:
+`Key outputs:
+• Initial classification (type) and severity
+• Timeline (what/when/where)
+• Affected assets/accounts/data
+• Working hypothesis (likely cause / tactic)
+• Containment decision (fast stop vs. preserve access for intel)
+• Evidence preserved (logs, memory, disk images as needed)
+
+Common triage moves:
+• Validate alert fidelity (false positive vs real)
+• Identify patient zero and spread
+• Collect IOCs (hashes, IPs, domains, usernames, process names)
+• Determine business impact (service outage, data exposure risk)
+• Decide: isolate now vs monitor briefly for scope (policy dependent)`,
+        lay:
+`Key things to figure out:
+• Is this real or a false alarm?
+• What devices/accounts are involved?
+• What’s the impact (lost access, suspicious payments, data exposure)?
+• When did it start?
+• Who needs to know right now?`
+      },
+      checklist: [
+        { id:"d1", analyst:"Capture the triggering alert/report details (source, time, entity, rule).", lay:"Write down what looked suspicious and when you noticed it." },
+        { id:"d2", analyst:"Validate: reproduce/confirm with independent evidence (logs/telemetry).", lay:"Confirm it’s real by checking another source or asking IT." },
+        { id:"d3", analyst:"Identify affected assets/accounts and likely scope (initial).", lay:"List the devices/accounts you think are involved." },
+        { id:"d4", analyst:"Start a timeline (first seen, key events, actions taken).", lay:"Start a simple timeline of what happened." },
+        { id:"d5", analyst:"Collect initial IOCs and note confidence level.", lay:"Save any suspicious details (emails, links, file names) safely." },
+        { id:"d6", analyst:"Assess business impact + prioritize response.", lay:"Decide how urgent it is (can people work? money at risk?)." },
+        { id:"d7", analyst:"Preserve evidence appropriately (logs, volatile data if needed).", lay:"Don’t delete things; keep messages/files for IT to review." }
+      ],
+      decisions: (state) => {
+        const items = [];
+        items.push({
+          id:"false_positive",
+          label:"Conclude: likely false positive / benign",
+          hint:"Document why, tune detections, and feed improvements into Preparation.",
+          action: () => {
+            addAutoNote("Decision: likely false positive/benign. Documented rationale; consider detection tuning.");
+            goToPhase("post");
+          }
+        });
+        items.push({
+          id:"need_containment",
+          label:"Proceed to containment actions",
+          hint:"If evidence suggests active threat or meaningful risk, move to Contain/Eradicate/Recover.",
+          action: () => goToPhase("cer")
+        });
+        items.push({
+          id:"need_more_data",
+          label:"Need more data (stay in Detect/Analyze)",
+          hint:"Keep iterating: widen logs, interview user, acquire endpoint data, validate scope.",
+          action: () => toast("Continue triage", "Stay in Detection & Analysis and collect more evidence.")
+        });
+        return items;
+      },
+      footer: {
+        analyst:"Loop note: After containment starts, new indicators often appear. Be ready to jump back here and refine scope/timeline/IOCs.",
+        lay:"Loop note: You may discover new information after you take action. Come back here to update your understanding."
+      }
+    },
+
+    {
+      id: "cer",
+      short: "Contain / Eradicate / Recover",
+      icon: "3",
+      loop: true,
+      lead: {
+        analyst: "Stop the bleeding, remove the adversary, restore services safely, and monitor for re‑infection. Iterate with Detection & Analysis.",
+        lay: "Contain the problem, remove what caused it, and get systems working again safely."
+      },
+      guide: {
+        analyst:
+`Containment:
+• Short-term: isolate host, disable account, block IOCs, restrict access, limit blast radius
+• Long-term: patch, segmentation changes, harden configs, rotate secrets
+
+Eradication:
+• Remove malware/webshell/persistence, close exploited path, reset credentials, revoke tokens
+
+Recovery:
+• Restore systems, validate integrity, monitor, and gradually return to normal operations
+
+Watch-outs:
+• Don’t “wipe” evidence before you capture what you need.
+• Coordinate communications, approvals, and downtime windows.`,
+        lay:
+`What this means:
+• Containment: stop it from spreading (disconnect device, disable account, block bad links)
+• Eradication: remove the bad thing (malware, stolen access, unsafe software)
+• Recovery: restore normal work safely (restore from backup, update passwords, monitor)`
+      },
+      checklist: [
+        { id:"c1", analyst:"Choose containment strategy: rapid isolation vs. controlled observation (policy-based).", lay:"Pick safe immediate actions to stop it from getting worse." },
+        { id:"c2", analyst:"Execute containment (isolate hosts, disable accounts, block IOCs).", lay:"Do the immediate steps (disconnect device, reset passwords, block suspicious items)." },
+        { id:"c3", analyst:"Identify and remediate root entry path (vuln, creds, misconfig, phishing).", lay:"Figure out how it got in (phishing, weak password, outdated software)." },
+        { id:"c4", analyst:"Eradicate persistence and malicious components; rotate secrets/tokens.", lay:"Remove the malicious thing and change passwords/keys if needed." },
+        { id:"c5", analyst:"Recover: restore services/data; validate integrity; monitor closely.", lay:"Restore from backup or repair, then watch carefully for repeat issues." },
+        { id:"c6", analyst:"Document actions and approvals (who authorized what, when).", lay:"Write down what you did and who approved it." }
+      ],
+      decisions: (state) => ([
+        {
+          id:"new_iocs",
+          label:"New indicators discovered → loop back to Detect/Analyze",
+          hint:"If containment/eradication reveals more affected assets or IOCs, update scope and timeline.",
+          action: () => {
+            addAutoNote("Loop: New indicators discovered during containment/recovery. Returning to Detection & Analysis to refine scope/timeline/IOCs.");
+            markLoop("cer");
+            goToPhase("detect");
+          }
+        },
+        {
+          id:"not_clean",
+          label:"Threat not fully removed → continue this phase",
+          hint:"Continue eradication and hardening until you can state a clear 'clean' condition.",
+          action: () => toast("Continue eradication", "Stay in Contain/Eradicate/Recover and keep removing persistence and closing entry paths.")
+        },
+        {
+          id:"clean_and_stable",
+          label:"Services stable & threat removed → move to Post‑Incident",
+          hint:"Once you can justify 'contained + eradicated + recovered', transition to lessons learned and improvements.",
+          action: () => goToPhase("post")
+        }
+      ]),
+      footer: {
+        analyst:"Loop note: This phase often uncovers new hosts, accounts, or techniques. Jump back to Detect/Analyze as needed.",
+        lay:"Loop note: If you find more affected devices or accounts, go back to figure out the bigger picture."
+      }
+    },
+
+    {
+      id: "post",
+      short: "Post‑Incident Activity",
+      icon: "4",
+      loop: false,
+      lead: {
+        analyst: "Capture lessons learned, finalize reporting, improve controls, and feed concrete changes back into Preparation.",
+        lay: "Review what happened, what worked, what didn’t, and update your plan so next time is easier."
+      },
+      guide: {
+        analyst:
+`Typical outputs:
+• Final incident timeline and root cause (as best known)
+• Impact assessment (systems, data, downtime, cost, reputational)
+• Control gaps + improvement plan (owners, dates)
+• Detection tuning and additional telemetry
+• Knowledge base updates and training
+• Compliance/regulatory notifications (if applicable)
+
+Goal:
+Turn “pain” into durable improvements. Make sure changes are owned, tracked, and tested.`,
+        lay:
+`What to capture:
+• What happened (simple summary)
+• What was affected (people/systems)
+• What you did to fix it
+• What you’ll change so it’s less likely next time`
+      },
+      checklist: [
+        { id:"o1", analyst:"Write a concise executive summary (what/impact/status).", lay:"Write a short summary anyone can understand." },
+        { id:"o2", analyst:"Finalize timeline + root cause statement (with confidence).", lay:"Write what caused it (as best you know)." },
+        { id:"o3", analyst:"List improvement actions (control gaps) with owners and due dates.", lay:"List 3–10 improvements and who will do them." },
+        { id:"o4", analyst:"Tune detections; add new rules/alerts and reduce noise.", lay:"Update your “early warning” method so you catch it faster." },
+        { id:"o5", analyst:"Update playbooks, training, and comms templates.", lay:"Update your checklist and teach people what to do." },
+        { id:"o6", analyst:"Close out tickets, evidence retention, and reporting obligations.", lay:"Make sure paperwork and records are saved appropriately." }
+      ],
+      decisions: (state) => ([
+        {
+          id:"feed_prep",
+          label:"Feed improvements into Preparation (start next cycle)",
+          hint:"This loops the lifecycle: Post‑Incident improvements become new Preparation tasks.",
+          action: () => {
+            const improvements = extractImprovementsFromNotes();
+            if(improvements.length){
+              state.prepFeed = improvements;
+              addAutoNote("Post‑Incident → Preparation: captured improvement actions for next readiness cycle:\n- " + improvements.join("\n- "));
+              toast("Fed into Preparation", "Your improvement actions will appear as suggested tasks in Preparation.");
+            } else {
+              addAutoNote("Post‑Incident → Preparation: no explicit improvement list found; consider adding one in notes.");
+              toast("Tip", "Add improvement actions in notes (e.g., lines starting with 'ACTION:'), then feed again.");
+            }
+            goToPhase("prep");
+          }
+        },
+        {
+          id:"close",
+          label:"Close incident notebook",
+          hint:"Export notes for recordkeeping, or start a new incident scenario.",
+          action: () => toast("Notebook ready", "Use Export to save your incident notes locally.")
+        }
+      ]),
+      footer: {
+        analyst:"Make it measurable: assign owners, dates, and evidence for each improvement. Otherwise it won’t stick.",
+        lay:"Pick a small set of improvements you can actually do soon—then do them."
+      }
+    }
+  ];
+
+  // ----------------------------
+  // State & persistence
+  // ----------------------------
+
+  const STORAGE_KEY = "nist_ir_walkthrough_v1";
+
+  const defaultState = () => ({
+    mode: "analyst",
+    phaseId: "prep",
+    incidentName: "",
+    severity: "unknown",
+    checklist: {},           // { phaseId: { itemId: true/false } }
+    notes: [],               // [{ts, phaseId, text}]
+    artifacts: "",
+    loops: {},               // { phaseId: number of loops }
+    prepFeed: []             // improvements extracted from post phase
+  });
+
+  let state = loadState() || defaultState();
+
+  // ----------------------------
+  // DOM references
+  // ----------------------------
+
+  const el = (id) => document.getElementById(id);
+
+  const phaseButtons = el("phaseButtons");
+  const modeSelect = el("modeSelect");
+  const modeLabel  = el("modeLabel");
+  const incidentName = el("incidentName");
+  const severity = el("severity");
+
+  const kpiPhase = el("kpiPhase");
+  const kpiChecks = el("kpiChecks");
+  const kpiNotes = el("kpiNotes");
+
+  const phaseTitle = el("phaseTitle");
+  const phaseLead = el("phaseLead");
+  const guideText = el("guideText");
+  const checklistEl = el("checklist");
+  const decisionButtons = el("decisionButtons");
+  const decisionLabel = el("decisionLabel");
+  const decisionHint = el("decisionHint");
+  const phaseFooterHint = el("phaseFooterHint");
+  const loopCallout = el("loopCallout");
+
+  const noteText = el("noteText");
+  const artifactsText = el("artifactsText");
+  const noteList = el("noteList");
+
+  const prevBtn = el("prevBtn");
+  const nextBtn = el("nextBtn");
+
+  const resetBtn = el("resetBtn");
+  const newIncidentBtn = el("newIncidentBtn");
+  const exportBtn = el("exportBtn");
+  const importFile = el("importFile");
+
+  const addNoteBtn = el("addNoteBtn");
+  const addTemplateNoteBtn = el("addTemplateNoteBtn");
+  const clearNotesBtn = el("clearNotesBtn");
+
+  const autosaveLabel = el("autosaveLabel");
+
+  const toastEl = el("toast");
+  const toastTitle = el("toastTitle");
+  const toastBody = el("toastBody");
+  let toastTimer = null;
+
+  // ----------------------------
+  // Helpers
+  // ----------------------------
+
+  function nowISO(){
+    const d = new Date();
+    return d.toISOString().replace("T"," ").replace("Z"," UTC");
+  }
+
+  function currentPhase(){
+    return PHASES.find(p => p.id === state.phaseId) || PHASES[0];
+  }
+
+  function phaseIndex(phaseId){
+    return PHASES.findIndex(p => p.id === phaseId);
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      autosaveLabel.textContent = "Autosave: on";
+    } catch(e){
+      autosaveLabel.textContent = "Autosave: off (storage blocked)";
+    }
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    } catch(e){
+      return null;
+    }
+  }
+
+  function toast(title, body){
+    toastTitle.textContent = title;
+    toastBody.textContent = body || "";
+    toastEl.style.display = "block";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.style.display = "none", 2600);
+  }
+
+  function ensureChecklistBucket(phaseId){
+    if(!state.checklist[phaseId]) state.checklist[phaseId] = {};
+  }
+
+  function countChecksDone(){
+    let n = 0;
+    for(const pid of Object.keys(state.checklist)){
+      for(const iid of Object.keys(state.checklist[pid])){
+        if(state.checklist[pid][iid]) n++;
+      }
+    }
+    return n;
+  }
+
+  function addAutoNote(text){
+    state.notes.unshift({ ts: nowISO(), phaseId: state.phaseId, text: text });
+    saveState();
+    renderNotes();
+    updateKPIs();
+  }
+
+  function addNote(text){
+    const t = (text || "").trim();
+    if(!t) return;
+    state.notes.unshift({ ts: nowISO(), phaseId: state.phaseId, text: t });
+    noteText.value = "";
+    saveState();
+    renderNotes();
+    updateKPIs();
+    toast("Note added", "Saved locally (offline).");
+  }
+
+  function markLoop(phaseId){
+    state.loops[phaseId] = (state.loops[phaseId] || 0) + 1;
+    saveState();
+  }
+
+  function goToPhase(phaseId){
+    state.phaseId = phaseId;
+    saveState();
+    render();
+  }
+
+  function exportJSON(){
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    const safeName = (state.incidentName || "incident-notes").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+    a.download = `${safeName || "incident-notes"}-nist-ir.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast("Exported", "Downloaded JSON to your device.");
+  }
+
+  function importJSON(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const obj = JSON.parse(reader.result);
+        // Minimal validation / merge defaults:
+        state = Object.assign(defaultState(), obj);
+        saveState();
+        render();
+        toast("Imported", "Loaded incident notes from JSON.");
+      }catch(e){
+        toast("Import failed", "That file didn't look like a valid export.");
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function resetAll(){
+    state = defaultState();
+    saveState();
+    render();
+    toast("Reset", "Cleared progress and notes.");
+  }
+
+  function newIncident(){
+    // Keep mode preference, reset incident-specific data
+    const mode = state.mode;
+    state = defaultState();
+    state.mode = mode;
+    saveState();
+    render();
+    toast("New incident", "Started a fresh notebook.");
+  }
+
+  function extractImprovementsFromNotes(){
+    // Simple heuristic:
+    // Capture lines starting with ACTION:, IMPROVE:, FIX:, TODO:
+    // Also capture bullet lines under a heading "Improvements:" if present.
+    const out = [];
+    const patterns = [/^\s*(ACTION|IMPROVE|FIX|TODO)\s*:\s*(.+)$/i, /^\s*[-*]\s*(.+)$/];
+    let inImprovementsBlock = false;
+
+    // Search notes newest->oldest, but build unique list
+    const seen = new Set();
+    for(const note of state.notes){
+      const lines = (note.text || "").split(/\r?\n/);
+      for(const line of lines){
+        const raw = line.trim();
+        if(!raw) continue;
+
+        if(/^improvements\s*:/i.test(raw)){
+          inImprovementsBlock = true;
+          continue;
+        }
+        if(inImprovementsBlock && /^(\w+\s*:|decision\s*:|summary\s*:)/i.test(raw)){
+          // rough stop if a new section begins
+          inImprovementsBlock = false;
+        }
+
+        let m = raw.match(patterns[0]);
+        if(m && m[2]){
+          const item = m[2].trim();
+          if(item && !seen.has(item.toLowerCase())){
+            seen.add(item.toLowerCase());
+            out.push(item);
+          }
+          continue;
+        }
+
+        if(inImprovementsBlock){
+          m = raw.match(patterns[1]);
+          if(m && m[1]){
+            const item = m[1].trim();
+            if(item && !seen.has(item.toLowerCase())){
+              seen.add(item.toLowerCase());
+              out.push(item);
+            }
+          }
+        }
+      }
+    }
+    return out.slice(0, 20);
+  }
+
+  function templateForPhase(phaseId){
+    if(phaseId === "prep"){
+      return `Preparation quick template:
+- Contacts updated:
+- Logging/telemetry readiness:
+- Backup/restore validated:
+- Playbooks/runbooks reviewed:
+- Pre-approved containment actions:
+- Gaps found / ACTION: ...`;
+    }
+    if(phaseId === "detect"){
+      return `Detection & Analysis quick template:
+- Trigger / alert source:
+- First observed (time):
+- Affected entity(ies):
+- Initial scope:
+- Timeline notes:
+- IOCs collected:
+- Hypothesis / likely cause:
+- Decision: contain now vs. observe briefly (why):
+- ACTION: ...`;
+    }
+    if(phaseId === "cer"){
+      return `Contain/Eradicate/Recover quick template:
+- Containment actions taken (who/when):
+- Entry path closed (vuln/creds/misconfig):
+- Eradication steps (persistence removed):
+- Credential/token rotation:
+- Recovery steps & validation:
+- Monitoring plan:
+- New indicators? (yes/no)`;
+    }
+    return `Post‑Incident quick template:
+Summary:
+Impact:
+Root cause (confidence):
+What worked:
+What didn’t:
+Improvements:
+- ACTION: ...
+- ACTION: ...
+Detection tuning needed:
+Evidence retained / location:`;
+  }
+
+  // ----------------------------
+  // Rendering
+  // ----------------------------
+
+  function renderPhaseButtons(){
+    phaseButtons.innerHTML = "";
+    for(const p of PHASES){
+      const btn = document.createElement("button");
+      btn.className = "stepBtn" + (p.id === state.phaseId ? " active" : "");
+      btn.type = "button";
+      btn.setAttribute("aria-label", "Go to phase " + p.short);
+
+      const badge = document.createElement("div");
+      badge.className = "badge";
+
+      // Mark as done if all checklist items checked
+      ensureChecklistBucket(p.id);
+      const items = p.checklist || [];
+      const done = items.length > 0 && items.every(it => !!state.checklist[p.id][it.id]);
+      if(done) badge.classList.add("done");
+
+      // Mark loop indicator if this phase has loop usage
+      if((state.loops[p.id] || 0) > 0) badge.classList.add("loop");
+
+      badge.textContent = p.icon;
+
+      const meta = document.createElement("div");
+      meta.className = "stepMeta";
+
+      const title = document.createElement("div");
+      title.className = "stepTitle";
+      title.textContent = p.short;
+
+      const desc = document.createElement("div");
+      desc.className = "stepDesc";
+      const loopTxt = p.loop ? "Iterative phase" : "Lifecycle phase";
+      const loopCount = (state.loops[p.id] || 0);
+      desc.textContent = loopCount ? `${loopTxt} • loops: ${loopCount}` : loopTxt;
+
+      meta.appendChild(title);
+      meta.appendChild(desc);
+
+      btn.appendChild(badge);
+      btn.appendChild(meta);
+
+      btn.addEventListener("click", () => goToPhase(p.id));
+      phaseButtons.appendChild(btn);
+    }
+  }
+
+  function renderChecklist(phase){
+    checklistEl.innerHTML = "";
+    ensureChecklistBucket(phase.id);
+
+    // Optional: if we fed improvements into prep, show a suggested checklist block
+    if(phase.id === "prep" && Array.isArray(state.prepFeed) && state.prepFeed.length){
+      const callout = document.createElement("div");
+      callout.className = "callout good";
+      callout.innerHTML = `<b>Suggested improvements from the last incident:</b><br>${state.prepFeed.map(x => "• " + escapeHtml(x)).join("<br>")}`;
+      checklistEl.appendChild(callout);
+    }
+
+    for(const item of (phase.checklist || [])){
+      const id = item.id;
+      const label = document.createElement("label");
+      label.className = "item";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!state.checklist[phase.id][id];
+
+      cb.addEventListener("change", () => {
+        state.checklist[phase.id][id] = cb.checked;
+        saveState();
+        updateKPIs();
+        renderPhaseButtons();
+      });
+
+      const span = document.createElement("span");
+      span.textContent = (state.mode === "analyst") ? item.analyst : item.lay;
+
+      label.appendChild(cb);
+      label.appendChild(span);
+      checklistEl.appendChild(label);
+    }
+  }
+
+  function renderDecisions(phase){
+    decisionButtons.innerHTML = "";
+    decisionHint.textContent = "";
+
+    const defs = typeof phase.decisions === "function" ? phase.decisions(state) : [];
+    if(!defs.length){
+      decisionLabel.textContent = "Decision point";
+      decisionHint.textContent = "No decisions available.";
+      return;
+    }
+
+    decisionLabel.textContent = state.mode === "analyst" ? "Decision point / next action" : "What do you want to do next?";
+    decisionHint.textContent = "";
+
+    defs.forEach((d, idx) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn small";
+
+      // Add subtle color mapping for common actions
+      if(/false positive|close/i.test(d.label)) b.classList.add("warn");
+      if(/contain|Proceed/i.test(d.label)) b.classList.add("primary");
+      if(/stable|removed|Post/i.test(d.label)) b.classList.add("good");
+
+      b.textContent = d.label;
+      b.addEventListener("click", () => {
+        try{ d.action(); } catch(e){ toast("Error", "Something went wrong: " + e.message); }
+      });
+
+      // show hint below buttons by last click? For simplicity show combined hint line
+      b.title = d.hint || "";
+      decisionButtons.appendChild(b);
+    });
+
+    // Show an aggregated hint line
+    const summaryHint = defs.map(d => "• " + d.hint).filter(Boolean).slice(0, 4).join("  ");
+    decisionHint.textContent = summaryHint || "";
+  }
+
+  function renderNotes(){
+    noteList.innerHTML = "";
+    kpiNotes.textContent = String(state.notes.length);
+
+    const show = state.notes.slice(0, 12); // show latest
+    if(!show.length){
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.textContent = "No notes yet. Add short entries as you move through phases.";
+      noteList.appendChild(empty);
+      return;
+    }
+
+    show.forEach(n => {
+      const box = document.createElement("div");
+      box.className = "note";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const phase = PHASES.find(p => p.id === n.phaseId)?.short || n.phaseId;
+      meta.innerHTML = `<span>${escapeHtml(n.ts)}</span><span>${escapeHtml(phase)}</span>`;
+
+      const txt = document.createElement("div");
+      txt.className = "txt";
+      txt.textContent = n.text;
+
+      box.appendChild(meta);
+      box.appendChild(txt);
+      noteList.appendChild(box);
+    });
+
+    if(state.notes.length > show.length){
+      const more = document.createElement("div");
+      more.className = "hint";
+      more.textContent = `Showing latest ${show.length} notes. Export JSON to archive all notes.`;
+      noteList.appendChild(more);
+    }
+  }
+
+  function updateKPIs(){
+    const idx = phaseIndex(state.phaseId);
+    kpiPhase.textContent = `${idx + 1}/${PHASES.length}`;
+    kpiChecks.textContent = String(countChecksDone());
+    kpiNotes.textContent = String(state.notes.length);
+  }
+
+  function render(){
+    // Mode
+    modeSelect.value = state.mode;
+    modeLabel.textContent = state.mode === "analyst" ? "Analyst" : "Layperson";
+
+    // Incident fields
+    incidentName.value = state.incidentName || "";
+    severity.value = state.severity || "unknown";
+
+    // Notebook artifacts
+    artifactsText.value = state.artifacts || "";
+
+    // Phase content
+    const phase = currentPhase();
+    phaseTitle.textContent = phase.short;
+    phaseLead.textContent = (state.mode === "analyst") ? phase.lead.analyst : phase.lead.lay;
+    guideText.textContent = (state.mode === "analyst") ? phase.guide.analyst : phase.guide.lay;
+    phaseFooterHint.textContent = (state.mode === "analyst") ? phase.footer.analyst : phase.footer.lay;
+
+    loopCallout.style.display = phase.loop ? "block" : "none";
+
+    renderChecklist(phase);
+    renderDecisions(phase);
+    renderNotes();
+    renderPhaseButtons();
+    updateKPIs();
+
+    // Prev/Next buttons (linear navigation still allowed)
+    const idx = phaseIndex(phase.id);
+    prevBtn.disabled = idx <= 0;
+    nextBtn.disabled = idx >= PHASES.length - 1;
+
+    // Add a small hint to Next button behavior for loop phases
+    nextBtn.textContent = (idx >= PHASES.length - 1) ? "Done" : "Next →";
+  }
+
+  // ----------------------------
+  // Events
+  // ----------------------------
+
+  modeSelect.addEventListener("change", () => {
+    state.mode = modeSelect.value;
+    saveState();
+    render();
+  });
+
+  incidentName.addEventListener("input", () => {
+    state.incidentName = incidentName.value;
+    saveState();
+  });
+
+  severity.addEventListener("change", () => {
+    state.severity = severity.value;
+    saveState();
+  });
+
+  artifactsText.addEventListener("input", () => {
+    state.artifacts = artifactsText.value;
+    saveState();
+  });
+
+  addNoteBtn.addEventListener("click", () => addNote(noteText.value));
+
+  addTemplateNoteBtn.addEventListener("click", () => {
+    const t = templateForPhase(state.phaseId);
+    noteText.value = noteText.value ? (noteText.value + "\n\n" + t) : t;
+    noteText.focus();
+  });
+
+  clearNotesBtn.addEventListener("click", () => {
+    state.notes = [];
+    saveState();
+    renderNotes();
+    updateKPIs();
+    toast("Cleared", "Notes removed.");
+  });
+
+  prevBtn.addEventListener("click", () => {
+    const idx = phaseIndex(state.phaseId);
+    if(idx > 0) goToPhase(PHASES[idx - 1].id);
+  });
+
+  nextBtn.addEventListener("click", () => {
+    const idx = phaseIndex(state.phaseId);
+    if(idx < PHASES.length - 1) goToPhase(PHASES[idx + 1].id);
+  });
+
+  resetBtn.addEventListener("click", resetAll);
+  newIncidentBtn.addEventListener("click", newIncident);
+  exportBtn.addEventListener("click", exportJSON);
+
+  importFile.addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(f) importJSON(f);
+    importFile.value = "";
+  });
+
+  // Keyboard shortcut: Ctrl/Cmd + Enter adds note
+  noteText.addEventListener("keydown", (e) => {
+    if((e.ctrlKey || e.metaKey) && e.key === "Enter"){
+      addNote(noteText.value);
+    }
+  });
+
+  // ----------------------------
+  // Small utility
+  // ----------------------------
+
+  function escapeHtml(str){
+    return String(str).replace(/[&<>"']/g, s => ({
+      "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+    }[s]));
+  }
+
+  // ----------------------------
+  // Initial render
+  // ----------------------------
+  render();
+
+})();
+</script>
+</body>
+</html>
