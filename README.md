@@ -6,3 +6,4 @@ Tools:
 - JVAT - an simplified adaptation of the Educause HECVAT in javascript
 - Logsculpt - a means of creating extraction rules and adding custom tagging for internal documentation
 - CTI_assistant - A step by step work flow to perform intake on intellegence and to tag the intellegence
+- NIST IR Process
