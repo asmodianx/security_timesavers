@@ -1,4 +1,4 @@
-This is AI generated code.  Please review before using.
+This is AI generated code therefore public domain code.  Please review before using.
 
 Tools:
 - Email - email header parser for eml and msg formated emails
