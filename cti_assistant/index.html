@@ -1,0 +1,270 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <title>CTI Analysis Assistant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>CTI Analysis Assistant</h1>
+      <p class="subtitle">Offline analyst support tool for Admiralty, TLP 2.0, and analytic confidence.</p>
+    </div>
+    <div class="header-actions no-print">
+      <button id="saveDraftBtn" type="button">Save Draft</button>
+      <button id="loadDraftBtn" type="button">Load Draft</button>
+      <button id="clearDraftBtn" type="button" class="danger">Clear Draft</button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar" aria-label="Case summary and help">
+      <section class="card">
+        <h2 tabindex="-1">Progress</h2>
+        <div class="progress-wrap" aria-label="Progress">
+          <div class="progress-bar" id="progressBar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+        </div>
+        <ol class="step-list" id="stepList">
+          <li>Case Intake</li>
+          <li>Source Reliability</li>
+          <li>Information Credibility</li>
+          <li>TLP Selection</li>
+          <li>Product Confidence</li>
+          <li>Final Output</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <h2>Selected Labels</h2>
+        <dl class="summary-grid">
+          <dt>Case ID</dt><dd id="summaryCase">—</dd>
+          <dt>Admiralty</dt><dd id="summaryAdmiralty">—</dd>
+          <dt>TLP</dt><dd id="summaryTlp">—</dd>
+          <dt>Confidence</dt><dd id="summaryConfidence">—</dd>
+        </dl>
+      </section>
+
+      <section class="card">
+        <details>
+          <summary>About / Help</summary>
+          <p>This tool walks a new analyst through source vetting, information credibility, sharing boundaries, and finished intelligence confidence. TLP shows who may receive the information; it is not a classification system. Admiralty separates source reliability from information credibility.</p>
+          <ul>
+            <li>Use the wizard from top to bottom.</li>
+            <li>Review the recommendation and decision trace at each step.</li>
+            <li>If you override a recommendation, document the reason.</li>
+            <li>Print or export the output for case records or product appendices.</li>
+          </ul>
+        </details>
+      </section>
+    </aside>
+
+    <section class="main-panel" aria-label="Wizard steps">
+      <form id="wizardForm" novalidate>
+        <section class="step active" data-step="0" aria-labelledby="step0Title">
+          <div class="step-header">
+            <h2 id="step0Title" tabindex="-1">Step 0: Case Intake</h2>
+            <p>Capture the case basics and the source or product context before scoring.</p>
+          </div>
+
+          <div class="card">
+            <h3>Checklist</h3>
+            <ul class="checklist">
+              <li>Record the case identifier and analyst name.</li>
+              <li>Identify the source and collection method.</li>
+              <li>Capture the product type, scope, indicators, and key assumptions.</li>
+            </ul>
+          </div>
+
+          <div class="grid two-col">
+            <label>Case ID<input type="text" id="case_id" maxlength="60" required></label>
+            <label>Analyst Name<input type="text" id="analyst_name" maxlength="80" required></label>
+            <label>Date/Time<input type="datetime-local" id="datetime"></label>
+            <label>Org / Unit<input type="text" id="org_unit" maxlength="100"></label>
+            <label>Source Name<input type="text" id="source_name" maxlength="100"></label>
+            <label>Source Type
+              <select id="source_type">
+                <option value="">Select</option>
+                <option>Human source</option>
+                <option>Internal telemetry</option>
+                <option>Open source</option>
+                <option>Vendor report</option>
+                <option>Partner / ISAC</option>
+                <option>Malware sample</option>
+                <option>Other</option>
+              </select>
+            </label>
+            <label>Collection Method<input type="text" id="collection_method" maxlength="100" placeholder="Example: EDR, email submission, malware sandbox"></label>
+            <label>Track Record Notes<textarea id="track_record" maxlength="600" rows="4" placeholder="Example: Source was accurate in 3 prior phishing investigations."></textarea></label>
+          </div>
+
+          <details class="learn-box">
+            <summary>Why this matters</summary>
+            <p>Analysts need context to judge whether a source is generally trustworthy, whether the specific information is credible, and how broadly a product can be shared.</p>
+          </details>
+
+          <div class="grid two-col">
+            <label>Intelligence Type
+              <select id="intelligence_type">
+                <option value="">Select</option>
+                <option>Alert</option>
+                <option>Report</option>
+                <option>Advisory</option>
+                <option>Briefing</option>
+              </select>
+            </label>
+            <label>Scope<input type="text" id="scope" maxlength="120" placeholder="Example: Single campus department or regional nonprofit sector"></label>
+            <label>Affected Assets<textarea id="affected_assets" maxlength="600" rows="3"></textarea></label>
+            <label>Indicators<textarea id="indicators" maxlength="600" rows="3" placeholder="IPs, domains, hashes, filenames"></textarea></label>
+            <label>TTPs<textarea id="ttps" maxlength="600" rows="3"></textarea></label>
+            <label>Assumptions / Gaps<textarea id="assumptions_gaps" maxlength="600" rows="3"></textarea></label>
+          </div>
+        </section>
+
+        <section class="step" data-step="1" aria-labelledby="step1Title">
+          <div class="step-header">
+            <h2 id="step1Title" tabindex="-1">Step 1: Source Reliability (Admiralty A–F)</h2>
+            <p>Assess the source itself. Reliability reflects trust in the source, not whether this specific report is true.</p>
+          </div>
+          <div class="card">
+            <h3>Checklist</h3>
+            <ul class="checklist">
+              <li>Review the source's track record and prior reporting.</li>
+              <li>Check source identity, provenance, or authenticity indicators.</li>
+              <li>Consider motive, bias, and proximity to the event.</li>
+            </ul>
+          </div>
+          <details class="learn-box">
+            <summary>Definitions and examples</summary>
+            <ul>
+              <li><strong>A</strong>: Completely reliable</li>
+              <li><strong>B</strong>: Usually reliable</li>
+              <li><strong>C</strong>: Fairly reliable</li>
+              <li><strong>D</strong>: Not usually reliable</li>
+              <li><strong>E</strong>: Unreliable</li>
+              <li><strong>F</strong>: Reliability cannot be judged</li>
+            </ul>
+          </details>
+          <div class="question-list">
+            <label>Proven track record <span class="hint" title="Has the source been accurate in prior cases?">?</span>
+              <select id="rel_track_record"><option value="">Select</option><option value="4">Consistently accurate over multiple cases</option><option value="3">Generally accurate with minor issues</option><option value="2">Mixed or limited history</option><option value="1">Poor history</option><option value="0">Unknown / cannot judge</option></select>
+            </label>
+            <p class="rationale">Why it matters: past performance is a strong indicator of future reporting reliability.</p>
+            <label>Authenticity / verification <span class="hint" title="Can you verify identity, provenance, signing, or chain of custody?">?</span>
+              <select id="rel_authenticity"><option value="">Select</option><option value="4">Identity/provenance strongly verified</option><option value="3">Mostly verified</option><option value="2">Partially verified</option><option value="1">Weak verification</option><option value="0">Unknown / unverifiable</option></select>
+            </label>
+            <p class="rationale">Why it matters: anonymous or poorly attributed reporting increases uncertainty.</p>
+            <label>Competence / expertise <span class="hint" title="Does the source demonstrate subject-matter knowledge?">?</span>
+              <select id="rel_competence"><option value="">Select</option><option value="3">Strong expertise in the subject area</option><option value="2">Adequate expertise</option><option value="1">Limited expertise</option><option value="0">Unknown or poor expertise</option></select>
+            </label>
+            <p class="rationale">Why it matters: domain expertise affects interpretation accuracy.</p>
+            <label>Bias / intent to deceive
+              <select id="rel_bias"><option value="">Select</option><option value="3">No obvious deceptive motive</option><option value="2">Some possible bias</option><option value="1">Strong incentive or bias</option><option value="0">Likely deceptive or unknown</option></select>
+            </label>
+            <p class="rationale">Why it matters: motive can reduce reliability even if details sound plausible.</p>
+            <label>Proximity to the event
+              <select id="rel_proximity"><option value="">Select</option><option value="3">Firsthand / direct observer or primary telemetry</option><option value="2">One step removed</option><option value="1">Multiple steps removed / hearsay</option><option value="0">Unknown</option></select>
+            </label>
+            <p class="rationale">Why it matters: firsthand collection is usually stronger than reposted or scraped content.</p>
+            <label>Transparency and reproducibility
+              <select id="rel_transparency"><option value="">Select</option><option value="3">Cites evidence and methods clearly</option><option value="2">Some evidence or method detail</option><option value="1">Minimal support</option><option value="0">No support / opaque</option></select>
+            </label>
+            <p class="rationale">Why it matters: transparent sourcing supports independent review.</p>
+          </div>
+          <div class="result-box" aria-live="polite">
+            <h3>Recommendation</h3>
+            <p><strong>Recommended Reliability:</strong> <span id="reliabilityResult">—</span></p>
+            <p id="reliabilityExplanation">Complete the questions to see the recommendation.</p>
+            <h4>Decision Trace</h4>
+            <ul id="reliabilityTrace"></ul>
+          </div>
+          <fieldset class="override-box">
+            <legend>Manual Override</legend>
+            <label><input type="checkbox" id="reliability_override_enabled"> Override recommended reliability</label>
+            <div class="grid two-col">
+              <label>Override value<select id="reliability_override_value" disabled><option value="">Select</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option></select></label>
+              <label>Justification<textarea id="reliability_override_reason" rows="3" maxlength="300" disabled></textarea></label>
+            </div>
+          </fieldset>
+        </section>
+
+        <section class="step" data-step="2" aria-labelledby="step2Title">
+          <div class="step-header">
+            <h2 id="step2Title" tabindex="-1">Step 2: Information Credibility (Admiralty 1–6)</h2>
+            <p>Assess the content of the report. Credibility reflects whether the information itself is believable and supported.</p>
+          </div>
+          <div class="card"><h3>Checklist</h3><ul class="checklist"><li>Look for independent corroboration.</li><li>Check internal logic and consistency with known context.</li><li>Evaluate evidence quality and whether another analyst could reproduce the result.</li></ul></div>
+          <details class="learn-box"><summary>Definitions and examples</summary><ul><li><strong>1</strong>: Confirmed by other sources</li><li><strong>2</strong>: Probably true</li><li><strong>3</strong>: Possibly true</li><li><strong>4</strong>: Doubtful</li><li><strong>5</strong>: Improbable</li><li><strong>6</strong>: Truth cannot be judged</li></ul></details>
+          <div class="question-list">
+            <label>Independent corroboration<select id="cred_corroboration"><option value="">Select</option><option value="4">Multiple independent confirmations</option><option value="3">One strong independent confirmation</option><option value="2">Indirect support only</option><option value="1">No corroboration yet</option><option value="0">Conflicting or unknown</option></select></label>
+            <p class="rationale">Why it matters: multiple independent sources strengthen credibility.</p>
+            <label>Internal consistency and logic<select id="cred_logic"><option value="">Select</option><option value="3">Highly consistent and logical</option><option value="2">Mostly consistent</option><option value="1">Some inconsistencies</option><option value="0">Major contradictions</option></select></label>
+            <p class="rationale">Why it matters: contradictions or logical gaps reduce believability.</p>
+            <label>Consistency with known context<select id="cred_context"><option value="">Select</option><option value="3">Strongly aligns with known background</option><option value="2">Generally aligns</option><option value="1">Some mismatch</option><option value="0">Strongly inconsistent</option></select></label>
+            <p class="rationale">Why it matters: claims that fit known patterns are easier to accept, though novelty can still occur.</p>
+            <label>Evidence quality<select id="cred_evidence"><option value="">Select</option><option value="4">Direct technical evidence (logs, pcap, sample)</option><option value="3">Screenshots or detailed artifacts</option><option value="2">Narrative description only</option><option value="1">Rumor or repost</option><option value="0">No evidence</option></select></label>
+            <p class="rationale">Why it matters: primary evidence is more persuasive than secondhand claims.</p>
+            <label>Reproducibility / validation potential<select id="cred_repro"><option value="">Select</option><option value="3">Another analyst can validate easily</option><option value="2">Validation possible with effort</option><option value="1">Validation difficult</option><option value="0">Cannot validate</option></select></label>
+            <p class="rationale">Why it matters: reproducible findings are more credible and teachable.</p>
+          </div>
+          <div class="result-box" aria-live="polite"><h3>Recommendation</h3><p><strong>Recommended Credibility:</strong> <span id="credibilityResult">—</span></p><p id="credibilityExplanation">Complete the questions to see the recommendation.</p><h4>Decision Trace</h4><ul id="credibilityTrace"></ul></div>
+          <fieldset class="override-box"><legend>Manual Override</legend><label><input type="checkbox" id="credibility_override_enabled"> Override recommended credibility</label><div class="grid two-col"><label>Override value<select id="credibility_override_value" disabled><option value="">Select</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label><label>Justification<textarea id="credibility_override_reason" rows="3" maxlength="300" disabled></textarea></label></div></fieldset>
+        </section>
+
+        <section class="step" data-step="3" aria-labelledby="step3Title">
+          <div class="step-header"><h2 id="step3Title" tabindex="-1">Step 3: Sharing Marking (TLP 2.0)</h2><p>TLP defines sharing boundaries. It is not a formal classification system.</p></div>
+          <div class="card"><h3>Checklist</h3><ul class="checklist"><li>Identify the intended audience.</li><li>Estimate harm if the information is shared too widely.</li><li>Determine whether the information should remain inside one organization, one community, or be public.</li></ul></div>
+          <details class="learn-box"><summary>Definitions and examples</summary><ul><li><strong>TLP:CLEAR</strong> — public release allowed.</li><li><strong>TLP:GREEN</strong> — share within a community; not public posting.</li><li><strong>TLP:AMBER</strong> — limited sharing on a need-to-know basis.</li><li><strong>TLP:AMBER+STRICT</strong> — recipient organization only.</li><li><strong>TLP:RED</strong> — highly restricted; do not share beyond named participants.</li></ul></details>
+          <div class="question-list">
+            <label>Intended audience<select id="tlp_audience"><option value="">Select</option><option value="0">Public / website / press</option><option value="1">Broad trusted community</option><option value="2">Limited partners / need-to-know</option><option value="3">Single recipient organization</option><option value="4">Named participants only</option></select></label>
+            <p class="rationale">Why it matters: audience scope is the core TLP decision factor.</p>
+            <label>Potential harm if widely shared<select id="tlp_harm"><option value="">Select</option><option value="0">Minimal</option><option value="1">Moderate</option><option value="2">High</option><option value="3">Severe / operationally sensitive</option></select></label>
+            <p class="rationale">Why it matters: privacy, reputation, or operational harm should narrow dissemination.</p>
+            <label>Can recipients share outside their organization?<select id="tlp_external"><option value="">Select</option><option value="0">Yes, public release acceptable</option><option value="1">Yes, within a trusted community only</option><option value="2">Limited, only as needed to act</option><option value="3">No, organization only</option><option value="4">No, named participants only</option></select></label>
+            <p class="rationale">Why it matters: sharing permissions determine whether GREEN, AMBER, AMBER+STRICT, or RED fits best.</p>
+            <label>Caveats / free-text restrictions<textarea id="tlp_caveats" maxlength="300" rows="3" placeholder="Example: Share only with security operations and legal contacts."></textarea></label>
+          </div>
+          <div class="result-box" aria-live="polite"><h3>Recommendation</h3><p><strong>Recommended TLP:</strong> <span id="tlpResult">—</span></p><p id="tlpExplanation">Complete the questions to see the recommendation.</p><h4>Decision Trace</h4><ul id="tlpTrace"></ul></div>
+          <fieldset class="override-box"><legend>Manual Selection / Override</legend><label><input type="checkbox" id="tlp_override_enabled"> Override recommended TLP</label><div class="grid two-col"><label>Override value<select id="tlp_override_value" disabled><option value="">Select</option><option>TLP:CLEAR</option><option>TLP:GREEN</option><option>TLP:AMBER</option><option>TLP:AMBER+STRICT</option><option>TLP:RED</option></select></label><label>Justification<textarea id="tlp_override_reason" rows="3" maxlength="300" disabled></textarea></label></div></fieldset>
+        </section>
+
+        <section class="step" data-step="4" aria-labelledby="step4Title">
+          <div class="step-header"><h2 id="step4Title" tabindex="-1">Step 4: Product Confidence (Low / Moderate / High)</h2><p>Confidence reflects the quality, quantity, and consistency of the evidence. High confidence is not the same as certainty.</p></div>
+          <div class="card"><h3>Checklist</h3><ul class="checklist"><li>Count how many sources support the assessment.</li><li>Check whether different collection types agree.</li><li>Document gaps and assumptions explicitly.</li></ul></div>
+          <div class="question-list">
+            <label>Number of sources<select id="conf_source_count"><option value="">Select</option><option value="4">4 or more</option><option value="3">3</option><option value="2">2</option><option value="1">1</option><option value="0">Unknown</option></select></label>
+            <p class="rationale">Why it matters: more supporting sources usually increase confidence if they are independent.</p>
+            <label>Variety of sources / collection types<select id="conf_variety"><option value="">Select</option><option value="3">Multiple distinct collection types</option><option value="2">Some variety</option><option value="1">Single collection type</option><option value="0">Unknown</option></select></label>
+            <p class="rationale">Why it matters: variety reduces the risk of the same error repeating across sources.</p>
+            <label>Agreement among sources<select id="conf_agreement"><option value="">Select</option><option value="3">Strong agreement</option><option value="2">Mostly agrees</option><option value="1">Some conflict</option><option value="0">Major conflicts</option></select></label>
+            <p class="rationale">Why it matters: unresolved conflict lowers confidence.</p>
+            <label>Gaps / assumptions documented<select id="conf_gaps"><option value="">Select</option><option value="2">Gaps and assumptions clearly documented</option><option value="1">Partially documented</option><option value="0">Not documented</option></select></label>
+            <p class="rationale">Why it matters: clear uncertainty statements improve analytic rigor.</p>
+            <label>Timeliness / completeness<select id="conf_timeliness"><option value="">Select</option><option value="2">Current and reasonably complete</option><option value="1">Somewhat stale or incomplete</option><option value="0">Stale or very incomplete</option></select></label>
+            <p class="rationale">Why it matters: stale or partial data lowers analytic confidence.</p>
+          </div>
+          <div class="result-box" aria-live="polite"><h3>Recommendation</h3><p><strong>Recommended Confidence:</strong> <span id="confidenceResult">—</span></p><p id="confidenceExplanation">Complete the questions to see the recommendation.</p><h4>Decision Trace</h4><ul id="confidenceTrace"></ul></div>
+          <fieldset class="override-box"><legend>Manual Override</legend><label><input type="checkbox" id="confidence_override_enabled"> Override recommended confidence</label><div class="grid two-col"><label>Override value<select id="confidence_override_value" disabled><option value="">Select</option><option>Low</option><option>Moderate</option><option>High</option></select></label><label>Justification<textarea id="confidence_override_reason" rows="3" maxlength="300" disabled></textarea></label></div></fieldset>
+        </section>
+
+        <section class="step" data-step="5" aria-labelledby="step5Title">
+          <div class="step-header"><h2 id="step5Title" tabindex="-1">Step 5: Final Output</h2><p>Review the CTI packaging recommendations, rationale, and next actions. Export or print as needed.</p></div>
+          <div class="card"><h3>Recommended Tags and Metadata</h3><dl class="summary-grid" id="outputMetadata"></dl></div>
+          <div class="card"><h3>Narrative Summary</h3><p id="outputNarrative"></p></div>
+          <div class="card"><h3>Checklist: What was done / what remains</h3><ul id="outputChecklist"></ul></div>
+          <div class="card"><h3>Decision Trace</h3><pre id="outputDecisionTrace" class="report-block"></pre></div>
+          <div class="card"><h3>Printable / Copyable Report</h3><pre id="reportText" class="report-block"></pre></div>
+          <div class="action-row no-print"><button type="button" id="copyReportBtn">Copy Report</button><button type="button" id="downloadJsonBtn">Download JSON</button><button type="button" id="printBtn">Print</button></div>
+        </section>
+
+        <div class="wizard-actions no-print"><button type="button" id="prevBtn">Back</button><button type="button" id="nextBtn">Next</button></div>
+      </form>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
