@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Offline ATT&CK Technique Picker (Debug)</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Arial,sans-serif;margin:16px;background:#0b0f14;color:#e6edf3}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .panel{background:#111826;border:1px solid #243244;border-radius:10px;padding:12px}
+  input[type="text"], textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #243244;background:#09101a;color:#e6edf3}
+  textarea{min-height:140px;font-family:ui-monospace,Consolas,monospace}
+  button{padding:9px 10px;border-radius:8px;border:1px solid #243244;background:#09101a;color:#e6edf3;cursor:pointer}
+  button:hover{border-color:#4aa3ff}
+  .small{font-size:12px;color:#9fb0c0}
+  .grid{display:grid;grid-template-columns:1.3fr 0.7fr;gap:12px;margin-top:12px}
+  @media (max-width:1000px){.grid{grid-template-columns:1fr}}
+  .results{max-height:55vh;overflow:auto;margin-top:10px;border-top:1px solid #243244}
+  .item{padding:10px;border-bottom:1px solid #243244;display:flex;justify-content:space-between;gap:10px}
+  .item:hover{background:#0f1724}
+  .id{font-family:ui-monospace,Consolas,monospace;color:#4aa3ff;font-weight:700}
+  .name{font-weight:600}
+  .meta{font-size:12px;color:#9fb0c0;margin-top:3px}
+  .badge{font-size:11px;border:1px solid #243244;border-radius:999px;padding:2px 8px;color:#9fb0c0;white-space:nowrap;height:fit-content}
+  .selected{color:#7ee787;border-color:#7ee787}
+  .warn{color:#ffcc66}
+  .bad{color:#ff6b6b}
+  .good{color:#7ee787}
+  pre{margin:10px 0 0 0;white-space:pre-wrap;word-break:break-word;background:#09101a;border:1px solid #243244;border-radius:8px;padding:10px}
+</style>
+</head>
+<body>
+
+<h2 style="margin:0 0 6px 0;">Offline ATT&CK Technique Picker <span class="small">(with Debug)</span></h2>
+<div class="small">
+Load a local ATT&CK STIX JSON bundle. This page extracts techniques (<span class="id">T####</span>/<span class="id">T####.###</span>) and lets you click to build a list.
+If it finds 0 techniques, the debug panel will tell you why.(Hint: Download the att&ck database <a href="https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack.json">here</a> or <a href="./enterprise-attack.json">here</a>.)
+</div>
+
+<div class="row" style="margin-top:10px;">
+  <div class="panel" style="flex:1;min-width:320px;">
+    <div class="small">1) Load local STIX JSON</div>
+    <input type="file" id="file" accept=".json,application/json,.txt" />
+    <div class="small" id="status" style="margin-top:6px;">No file loaded.</div>
+    <div class="small" style="margin-top:8px;">
+      Tip: If you accidentally saved a GitHub page as HTML, this will detect it.
+    </div>
+  </div>
+
+  <div class="panel" style="flex:2;min-width:320px;">
+    <div class="small">2) Search (ID or name)</div>
+    <input type="text" id="q" placeholder="e.g., T1059, powershell, credential dumping" />
+    <div class="small" id="counts" style="margin-top:6px;">Loaded: 0 techniques • Showing: 0</div>
+  </div>
+
+  <div class="panel" style="min-width:300px;">
+    <div class="small">3) Actions</div>
+    <div class="row" style="margin-top:8px;">
+      <button id="copy">Copy IDs</button>
+      <button id="export">Export JSON</button>
+      <button id="clear">Clear</button>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="panel">
+    <div class="small">Results (click to select)</div>
+    <div class="results" id="results"></div>
+  </div>
+
+  <div class="panel">
+    <div class="small">Selected IDs (one per line)</div>
+    <textarea id="sel" spellcheck="false" placeholder="Your selected technique IDs will appear here..."></textarea>
+    <div class="row" style="margin-top:10px;">
+      <button id="import">Import IDs</button>
+      <button id="sort">Sort</button>
+      <button id="dedupe">Dedupe</button>
+    </div>
+    <div class="small" id="selCount" style="margin-top:8px;">Selected: 0</div>
+
+    <div class="small" style="margin-top:12px;">Debug summary</div>
+    <pre id="debugBox" class="small">No debug yet.</pre>
+  </div>
+</div>
+
+<script>
+  const el = {
+    file:   document.getElementById('file'),
+    status: document.getElementById('status'),
+    q:      document.getElementById('q'),
+    counts: document.getElementById('counts'),
+    results:document.getElementById('results'),
+    sel:    document.getElementById('sel'),
+    selCount:document.getElementById('selCount'),
+    copy:   document.getElementById('copy'),
+    export: document.getElementById('export'),
+    clear:  document.getElementById('clear'),
+    import: document.getElementById('import'),
+    sort:   document.getElementById('sort'),
+    dedupe: document.getElementById('dedupe'),
+    debugBox: document.getElementById('debugBox'),
+  };
+
+  let techniques = [];             // [{id,name,isSub,tactics[]}]
+  const byId = new Map();          // id -> technique
+  const selected = new Set();      // ids
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function isProbablyHtml(text){
+    const t = (text || "").trim().slice(0, 200).toLowerCase();
+    return t.startsWith("<!doctype html") || t.startsWith("<html") || t.includes("<head") || t.includes("<body");
+  }
+
+  function parseBundle(json){
+    // Robust STIX bundle reader.
+    // Returns: { techniques: [...], debug: {...} }
+
+    const objects = json.objects || (json.bundle && json.bundle.objects) || [];
+    if(!Array.isArray(objects) || objects.length === 0){
+      const keys = json && typeof json === "object" ? Object.keys(json).join(", ") : "(not an object)";
+      throw new Error("No STIX 'objects' array found. Top-level keys: " + keys);
+    }
+
+    // Count object types
+    const typeCounts = {};
+    for(const o of objects){
+      if(!o || !o.type) continue;
+      typeCounts[o.type] = (typeCounts[o.type] || 0) + 1;
+    }
+
+    // Extract attack-pattern objects (techniques live here)
+    const attackPatterns = objects.filter(o => o && o.type === "attack-pattern");
+
+    function getExternalId(obj){
+      // Technique IDs are typically stored as external_references[].external_id
+      const refs = obj.external_references || [];
+      for(const r of refs){
+        const eid = String(r && r.external_id || "").toUpperCase().trim();
+        if(/^T\d{4}(\.\d{3})?$/.test(eid)) return eid;
+      }
+      return null;
+    }
+
+    let withTechniqueId = 0;
+    const techniques = [];
+
+    for(const o of attackPatterns){
+      const id = getExternalId(o);
+      if(!id) continue;
+      withTechniqueId++;
+
+      const name = String(o.name || id).trim();
+      const isSub = !!o.x_mitre_is_subtechnique;
+
+      const tactics = [];
+      for(const p of (o.kill_chain_phases || [])){
+        const kcn = String(p.kill_chain_name || "").toLowerCase();
+        if(kcn.includes("mitre") && p.phase_name) tactics.push(String(p.phase_name));
+      }
+
+      techniques.push({ id, name, isSub, tactics: [...new Set(tactics)] });
+    }
+
+    techniques.sort((a,b)=>a.id.localeCompare(b.id, undefined, {numeric:true}));
+
+    // Provide useful debug info
+    const debug = {
+      objectCount: objects.length,
+      attackPatternCount: attackPatterns.length,
+      attackPatternsWithTechniqueId: withTechniqueId,
+      topObjectTypes: Object.entries(typeCounts)
+        .sort((a,b)=>b[1]-a[1])
+        .slice(0, 15),
+      hasCollectionObject: !!typeCounts["x-mitre-collection"],
+      hasTactics: !!typeCounts["x-mitre-tactic"],
+      hasRelationships: !!typeCounts["relationship"],
+      hasIntrusionSets: !!typeCounts["intrusion-set"]
+    };
+
+    return { techniques, debug };
+  }
+
+  function updateSelectedTextarea(){
+    const ids = [...selected].sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+    el.sel.value = ids.join('\n');
+    el.selCount.textContent = `Selected: ${ids.length}`;
+  }
+
+  function updateCounts(showing){
+    el.counts.textContent = `Loaded: ${techniques.length} techniques • Showing: ${showing}`;
+  }
+
+  function render(){
+    const q = (el.q.value || '').trim().toLowerCase();
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const isIdQuery = /^t\d{4}(\.\d{3})?$/.test(q);
+
+    el.results.innerHTML = '';
+    let shown = 0;
+
+    for(const t of techniques){
+      const hayId = t.id.toLowerCase();
+      const hayName = t.name.toLowerCase();
+
+      let match = true;
+      if(q){
+        if(isIdQuery){
+          match = hayId.includes(q);
+        } else {
+          match = tokens.every(tok => hayId.includes(tok) || hayName.includes(tok));
+        }
+      }
+      if(!match) continue;
+      shown++;
+
+      const div = document.createElement('div');
+      div.className = 'item';
+      div.dataset.id = t.id;
+
+      const left = document.createElement('div');
+      const top = document.createElement('div');
+      top.innerHTML = `<span class="id">${t.id}</span> <span class="name">${escapeHtml(t.name)}</span>`;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = (t.tactics.length ? `Tactics: ${t.tactics.join(', ')}` : 'Tactics: (none in bundle for this item)');
+      left.appendChild(top);
+      left.appendChild(meta);
+
+      const badge = document.createElement('div');
+      badge.className = 'badge' + (selected.has(t.id) ? ' selected' : '');
+      badge.textContent = selected.has(t.id) ? 'Selected' : (t.isSub ? 'Sub-tech' : 'Tech');
+
+      div.appendChild(left);
+      div.appendChild(badge);
+
+      div.addEventListener('click', ()=>{
+        if(selected.has(t.id)) selected.delete(t.id);
+        else selected.add(t.id);
+        updateSelectedTextarea();
+        render(); // update badges
+      });
+
+      el.results.appendChild(div);
+    }
+
+    updateCounts(shown);
+  }
+
+  async function copySelected(){
+    const txt = el.sel.value.trim();
+    if(!txt) return alert("Nothing selected.");
+    try{
+      await navigator.clipboard.writeText(txt);
+      alert("Copied to clipboard.");
+    }catch{
+      el.sel.focus(); el.sel.select();
+      alert("Clipboard blocked in this context. Text selected — press Ctrl+C.");
+    }
+  }
+
+  function exportSelected(){
+    const ids = el.sel.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    const payload = { exported_at: new Date().toISOString(), count: ids.length, technique_ids: ids };
+    const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'selected-attack-techniques.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function clearSelected(){
+    selected.clear();
+    updateSelectedTextarea();
+    render();
+  }
+
+  function importIds(){
+    const ids = el.sel.value.split(/\r?\n/).map(s=>s.trim().toUpperCase()).filter(Boolean);
+    let matched=0, missing=0;
+    for(const id of ids){
+      if(byId.has(id)){ selected.add(id); matched++; }
+      else missing++;
+    }
+    updateSelectedTextarea();
+    render();
+    alert(`Imported: ${matched} matched, ${missing} not found in loaded dataset.`);
+  }
+
+  function sortTextarea(){
+    const ids = el.sel.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    ids.sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
+    el.sel.value = ids.join('\n');
+  }
+
+  function dedupeTextarea(){
+    const ids = el.sel.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    const seen = new Set();
+    const out = [];
+    for(const id of ids){
+      const k = id.toUpperCase();
+      if(!seen.has(k)){ seen.add(k); out.push(id); }
+    }
+    el.sel.value = out.join('\n');
+  }
+
+  function showDebug(d){
+    const lines = [];
+    lines.push(`objects: ${d.objectCount}`);
+    lines.push(`attack-pattern: ${d.attackPatternCount}`);
+    lines.push(`attack-pattern with technique external_id (T####/T####.###): ${d.attackPatternsWithTechniqueId}`);
+    lines.push(`has x-mitre-collection: ${d.hasCollectionObject}`);
+    lines.push(`has x-mitre-tactic: ${d.hasTactics}`);
+    lines.push(`has relationship: ${d.hasRelationships}`);
+    lines.push(`has intrusion-set: ${d.hasIntrusionSets}`);
+    lines.push("");
+    lines.push("Top object types:");
+    for(const [t,c] of d.topObjectTypes){
+      lines.push(`  - ${t}: ${c}`);
+    }
+    el.debugBox.textContent = lines.join('\n');
+  }
+
+  el.file.addEventListener('change', async ()=>{
+    const f = el.file.files && el.file.files[0];
+    if(!f) return;
+
+    el.status.innerHTML = `Loading <span class="warn">${escapeHtml(f.name)}</span>...`;
+    el.debugBox.textContent = "Loading / parsing...";
+
+    try{
+      const text = await f.text();
+
+      // Detect HTML accidentally saved instead of raw JSON
+      if(isProbablyHtml(text)){
+        throw new Error(
+          "This looks like HTML, not JSON. You probably saved the GitHub web page instead of the raw JSON file. " +
+          "Download using the raw.githubusercontent.com link or PowerShell Invoke-WebRequest."
+        );
+      }
+
+      const json = JSON.parse(text);
+
+      const parsed = parseBundle(json);
+      techniques = parsed.techniques;
+
+      byId.clear();
+      for(const t of techniques) byId.set(t.id, t);
+
+      const d = parsed.debug;
+      console.log("STIX Debug:", d);
+      showDebug(d);
+
+      el.status.innerHTML =
+        `Loaded: <span class="good">${escapeHtml(f.name)}</span> ` +
+        `<span class="small">| objects=${d.objectCount} | attack-pattern=${d.attackPatternCount} | with T-id=${d.attackPatternsWithTechniqueId}</span>`;
+
+      render();
+
+      // Helpful warnings
+      if(d.attackPatternCount === 0){
+        alert("This bundle has 0 attack-pattern objects (techniques). It's not the full ATT&CK dataset.");
+      } else if(d.attackPatternsWithTechniqueId === 0){
+        alert("This bundle has attack-pattern objects, but none have external_id like T####. Parser needs adjustment.");
+      } else if(techniques.length === 0){
+        alert("Parsed 0 techniques. Check debug panel + console output for details.");
+      }
+
+    }catch(e){
+      console.error(e);
+      techniques = [];
+      byId.clear();
+      selected.clear();
+      updateSelectedTextarea();
+      el.results.innerHTML = '';
+      updateCounts(0);
+
+      el.status.innerHTML = `<span class="bad">Load failed:</span> ${escapeHtml(e.message || String(e))}`;
+      el.debugBox.textContent = "Parse failed. See the error message above and browser console (F12).";
+      alert("Failed to load/parse STIX JSON: " + (e.message || e));
+    }
+  });
+
+  el.q.addEventListener('input', render);
+  el.copy.addEventListener('click', copySelected);
+  el.export.addEventListener('click', exportSelected);
+  el.clear.addEventListener('click', clearSelected);
+  el.import.addEventListener('click', importIds);
+  el.sort.addEventListener('click', sortTextarea);
+  el.dedupe.addEventListener('click', dedupeTextarea);
+
+  // Initial UI
+  updateCounts(0);
+  updateSelectedTextarea();
+</script>
+
+</body>
+</html>
