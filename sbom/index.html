@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SBOM Studio - Vanilla HTML/JavaScript</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #141c33;
+      --panel-2: #1b2542;
+      --text: #e9eefc;
+      --muted: #aeb8d8;
+      --accent: #5da3ff;
+      --accent-2: #7cf0c5;
+      --danger: #ff7b86;
+      --warn: #ffd166;
+      --ok: #79e6a3;
+      --line: #2b385f;
+      --chip: #22305a;
+      --shadow: 0 12px 28px rgba(0,0,0,.25);
+      --font: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--font);
+      background: linear-gradient(180deg, #09101f 0%, #0d1530 100%);
+      color: var(--text);
+    }
+    header {
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(7, 11, 24, .6);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(10px);
+    }
+    .titleRow {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      line-height: 1.2;
+    }
+    .sub {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: .95rem;
+    }
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    button, .button, select, input[type="text"], input[type="number"], input[type="datetime-local"], textarea {
+      font: inherit;
+      color: var(--text);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: none;
+    }
+    button, .button {
+      cursor: pointer;
+      background: linear-gradient(180deg, #24407d 0%, #18315e 100%);
+      border-color: #3f66b6;
+      transition: .18s ease;
+      box-shadow: var(--shadow);
+    }
+    button:hover, .button:hover { transform: translateY(-1px); }
+    button.secondary {
+      background: var(--panel-2);
+      border-color: var(--line);
+      box-shadow: none;
+    }
+    button.ghost {
+      background: transparent;
+      border-color: var(--line);
+      box-shadow: none;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 18px;
+      padding: 18px;
+    }
+    nav {
+      background: rgba(17, 24, 45, .9);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      height: fit-content;
+      position: sticky;
+      top: 94px;
+      box-shadow: var(--shadow);
+    }
+    .navBtn {
+      width: 100%;
+      text-align: left;
+      margin: 4px 0;
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+    }
+    .navBtn.active {
+      background: linear-gradient(180deg, #2a4e9a 0%, #1d3770 100%);
+      border-color: #3f66b6;
+    }
+    .workspace {
+      display: grid;
+      gap: 18px;
+    }
+    .panel {
+      background: rgba(17, 24, 45, .92);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .panel h2, .panel h3 {
+      margin-top: 0;
+    }
+    .grid {
+      display: grid;
+      gap: 12px;
+    }
+    .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .stack { display: grid; gap: 8px; }
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: .92rem;
+      color: var(--muted);
+    }
+    label > span { color: var(--text); font-weight: 600; }
+    textarea {
+      min-height: 180px;
+      resize: vertical;
+      width: 100%;
+      background: #0e1730;
+    }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #0e1730;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      max-height: 520px;
+      overflow: auto;
+    }
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .chip {
+      background: var(--chip);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .86rem;
+    }
+    .alert {
+      border-left: 5px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #10172b;
+      margin: 8px 0;
+    }
+    .alert.error { border-color: var(--danger); }
+    .alert.warning { border-color: var(--warn); }
+    .alert.info { border-color: var(--accent); }
+    .alert.success { border-color: var(--ok); }
+    .small { font-size: .88rem; color: var(--muted); }
+    .muted { color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #0f1831;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 10px 8px;
+      text-align: left;
+      vertical-align: top;
+      font-size: .92rem;
+    }
+    th { background: #142041; }
+    .hidden { display: none !important; }
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .tabs button { box-shadow: none; }
+    .tabs button.active { background: linear-gradient(180deg, #2a4e9a 0%, #1d3770 100%); }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .spacer { flex: 1 1 auto; }
+    .dropzone {
+      border: 2px dashed #4866aa;
+      border-radius: 14px;
+      padding: 18px;
+      background: rgba(24,49,94,.2);
+      text-align: center;
+    }
+    .statusbar {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .stat {
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #10172c;
+    }
+    .stat .num { font-size: 1.4rem; font-weight: 700; }
+    .cardGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .componentCard {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #10172c;
+    }
+    .footerNote {
+      color: var(--muted);
+      font-size: .88rem;
+      margin-top: 12px;
+    }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #10172c;
+    }
+    details > summary { cursor: pointer; font-weight: 700; }
+    @media (max-width: 1080px) {
+      main { grid-template-columns: 1fr; }
+      nav { position: static; }
+      .cols-2, .cols-3, .cols-4, .statusbar { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="titleRow">
+      <div>
+        <h1>SBOM Studio</h1>
+        <div class="sub">Standalone SBOM viewer, validator, builder, and exporter for CycloneDX JSON and SPDX JSON.</div>
+      </div>
+      <div class="toolbar">
+        <button id="btnLoadSample">Load Sample</button>
+        <button id="btnNormalizeImported" class="secondary">Use Imported Data In Builder</button>
+        <button id="btnExportCurrent">Download Current JSON</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <nav>
+      <button class="navBtn active" data-view="importView">1. Import / Paste</button>
+      <button class="navBtn" data-view="viewerView">2. Viewer</button>
+      <button class="navBtn" data-view="validatorView">3. Validation Alerts</button>
+      <button class="navBtn" data-view="builderView">4. Builder / Export</button>
+      <button class="navBtn" data-view="aboutView">5. Standards Notes</button>
+      <div class="footerNote">
+        Works fully offline. No CDNs, no external libraries, no network calls.
+      </div>
+    </nav>
+
+    <section class="workspace">
+      <section id="importView" class="panel viewPane">
+        <h2>Import or paste an SBOM JSON document</h2>
+        <div class="grid cols-2">
+          <div class="stack">
+            <div class="dropzone" id="dropzone">
+              <p><strong>Drop an SBOM JSON file here</strong> or choose a file.</p>
+              <input id="fileInput" type="file" accept=".json,application/json" />
+              <div class="small">Supported detection: CycloneDX JSON, SPDX JSON, or unknown JSON.</div>
+            </div>
+            <label>
+              <span>Paste JSON</span>
+              <textarea id="jsonInput" placeholder="Paste an SBOM JSON document here..."></textarea>
+            </label>
+            <div class="row">
+              <button id="btnParse">Parse JSON</button>
+              <button id="btnClearImport" class="secondary">Clear</button>
+            </div>
+          </div>
+          <div class="stack">
+            <h3>Detection summary</h3>
+            <div id="detectionSummary" class="mono">No document loaded.</div>
+            <div class="chips" id="summaryChips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="viewerView" class="panel viewPane hidden">
+        <h2>Viewer</h2>
+        <div class="statusbar" id="viewerStats"></div>
+        <div class="tabs">
+          <button class="active" data-vtab="summaryTab">Summary</button>
+          <button data-vtab="componentsTab">Components</button>
+          <button data-vtab="depsTab">Dependencies</button>
+          <button data-vtab="rawTab">Raw JSON</button>
+        </div>
+        <div id="summaryTab" class="vtabPane">
+          <div id="summaryCards" class="cardGrid"></div>
+        </div>
+        <div id="componentsTab" class="vtabPane hidden">
+          <div class="row"><div class="spacer"></div><input id="componentFilter" type="text" placeholder="Filter components..." /></div>
+          <div id="componentsContainer"></div>
+        </div>
+        <div id="depsTab" class="vtabPane hidden">
+          <div id="depsContainer"></div>
+        </div>
+        <div id="rawTab" class="vtabPane hidden">
+          <div id="rawJson" class="mono"></div>
+        </div>
+      </section>
+
+      <section id="validatorView" class="panel viewPane hidden">
+        <h2>Validation alerts</h2>
+        <div class="small">Flags malformed JSON, unsupported/unknown layouts, missing standard fields, duplicate identifiers, and several suspicious non-standard patterns.</div>
+        <div class="row" style="margin-top:10px;">
+          <button id="btnRunValidation">Run Validation</button>
+          <button id="btnAutoFixDates" class="secondary">Normalize Timestamps In Builder</button>
+        </div>
+        <div id="validationSummary" class="chips"></div>
+        <div id="validationAlerts"></div>
+      </section>
+
+      <section id="builderView" class="panel viewPane hidden">
+        <h2>Builder / exporter</h2>
+        <div class="grid cols-2">
+          <div class="stack">
+            <label><span>Export standard</span>
+              <select id="builderFormat">
+                <option value="cyclonedx@1.7">CycloneDX JSON 1.7</option>
+                <option value="cyclonedx@1.6">CycloneDX JSON 1.6</option>
+                <option value="spdx@2.3">SPDX JSON 2.3</option>
+              </select>
+            </label>
+            <label><span>SBOM / document name</span><input id="docName" type="text" placeholder="My Product SBOM" /></label>
+            <div class="grid cols-2">
+              <label><span>Supplier / organization</span><input id="docSupplier" type="text" placeholder="Example Org" /></label>
+              <label><span>Author / creator</span><input id="docAuthor" type="text" placeholder="Analyst Name" /></label>
+            </div>
+            <div class="grid cols-2">
+              <label><span>Tool name</span><input id="docTool" type="text" placeholder="SBOM Studio" /></label>
+              <label><span>Timestamp</span><input id="docTimestamp" type="datetime-local" /></label>
+            </div>
+            <div class="grid cols-3">
+              <label><span>Root component type</span>
+                <select id="rootType">
+                  <option>application</option>
+                  <option>library</option>
+                  <option>container</option>
+                  <option>framework</option>
+                  <option>operating-system</option>
+                  <option>firmware</option>
+                  <option>device</option>
+                </select>
+              </label>
+              <label><span>Root component name</span><input id="rootName" type="text" placeholder="my-app" /></label>
+              <label><span>Root component version</span><input id="rootVersion" type="text" placeholder="1.0.0" /></label>
+            </div>
+            <div class="grid cols-2">
+              <label><span>Document namespace / serial seed (optional)</span><input id="docNamespaceSeed" type="text" placeholder="https://example.org/sbom/my-app/1.0.0" /></label>
+              <label><span>License expression / declared license (optional)</span><input id="docLicense" type="text" placeholder="MIT" /></label>
+            </div>
+            <div class="row">
+              <button id="btnAddComponent">Add component</button>
+              <button id="btnGenerateFromBuilder" class="secondary">Generate JSON Preview</button>
+            </div>
+          </div>
+          <div class="stack">
+            <h3>Generated JSON preview</h3>
+            <div id="builderPreview" class="mono"></div>
+            <div class="row">
+              <button id="btnDownloadBuilder">Download Export</button>
+              <button id="btnCopyBuilder" class="secondary">Copy JSON</button>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:18px;">Components</h3>
+        <div class="small">Define package URLs (purl), CPEs, licenses, hashes, and dependency edges. Dependency list accepts comma-separated refs/IDs of child components.</div>
+        <div id="builderComponents"></div>
+      </section>
+
+      <section id="aboutView" class="panel viewPane hidden">
+        <h2>Standards notes</h2>
+        <div class="alert info"><strong>What this app supports:</strong> CycloneDX JSON 1.6/1.7 and SPDX JSON 2.3 import, viewing, validation, normalization, and export. It focuses on the most common JSON-based SBOM workflows.</div>
+        <details open>
+          <summary>Why only these JSON standards?</summary>
+          <p class="muted">CycloneDX and SPDX both have well-established JSON serializations. SWID is an important software-identification standard, but its formal serializations are XML and CBOR rather than common JSON. This app therefore treats JSON as the primary interchange target and alerts if a document appears to be neither CycloneDX nor SPDX.</p>
+        </details>
+        <details open>
+          <summary>Validation philosophy</summary>
+          <p class="muted">Validation is intentionally pragmatic rather than exhaustive schema validation. The alert engine checks for key top-level fields, minimum expected component fields, duplicate identifiers, malformed timestamps, odd license/hash structures, and dependency references to missing components. That makes it useful offline even without bundling official schemas.</p>
+        </details>
+        <details>
+          <summary>Builder model</summary>
+          <p class="muted">Internally, the builder uses a simple normalized model: document metadata, one root component, child components, optional hashes/licenses/identifiers, and dependency edges. Exporters map this model into CycloneDX or SPDX JSON.</p>
+        </details>
+      </section>
+    </section>
+  </main>
+
+<script>
+(() => {
+  'use strict';
+
+  const state = {
+    imported: null,
+    importedRawText: '',
+    detected: null,
+    normalized: createEmptyNormalized(),
+    currentJson: null,
+    validation: []
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+  function createEmptyNormalized() {
+    return {
+      format: 'cyclonedx',
+      version: '1.7',
+      docName: '',
+      supplier: '',
+      author: '',
+      tool: 'SBOM Studio',
+      timestamp: toLocalInputValue(new Date()),
+      license: '',
+      namespaceSeed: '',
+      root: { ref: 'root', type: 'application', name: '', version: '', purl: '', cpe: '', supplier: '', license: '', hashes: [] },
+      components: []
+    };
+  }
+
+  function uid(prefix = 'id') {
+    return prefix + '-' + Math.random().toString(36).slice(2, 10);
+  }
+
+  function esc(v) {
+    return String(v ?? '').replace(/[&<>\"]/g, (ch) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[ch]));
+  }
+
+  function downloadText(filename, text) {
+    const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const t = document.createElement('textarea');
+    t.value = text;
+    document.body.appendChild(t);
+    t.select();
+    document.execCommand('copy');
+    t.remove();
+  }
+
+  function toIsoFromLocalInput(value) {
+    if (!value) return new Date().toISOString();
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+  }
+
+  function toLocalInputValue(d) {
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = dt.getFullYear();
+    const month = pad(dt.getMonth() + 1);
+    const day = pad(dt.getDate());
+    const hrs = pad(dt.getHours());
+    const mins = pad(dt.getMinutes());
+    return `${year}-${month}-${day}T${hrs}:${mins}`;
+  }
+
+  function looksIsoDate(s) {
+    if (typeof s !== 'string' || !s.trim()) return false;
+    const d = new Date(s);
+    return !isNaN(d.getTime());
+  }
+
+  function parseJsonText(text) {
+    return JSON.parse(text);
+  }
+
+  function detectFormat(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+      return { type: 'unknown', version: '', confidence: 0, reason: 'Root is not an object.' };
+    }
+    if (obj.bomFormat === 'CycloneDX' && typeof obj.specVersion === 'string') {
+      return { type: 'cyclonedx', version: obj.specVersion, confidence: 98, reason: 'Found bomFormat=\"CycloneDX\" and specVersion.' };
+    }
+    if (typeof obj.spdxVersion === 'string' && (obj.SPDXID || obj.creationInfo || obj.documentNamespace)) {
+      return { type: 'spdx', version: obj.spdxVersion.replace(/^SPDX-/, ''), confidence: 96, reason: 'Found spdxVersion and SPDX document fields.' };
+    }
+    if (obj.tagId || obj.softwareIdentity || obj.entity || obj.payload) {
+      return { type: 'unsupported-swid-ish', version: '', confidence: 55, reason: 'Looks closer to a SWID-like structure than CycloneDX/SPDX JSON.' };
+    }
+    return { type: 'unknown', version: '', confidence: 20, reason: 'JSON parsed, but it does not match common CycloneDX/SPDX root markers.' };
+  }
+
+  function normalizeImported(obj, detected) {
+    const model = createEmptyNormalized();
+    if (!obj || !detected) return model;
+
+    if (detected.type === 'cyclonedx') {
+      model.format = 'cyclonedx';
+      model.version = obj.specVersion || '1.7';
+      model.docName = (obj.metadata && obj.metadata.component && obj.metadata.component.name) || (obj.metadata && obj.metadata.component && obj.metadata.component['bom-ref']) || 'CycloneDX SBOM';
+      model.supplier = ((obj.metadata && obj.metadata.manufacturer && obj.metadata.manufacturer.name) || (obj.metadata && obj.metadata.component && obj.metadata.component.supplier && obj.metadata.component.supplier.name) || '');
+      model.author = Array.isArray(obj.metadata && obj.metadata.authors) && obj.metadata.authors[0] ? (obj.metadata.authors[0].name || '') : '';
+      model.tool = (((obj.metadata && obj.metadata.tools && obj.metadata.tools.components && obj.metadata.tools.components[0] && obj.metadata.tools.components[0].name) || 'SBOM Studio'));
+      model.timestamp = toLocalInputValue((obj.metadata && obj.metadata.timestamp) || new Date());
+      model.license = '';
+      model.namespaceSeed = obj.serialNumber || '';
+      const root = (obj.metadata && obj.metadata.component) || {};
+      model.root = {
+        ref: root['bom-ref'] || 'root',
+        type: root.type || 'application',
+        name: root.name || '',
+        version: root.version || '',
+        purl: root.purl || '',
+        cpe: root.cpe || '',
+        supplier: (root.supplier && root.supplier.name) || model.supplier || '',
+        license: extractCycloneLicense(root.licenses),
+        hashes: normalizeCycloneHashes(root.hashes || [])
+      };
+      model.components = (obj.components || []).map((c) => ({
+        ref: c['bom-ref'] || uid('cmp'),
+        type: c.type || 'library',
+        name: c.name || '',
+        version: c.version || '',
+        purl: c.purl || '',
+        cpe: c.cpe || '',
+        supplier: (c.supplier && c.supplier.name) || '',
+        license: extractCycloneLicense(c.licenses),
+        hashes: normalizeCycloneHashes(c.hashes || []),
+        dependsOn: []
+      }));
+      const depMap = new Map((obj.dependencies || []).map((d) => [d.ref, Array.isArray(d.dependsOn) ? d.dependsOn.slice() : []]));
+      if (depMap.has(model.root.ref)) model.root.dependsOn = depMap.get(model.root.ref);
+      model.components.forEach((c) => { c.dependsOn = depMap.get(c.ref) || []; });
+      return model;
+    }
+
+    if (detected.type === 'spdx') {
+      model.format = 'spdx';
+      model.version = (obj.spdxVersion || 'SPDX-2.3').replace(/^SPDX-/, '');
+      model.docName = obj.name || 'SPDX SBOM';
+      model.supplier = '';
+      model.author = Array.isArray(obj.creationInfo && obj.creationInfo.creators) ? obj.creationInfo.creators.join('; ') : '';
+      model.tool = 'SBOM Studio';
+      model.timestamp = toLocalInputValue((obj.creationInfo && obj.creationInfo.created) || new Date());
+      model.license = obj.dataLicense || '';
+      model.namespaceSeed = obj.documentNamespace || '';
+
+      const pkgs = Array.isArray(obj.packages) ? obj.packages : [];
+      const rootId = Array.isArray(obj.documentDescribes) && obj.documentDescribes[0] ? obj.documentDescribes[0] : (pkgs[0] && pkgs[0].SPDXID) || 'SPDXRef-Root';
+      const rootPkg = pkgs.find((p) => p.SPDXID === rootId) || pkgs[0] || {};
+      model.root = {
+        ref: rootPkg.SPDXID || rootId,
+        type: mapSpdxPrimaryPurposeToType(rootPkg.primaryPackagePurpose),
+        name: rootPkg.name || obj.name || '',
+        version: rootPkg.versionInfo || '',
+        purl: extractSpdxPurl(rootPkg.externalRefs || []),
+        cpe: extractSpdxCpe(rootPkg.externalRefs || []),
+        supplier: rootPkg.supplier || '',
+        license: rootPkg.licenseDeclared || rootPkg.licenseConcluded || '',
+        hashes: normalizeSpdxChecksums(rootPkg.checksums || []),
+        dependsOn: []
+      };
+      model.components = pkgs.filter((p) => p.SPDXID !== model.root.ref).map((p) => ({
+        ref: p.SPDXID || uid('pkg'),
+        type: mapSpdxPrimaryPurposeToType(p.primaryPackagePurpose),
+        name: p.name || '',
+        version: p.versionInfo || '',
+        purl: extractSpdxPurl(p.externalRefs || []),
+        cpe: extractSpdxCpe(p.externalRefs || []),
+        supplier: p.supplier || '',
+        license: p.licenseDeclared || p.licenseConcluded || '',
+        hashes: normalizeSpdxChecksums(p.checksums || []),
+        dependsOn: []
+      }));
+
+      const rels = Array.isArray(obj.relationships) ? obj.relationships : [];
+      const depMap = new Map();
+      rels.forEach((r) => {
+        if (r.relationshipType === 'DEPENDS_ON' && r.spdxElementId && r.relatedSpdxElement) {
+          if (!depMap.has(r.spdxElementId)) depMap.set(r.spdxElementId, []);
+          depMap.get(r.spdxElementId).push(r.relatedSpdxElement);
+        }
+      });
+      model.root.dependsOn = depMap.get(model.root.ref) || [];
+      model.components.forEach((c) => { c.dependsOn = depMap.get(c.ref) || []; });
+      return model;
+    }
+
+    return model;
+  }
+
+  function normalizeCycloneHashes(items) {
+    return (items || []).map((h) => ({ alg: h.alg || '', content: h.content || '' })).filter((h) => h.alg || h.content);
+  }
+  function normalizeSpdxChecksums(items) {
+    return (items || []).map((h) => ({ alg: h.algorithm || '', content: h.checksumValue || '' })).filter((h) => h.alg || h.content);
+  }
+  function extractCycloneLicense(licenses) {
+    if (!Array.isArray(licenses) || !licenses.length) return '';
+    const first = licenses[0];
+    if (first.expression) return first.expression;
+    if (first.license && first.license.id) return first.license.id;
+    if (first.license && first.license.name) return first.license.name;
+    return '';
+  }
+  function extractSpdxPurl(refs) {
+    const hit = (refs || []).find((r) => /purl/i.test(r.referenceType || '') || /package-url/i.test(r.referenceType || ''));
+    return hit ? (hit.referenceLocator || '') : '';
+  }
+  function extractSpdxCpe(refs) {
+    const hit = (refs || []).find((r) => /cpe23Type/i.test(r.referenceType || '') || /security cpe23type/i.test(r.referenceType || ''));
+    return hit ? (hit.referenceLocator || '') : '';
+  }
+  function mapSpdxPrimaryPurposeToType(purpose) {
+    const map = {
+      APPLICATION: 'application',
+      FRAMEWORK: 'framework',
+      LIBRARY: 'library',
+      CONTAINER: 'container',
+      'OPERATING-SYSTEM': 'operating-system',
+      FIRMWARE: 'firmware',
+      DEVICE: 'device'
+    };
+    return map[purpose] || 'library';
+  }
+  function mapTypeToSpdxPrimaryPurpose(type) {
+    const map = {
+      application: 'APPLICATION',
+      framework: 'FRAMEWORK',
+      library: 'LIBRARY',
+      container: 'CONTAINER',
+      'operating-system': 'OPERATING-SYSTEM',
+      firmware: 'FIRMWARE',
+      device: 'DEVICE'
+    };
+    return map[type] || 'LIBRARY';
+  }
+
+  function validateImported(obj, detected) {
+    const alerts = [];
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) {
+      alerts.push(makeAlert('error', 'Root JSON structure is not an object.'));
+      return alerts;
+    }
+
+    if (detected.type === 'unknown') {
+      alerts.push(makeAlert('error', 'Document is valid JSON but does not match recognized CycloneDX or SPDX JSON root fields.'));
+      return alerts;
+    }
+    if (detected.type === 'unsupported-swid-ish') {
+      alerts.push(makeAlert('warning', 'Document appears closer to SWID-like content than CycloneDX/SPDX JSON. This viewer will treat it as non-standard for JSON SBOM export.'));
+    }
+
+    if (detected.type === 'cyclonedx') {
+      const allowedTop = new Set(['$schema', 'bomFormat', 'specVersion', 'serialNumber', 'version', 'metadata', 'components', 'services', 'dependencies', 'compositions', 'vulnerabilities', 'annotations', 'declarations', 'definitions', 'formulation', 'properties', 'signature', 'externalReferences']);
+      if (obj.bomFormat !== 'CycloneDX') alerts.push(makeAlert('error', 'CycloneDX BOM must set bomFormat to "CycloneDX".'));
+      if (!obj.specVersion) alerts.push(makeAlert('error', 'CycloneDX BOM is missing specVersion.'));
+      if (obj.serialNumber && !/^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(obj.serialNumber)) {
+        alerts.push(makeAlert('warning', 'CycloneDX serialNumber exists but does not look like the expected urn:uuid value.'));
+      }
+      if (!(Number.isInteger(obj.version) && obj.version >= 1)) alerts.push(makeAlert('warning', 'CycloneDX version should be a positive integer revision number.'));
+      if (!obj.metadata) alerts.push(makeAlert('warning', 'CycloneDX metadata section is missing.'));
+      if (obj.metadata && obj.metadata.timestamp && !looksIsoDate(obj.metadata.timestamp)) alerts.push(makeAlert('warning', 'metadata.timestamp is present but does not parse as a valid date/time.'));
+      if (!obj.metadata || !obj.metadata.component) alerts.push(makeAlert('warning', 'metadata.component (the primary/root component) is missing.'));
+      const comps = Array.isArray(obj.components) ? obj.components : [];
+      const depRefs = new Set();
+      const ids = new Set();
+      const dupes = new Set();
+      const allComps = [];
+      if (obj.metadata && obj.metadata.component) allComps.push(obj.metadata.component);
+      allComps.push(...comps);
+      allComps.forEach((c, i) => {
+        const where = i === 0 && obj.metadata && obj.metadata.component === c ? 'metadata.component' : `components[${i-1}]`;
+        const ref = c['bom-ref'] || c.name || where;
+        if (ids.has(ref)) dupes.add(ref); else ids.add(ref);
+        if (!c.type) alerts.push(makeAlert('warning', `${where} is missing type.`));
+        if (!c.name) alerts.push(makeAlert('error', `${where} is missing name.`));
+        if (!c.version && !c.versionRange) alerts.push(makeAlert('warning', `${where} is missing version/versionRange.`));
+        if (c.hashes && !Array.isArray(c.hashes)) alerts.push(makeAlert('warning', `${where}.hashes should be an array.`));
+        (c.hashes || []).forEach((h, idx) => {
+          if (!h.alg || !h.content) alerts.push(makeAlert('warning', `${where}.hashes[${idx}] should include alg and content.`));
+        });
+      });
+      if (dupes.size) alerts.push(makeAlert('error', `Duplicate component identifiers/bom-ref values found: ${Array.from(dupes).join(', ')}`));
+      (obj.dependencies || []).forEach((d, idx) => {
+        if (!d.ref) alerts.push(makeAlert('warning', `dependencies[${idx}] is missing ref.`));
+        depRefs.add(d.ref);
+        (d.dependsOn || []).forEach((r) => depRefs.add(r));
+      });
+      depRefs.forEach((r) => { if (!ids.has(r)) alerts.push(makeAlert('warning', `Dependency references unknown component/bom-ref: ${r}`)); });
+      Object.keys(obj).forEach((k) => { if (!allowedTop.has(k)) alerts.push(makeAlert('info', `Top-level key "${k}" is not a common CycloneDX root key and may be non-standard.`)); });
+      if (!comps.length) alerts.push(makeAlert('info', 'No components array was found; the BOM may describe only a root component or be incomplete.'));
+      return alerts;
+    }
+
+    if (detected.type === 'spdx') {
+      const allowedTop = new Set(['spdxVersion', 'dataLicense', 'SPDXID', 'name', 'documentNamespace', 'creationInfo', 'documentDescribes', 'packages', 'relationships', 'annotations', 'externalDocumentRefs', 'hasExtractedLicensingInfos', 'documentComment', 'creationInfo']);
+      if (!obj.spdxVersion) alerts.push(makeAlert('error', 'SPDX document is missing spdxVersion.'));
+      if (!obj.SPDXID) alerts.push(makeAlert('error', 'SPDX document is missing SPDXID.'));
+      if (!obj.name) alerts.push(makeAlert('error', 'SPDX document is missing name.'));
+      if (!obj.dataLicense) alerts.push(makeAlert('error', 'SPDX document is missing dataLicense.'));
+      if (!obj.documentNamespace) alerts.push(makeAlert('error', 'SPDX document is missing documentNamespace.'));
+      if (!obj.creationInfo) alerts.push(makeAlert('error', 'SPDX document is missing creationInfo.'));
+      if (obj.creationInfo && obj.creationInfo.created && !looksIsoDate(obj.creationInfo.created)) alerts.push(makeAlert('warning', 'creationInfo.created is present but does not parse as a valid date/time.'));
+      if (obj.creationInfo && !Array.isArray(obj.creationInfo.creators)) alerts.push(makeAlert('warning', 'creationInfo.creators should be an array.'));
+      const pkgs = Array.isArray(obj.packages) ? obj.packages : [];
+      const ids = new Set();
+      const dupes = new Set();
+      pkgs.forEach((p, idx) => {
+        const id = p.SPDXID || `packages[${idx}]`;
+        if (ids.has(id)) dupes.add(id); else ids.add(id);
+        if (!p.SPDXID) alerts.push(makeAlert('error', `packages[${idx}] is missing SPDXID.`));
+        if (!p.name) alerts.push(makeAlert('warning', `packages[${idx}] is missing name.`));
+        if (!p.versionInfo) alerts.push(makeAlert('warning', `packages[${idx}] is missing versionInfo.`));
+        if (p.checksums && !Array.isArray(p.checksums)) alerts.push(makeAlert('warning', `packages[${idx}].checksums should be an array.`));
+        if (p.externalRefs && !Array.isArray(p.externalRefs)) alerts.push(makeAlert('warning', `packages[${idx}].externalRefs should be an array.`));
+      });
+      if (dupes.size) alerts.push(makeAlert('error', `Duplicate SPDX package identifiers found: ${Array.from(dupes).join(', ')}`));
+      (obj.documentDescribes || []).forEach((id) => { if (!ids.has(id)) alerts.push(makeAlert('warning', `documentDescribes references missing package ${id}.`)); });
+      (obj.relationships || []).forEach((r, idx) => {
+        if (!r.relationshipType || !r.spdxElementId || !r.relatedSpdxElement) alerts.push(makeAlert('warning', `relationships[${idx}] should include relationshipType, spdxElementId, and relatedSpdxElement.`));
+        if (r.spdxElementId && !ids.has(r.spdxElementId) && r.spdxElementId !== 'SPDXRef-DOCUMENT') alerts.push(makeAlert('warning', `relationships[${idx}] references missing spdxElementId ${r.spdxElementId}.`));
+        if (r.relatedSpdxElement && !ids.has(r.relatedSpdxElement) && r.relatedSpdxElement !== 'SPDXRef-DOCUMENT') alerts.push(makeAlert('warning', `relationships[${idx}] references missing relatedSpdxElement ${r.relatedSpdxElement}.`));
+      });
+      Object.keys(obj).forEach((k) => { if (!allowedTop.has(k)) alerts.push(makeAlert('info', `Top-level key "${k}" is not a common SPDX JSON document key and may be non-standard.`)); });
+      if (!pkgs.length) alerts.push(makeAlert('warning', 'No packages array was found; the SPDX document may be incomplete for SBOM use.'));
+      return alerts;
+    }
+
+    alerts.push(makeAlert('warning', 'Validation ran, but the format is not fully supported.'));
+    return alerts;
+  }
+
+  function makeAlert(level, message) {
+    return { level, message };
+  }
+
+  function renderValidation(alerts) {
+    state.validation = alerts;
+    const container = $('validationAlerts');
+    const summary = $('validationSummary');
+    container.innerHTML = '';
+    summary.innerHTML = '';
+    const counts = { error: 0, warning: 0, info: 0, success: 0 };
+    alerts.forEach((a) => counts[a.level] = (counts[a.level] || 0) + 1);
+    if (!alerts.length) {
+      container.innerHTML = '<div class="alert success">No alerts. The document passed the current offline validation rules.</div>';
+      counts.success = 1;
+    } else {
+      alerts.forEach((a) => {
+        const div = document.createElement('div');
+        div.className = `alert ${a.level}`;
+        div.innerHTML = `<strong>${a.level.toUpperCase()}</strong><br>${esc(a.message)}`;
+        container.appendChild(div);
+      });
+    }
+    ['error','warning','info','success'].forEach((k) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.textContent = `${k}: ${counts[k] || 0}`;
+      summary.appendChild(chip);
+    });
+  }
+
+  function renderDetection(obj, detected) {
+    $('detectionSummary').textContent = obj
+      ? JSON.stringify({
+          detectedFormat: detected.type,
+          detectedVersion: detected.version || '(unknown)',
+          confidence: detected.confidence,
+          reason: detected.reason
+        }, null, 2)
+      : 'No document loaded.';
+    const chips = $('summaryChips');
+    chips.innerHTML = '';
+    if (!obj) return;
+    [
+      `format: ${detected.type}`,
+      `version: ${detected.version || 'n/a'}`,
+      `confidence: ${detected.confidence}%`,
+      `root keys: ${Object.keys(obj).length}`
+    ].forEach((txt) => {
+      const c = document.createElement('div'); c.className = 'chip'; c.textContent = txt; chips.appendChild(c);
+    });
+  }
+
+  function renderViewer() {
+    const obj = state.imported;
+    const detected = state.detected || { type: 'none', version: '', confidence: 0 };
+    const normalized = state.normalized;
+    const stats = $('viewerStats');
+    const summaryCards = $('summaryCards');
+    const componentsContainer = $('componentsContainer');
+    const depsContainer = $('depsContainer');
+    const rawJson = $('rawJson');
+
+    if (!obj) {
+      stats.innerHTML = '<div class="stat"><div class="num">0</div><div>No document loaded</div></div>';
+      summaryCards.innerHTML = '<div class="componentCard">Import JSON to view details.</div>';
+      componentsContainer.innerHTML = '';
+      depsContainer.innerHTML = '';
+      rawJson.textContent = '';
+      return;
+    }
+
+    const componentCount = 1 + (normalized.components || []).length;
+    const depEdgeCount = (normalized.root.dependsOn || []).length + (normalized.components || []).reduce((n, c) => n + (c.dependsOn || []).length, 0);
+    const errCount = state.validation.filter((a) => a.level === 'error').length;
+    const warnCount = state.validation.filter((a) => a.level === 'warning').length;
+    stats.innerHTML = [
+      statCard('Format', `${detected.type} ${detected.version || ''}`.trim()),
+      statCard('Components', String(componentCount)),
+      statCard('Dependency edges', String(depEdgeCount)),
+      statCard('Alerts', `${errCount} errors / ${warnCount} warnings`)
+    ].join('');
+
+    const cards = [];
+    cards.push(summaryCard('Document', [
+      ['Name', normalized.docName || '(unnamed)'],
+      ['Supplier', normalized.supplier || '(not set)'],
+      ['Author', normalized.author || '(not set)'],
+      ['Timestamp', normalized.timestamp || '(not set)']
+    ]));
+    cards.push(summaryCard('Root component', [
+      ['Ref', normalized.root.ref || '(none)'],
+      ['Type', normalized.root.type || '(none)'],
+      ['Name', normalized.root.name || '(none)'],
+      ['Version', normalized.root.version || '(none)']
+    ]));
+    cards.push(summaryCard('Identifiers', [
+      ['PURL', normalized.root.purl || '(none)'],
+      ['CPE', normalized.root.cpe || '(none)'],
+      ['License', normalized.root.license || normalized.license || '(none)'],
+      ['Tool', normalized.tool || '(not set)']
+    ]));
+    summaryCards.innerHTML = cards.join('');
+
+    renderComponentsTable();
+
+    const rows = [];
+    rows.push(`<tr><td>${esc(normalized.root.ref)}</td><td>${esc((normalized.root.dependsOn || []).join(', ') || '(none)')}</td></tr>`);
+    (normalized.components || []).forEach((c) => rows.push(`<tr><td>${esc(c.ref)}</td><td>${esc((c.dependsOn || []).join(', ') || '(none)')}</td></tr>`));
+    depsContainer.innerHTML = `<table><thead><tr><th>Component / Package</th><th>Depends On</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+    rawJson.textContent = JSON.stringify(obj, null, 2);
+  }
+
+  function statCard(label, value) {
+    return `<div class="stat"><div class="small">${esc(label)}</div><div class="num">${esc(value)}</div></div>`;
+  }
+  function summaryCard(title, pairs) {
+    return `<div class="componentCard"><h3>${esc(title)}</h3>${pairs.map(([k,v]) => `<div><strong>${esc(k)}:</strong> ${esc(v)}</div>`).join('')}</div>`;
+  }
+
+  function renderComponentsTable() {
+    const filter = $('componentFilter').value.trim().toLowerCase();
+    const all = [state.normalized.root, ...(state.normalized.components || [])].filter((c) => {
+      if (!filter) return true;
+      const hay = [c.ref, c.type, c.name, c.version, c.purl, c.cpe, c.supplier, c.license].join(' ').toLowerCase();
+      return hay.includes(filter);
+    });
+    const rows = all.map((c, idx) => `
+      <tr>
+        <td>${idx === 0 ? 'root' : 'component'}</td>
+        <td>${esc(c.ref)}</td>
+        <td>${esc(c.type)}</td>
+        <td>${esc(c.name)}</td>
+        <td>${esc(c.version)}</td>
+        <td>${esc(c.purl || '')}</td>
+        <td>${esc(c.cpe || '')}</td>
+        <td>${esc(c.supplier || '')}</td>
+        <td>${esc(c.license || '')}</td>
+      </tr>`).join('');
+    $('componentsContainer').innerHTML = `
+      <table>
+        <thead>
+          <tr><th>Role</th><th>Ref</th><th>Type</th><th>Name</th><th>Version</th><th>PURL</th><th>CPE</th><th>Supplier</th><th>License</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  }
+
+  function renderBuilder() {
+    const m = state.normalized;
+    const desiredFormat = `${m.format || 'cyclonedx'}@${m.version || '1.7'}`;
+    const builderFormatEl = $('builderFormat');
+    if ([...builderFormatEl.options].some(o => o.value === desiredFormat)) builderFormatEl.value = desiredFormat;
+    else builderFormatEl.value = 'cyclonedx@1.7';
+    $('docName').value = m.docName || '';
+    $('docSupplier').value = m.supplier || '';
+    $('docAuthor').value = m.author || '';
+    $('docTool').value = m.tool || 'SBOM Studio';
+    $('docTimestamp').value = m.timestamp || toLocalInputValue(new Date());
+    $('rootType').value = m.root.type || 'application';
+    $('rootName').value = m.root.name || '';
+    $('rootVersion').value = m.root.version || '';
+    $('docNamespaceSeed').value = m.namespaceSeed || '';
+    $('docLicense').value = m.license || m.root.license || '';
+
+    const container = $('builderComponents');
+    const rows = (m.components || []).map((c, idx) => componentEditorRow(c, idx)).join('');
+    container.innerHTML = rows || '<div class="alert info">No components added yet. Use <strong>Add component</strong> to build an SBOM.</div>';
+
+    qsa('[data-remove-component]', container).forEach((btn) => btn.addEventListener('click', () => {
+      const idx = Number(btn.getAttribute('data-remove-component'));
+      state.normalized.components.splice(idx, 1);
+      renderBuilder();
+      refreshPreview();
+    }));
+    qsa('[data-component-field]', container).forEach((el) => el.addEventListener('input', syncBuilderComponentsFromUI));
+
+    refreshPreview();
+  }
+
+  function componentEditorRow(c, idx) {
+    return `
+      <div class="panel" style="padding:12px; margin-top:12px;">
+        <div class="row">
+          <strong>Component ${idx + 1}</strong>
+          <div class="spacer"></div>
+          <button class="ghost" data-remove-component="${idx}">Remove</button>
+        </div>
+        <div class="grid cols-4">
+          <label><span>Ref / ID</span><input data-component-field="ref" data-idx="${idx}" type="text" value="${esc(c.ref)}" /></label>
+          <label><span>Type</span>
+            <select data-component-field="type" data-idx="${idx}">
+              ${['application','library','framework','container','operating-system','firmware','device'].map((t) => `<option ${c.type===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+          </label>
+          <label><span>Name</span><input data-component-field="name" data-idx="${idx}" type="text" value="${esc(c.name)}" /></label>
+          <label><span>Version</span><input data-component-field="version" data-idx="${idx}" type="text" value="${esc(c.version)}" /></label>
+        </div>
+        <div class="grid cols-3">
+          <label><span>PURL</span><input data-component-field="purl" data-idx="${idx}" type="text" value="${esc(c.purl || '')}" /></label>
+          <label><span>CPE</span><input data-component-field="cpe" data-idx="${idx}" type="text" value="${esc(c.cpe || '')}" /></label>
+          <label><span>Supplier</span><input data-component-field="supplier" data-idx="${idx}" type="text" value="${esc(c.supplier || '')}" /></label>
+        </div>
+        <div class="grid cols-3">
+          <label><span>License</span><input data-component-field="license" data-idx="${idx}" type="text" value="${esc(c.license || '')}" /></label>
+          <label><span>Hashes (ALG:VALUE, comma separated)</span><input data-component-field="hashes" data-idx="${idx}" type="text" value="${esc((c.hashes || []).map(h => `${h.alg}:${h.content}`).join(', '))}" /></label>
+          <label><span>Depends on refs (comma separated)</span><input data-component-field="dependsOn" data-idx="${idx}" type="text" value="${esc((c.dependsOn || []).join(', '))}" /></label>
+        </div>
+      </div>`;
+  }
+
+  function syncBuilderHeaderFromUI() {
+    const [fmt, ver] = $('builderFormat').value.split('@');
+    state.normalized.format = fmt;
+    state.normalized.version = ver;
+    state.normalized.docName = $('docName').value.trim();
+    state.normalized.supplier = $('docSupplier').value.trim();
+    state.normalized.author = $('docAuthor').value.trim();
+    state.normalized.tool = $('docTool').value.trim() || 'SBOM Studio';
+    state.normalized.timestamp = $('docTimestamp').value || toLocalInputValue(new Date());
+    state.normalized.root.type = $('rootType').value;
+    state.normalized.root.name = $('rootName').value.trim();
+    state.normalized.root.version = $('rootVersion').value.trim();
+    state.normalized.namespaceSeed = $('docNamespaceSeed').value.trim();
+    state.normalized.license = $('docLicense').value.trim();
+    state.normalized.root.license = $('docLicense').value.trim() || state.normalized.root.license;
+  }
+
+  function syncBuilderComponentsFromUI() {
+    qsa('[data-component-field]').forEach((el) => {
+      const idx = Number(el.getAttribute('data-idx'));
+      const field = el.getAttribute('data-component-field');
+      const cmp = state.normalized.components[idx];
+      if (!cmp) return;
+      let val = el.value;
+      if (field === 'dependsOn') {
+        cmp.dependsOn = val.split(',').map((s) => s.trim()).filter(Boolean);
+      } else if (field === 'hashes') {
+        cmp.hashes = val.split(',').map((s) => s.trim()).filter(Boolean).map((pair) => {
+          const i = pair.indexOf(':');
+          return i >= 0 ? { alg: pair.slice(0, i).trim(), content: pair.slice(i + 1).trim() } : { alg: '', content: pair };
+        });
+      } else {
+        cmp[field] = val;
+      }
+    });
+  }
+
+  function readBuilderModel() {
+    syncBuilderHeaderFromUI();
+    syncBuilderComponentsFromUI();
+    return state.normalized;
+  }
+
+  function refreshPreview() {
+    const model = readBuilderModel();
+    const obj = exportFromNormalized(model);
+    state.currentJson = obj;
+    $('builderPreview').textContent = JSON.stringify(obj, null, 2);
+  }
+
+  function exportFromNormalized(model) {
+    if (model.format === 'spdx') return buildSpdx(model);
+    return buildCyclone(model);
+  }
+
+  function buildCyclone(model) {
+    const serial = model.namespaceSeed && /^urn:uuid:/i.test(model.namespaceSeed)
+      ? model.namespaceSeed
+      : `urn:uuid:${uuidv4()}`;
+    const toolComponent = { type: 'application', name: model.tool || 'SBOM Studio', version: '1.0.0' };
+    const root = {
+      'bom-ref': model.root.ref || 'root',
+      type: model.root.type || 'application',
+      name: model.root.name || model.docName || 'unnamed-root',
+      version: model.root.version || '0.0.0'
+    };
+    if (model.root.purl) root.purl = model.root.purl;
+    if (model.root.cpe) root.cpe = model.root.cpe;
+    if (model.supplier || model.root.supplier) root.supplier = { name: model.root.supplier || model.supplier };
+    if (model.root.license || model.license) root.licenses = [{ license: { id: model.root.license || model.license } }];
+    if (model.root.hashes && model.root.hashes.length) root.hashes = model.root.hashes.filter(h => h.alg && h.content);
+
+    const components = (model.components || []).map((c) => {
+      const x = {
+        'bom-ref': c.ref || uid('cmp'),
+        type: c.type || 'library',
+        name: c.name || 'unnamed-component',
+        version: c.version || '0.0.0'
+      };
+      if (c.purl) x.purl = c.purl;
+      if (c.cpe) x.cpe = c.cpe;
+      if (c.supplier) x.supplier = { name: c.supplier };
+      if (c.license) x.licenses = [{ license: { id: c.license } }];
+      if (c.hashes && c.hashes.length) x.hashes = c.hashes.filter(h => h.alg && h.content);
+      return x;
+    });
+
+    const deps = [];
+    const rootDeps = Array.isArray(model.root.dependsOn) ? model.root.dependsOn : [];
+    if (rootDeps.length) deps.push({ ref: root['bom-ref'], dependsOn: rootDeps.slice() });
+    (model.components || []).forEach((c) => {
+      if (Array.isArray(c.dependsOn) && c.dependsOn.length) deps.push({ ref: c.ref, dependsOn: c.dependsOn.slice() });
+    });
+
+    return {
+      bomFormat: 'CycloneDX',
+      specVersion: model.version || '1.7',
+      serialNumber: serial,
+      version: 1,
+      metadata: {
+        timestamp: toIsoFromLocalInput(model.timestamp),
+        tools: { components: [toolComponent] },
+        authors: model.author ? [{ name: model.author }] : undefined,
+        manufacturer: model.supplier ? { name: model.supplier } : undefined,
+        component: root
+      },
+      components,
+      dependencies: deps
+    };
+  }
+
+  function buildSpdx(model) {
+    const ns = model.namespaceSeed || `https://sbom.local/document/${encodeURIComponent((model.docName || model.root.name || 'sbom').replace(/\s+/g, '-').toLowerCase())}/${uuidv4()}`;
+    const rootId = ensureSpdxId(model.root.ref || 'SPDXRef-Root');
+    const packages = [];
+    packages.push(buildSpdxPackage({ ...model.root, ref: rootId }, model, true));
+    (model.components || []).forEach((c) => packages.push(buildSpdxPackage(c, model, false)));
+
+    const relationships = [];
+    const rootDeps = Array.isArray(model.root.dependsOn) ? model.root.dependsOn : [];
+    rootDeps.forEach((child) => relationships.push({ spdxElementId: rootId, relationshipType: 'DEPENDS_ON', relatedSpdxElement: ensureSpdxId(child) }));
+    (model.components || []).forEach((c) => {
+      (c.dependsOn || []).forEach((child) => relationships.push({ spdxElementId: ensureSpdxId(c.ref), relationshipType: 'DEPENDS_ON', relatedSpdxElement: ensureSpdxId(child) }));
+    });
+
+    return {
+      spdxVersion: 'SPDX-2.3',
+      dataLicense: model.license || 'CC0-1.0',
+      SPDXID: 'SPDXRef-DOCUMENT',
+      name: model.docName || model.root.name || 'SPDX SBOM',
+      documentNamespace: ns,
+      creationInfo: {
+        created: toIsoFromLocalInput(model.timestamp),
+        creators: compact([
+          model.author ? `Person: ${model.author}` : '',
+          model.tool ? `Tool: ${model.tool}` : 'Tool: SBOM Studio'
+        ])
+      },
+      documentDescribes: [rootId],
+      packages,
+      relationships
+    };
+  }
+
+  function buildSpdxPackage(c, model, isRoot) {
+    const refs = [];
+    if (c.purl) refs.push({ referenceCategory: 'PACKAGE-MANAGER', referenceType: 'purl', referenceLocator: c.purl });
+    if (c.cpe) refs.push({ referenceCategory: 'SECURITY', referenceType: 'cpe23Type', referenceLocator: c.cpe });
+    return {
+      SPDXID: ensureSpdxId(c.ref),
+      name: c.name || (isRoot ? model.docName || 'root-package' : 'unnamed-package'),
+      versionInfo: c.version || '0.0.0',
+      supplier: c.supplier || model.supplier || 'NOASSERTION',
+      primaryPackagePurpose: mapTypeToSpdxPrimaryPurpose(c.type || 'library'),
+      downloadLocation: 'NOASSERTION',
+      filesAnalyzed: false,
+      licenseDeclared: c.license || model.license || 'NOASSERTION',
+      checksums: (c.hashes || []).filter(h => h.alg && h.content).map((h) => ({ algorithm: normalizeSpdxAlg(h.alg), checksumValue: h.content })),
+      externalRefs: refs
+    };
+  }
+
+  function normalizeSpdxAlg(alg) {
+    const up = String(alg || '').toUpperCase();
+    const allowed = ['SHA1','SHA224','SHA256','SHA384','SHA512','SHA3-256','SHA3-384','SHA3-512','BLAKE2B-256','BLAKE2B-384','BLAKE2B-512','BLAKE3','MD2','MD4','MD5','MD6','ADLER32'];
+    if (allowed.includes(up)) return up;
+    if (up === 'SHA-1') return 'SHA1';
+    if (up === 'SHA-256') return 'SHA256';
+    if (up === 'SHA-384') return 'SHA384';
+    if (up === 'SHA-512') return 'SHA512';
+    return 'SHA256';
+  }
+
+  function compact(arr) { return arr.filter(Boolean); }
+  function ensureSpdxId(s) {
+    const raw = String(s || 'SPDXRef-Item').trim();
+    if (/^SPDXRef-/.test(raw)) return raw.replace(/[^A-Za-z0-9.-]/g, '-');
+    return 'SPDXRef-' + raw.replace(/[^A-Za-z0-9.-]/g, '-');
+  }
+  function uuidv4() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      const v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  }
+
+  function loadImportedObject(obj, rawText = '') {
+    state.imported = obj;
+    state.importedRawText = rawText || JSON.stringify(obj, null, 2);
+    state.detected = detectFormat(obj);
+    state.normalized = normalizeImported(obj, state.detected);
+    renderDetection(obj, state.detected);
+    renderValidation(validateImported(obj, state.detected));
+    renderViewer();
+    renderBuilder();
+    state.currentJson = obj;
+  }
+
+  function addComponent() {
+    state.normalized.components.push({ ref: uid('cmp'), type: 'library', name: '', version: '', purl: '', cpe: '', supplier: '', license: '', hashes: [], dependsOn: [] });
+    renderBuilder();
+  }
+
+  function generateSample() {
+    state.normalized = {
+      format: 'cyclonedx',
+      version: '1.7',
+      docName: 'Demo Web App SBOM',
+      supplier: 'Example University',
+      author: 'SBOM Studio',
+      tool: 'SBOM Studio',
+      timestamp: toLocalInputValue(new Date()),
+      license: 'MIT',
+      namespaceSeed: '',
+      root: { ref: 'app-root', type: 'application', name: 'demo-web-app', version: '1.0.0', purl: 'pkg:generic/demo-web-app@1.0.0', cpe: '', supplier: 'Example University', license: 'MIT', hashes: [{ alg: 'SHA-256', content: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' }], dependsOn: ['cmp-lodash', 'cmp-express'] },
+      components: [
+        { ref: 'cmp-lodash', type: 'library', name: 'lodash', version: '4.17.21', purl: 'pkg:npm/lodash@4.17.21', cpe: '', supplier: 'OpenJS', license: 'MIT', hashes: [], dependsOn: [] },
+        { ref: 'cmp-express', type: 'framework', name: 'express', version: '4.19.2', purl: 'pkg:npm/express@4.19.2', cpe: '', supplier: 'OpenJS', license: 'MIT', hashes: [], dependsOn: ['cmp-lodash'] }
+      ]
+    };
+    renderBuilder();
+    const exported = exportFromNormalized(state.normalized);
+    $('jsonInput').value = JSON.stringify(exported, null, 2);
+    loadImportedObject(exported, JSON.stringify(exported, null, 2));
+  }
+
+  function normalizeImportedIntoBuilder() {
+    if (!state.imported) return;
+    state.normalized = normalizeImported(state.imported, state.detected);
+    renderBuilder();
+  }
+
+  function switchView(id) {
+    qsa('.viewPane').forEach((p) => p.classList.add('hidden'));
+    $(id).classList.remove('hidden');
+    qsa('.navBtn').forEach((b) => b.classList.toggle('active', b.getAttribute('data-view') === id));
+  }
+
+  function initTabs() {
+    qsa('.navBtn').forEach((btn) => btn.addEventListener('click', () => switchView(btn.getAttribute('data-view'))));
+    qsa('[data-vtab]').forEach((btn) => btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-vtab');
+      qsa('[data-vtab]').forEach((b) => b.classList.toggle('active', b === btn));
+      qsa('.vtabPane').forEach((p) => p.classList.toggle('hidden', p.id !== id));
+    }));
+  }
+
+  function wireEvents() {
+    $('btnParse').addEventListener('click', () => {
+      const text = $('jsonInput').value.trim();
+      if (!text) {
+        alert('Paste JSON first.');
+        return;
+      }
+      try {
+        const obj = parseJsonText(text);
+        loadImportedObject(obj, text);
+      } catch (e) {
+        renderDetection(null, { type: 'unknown', version: '', confidence: 0, reason: e.message });
+        renderValidation([makeAlert('error', `JSON parse error: ${e.message}`)]);
+      }
+    });
+
+    $('btnClearImport').addEventListener('click', () => {
+      $('jsonInput').value = '';
+      state.imported = null;
+      state.importedRawText = '';
+      state.detected = null;
+      state.validation = [];
+      state.currentJson = null;
+      renderDetection(null, null);
+      renderValidation([]);
+      renderViewer();
+      state.normalized = createEmptyNormalized();
+      renderBuilder();
+    });
+
+    $('fileInput').addEventListener('change', (ev) => {
+      const file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        $('jsonInput').value = String(reader.result || '');
+      };
+      reader.readAsText(file);
+    });
+
+    const dropzone = $('dropzone');
+    ['dragenter','dragover'].forEach((evt) => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.style.borderColor = '#7cf0c5'; }));
+    ['dragleave','drop'].forEach((evt) => dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.style.borderColor = '#4866aa'; }));
+    dropzone.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => { $('jsonInput').value = String(reader.result || ''); };
+      reader.readAsText(file);
+    });
+
+    $('btnLoadSample').addEventListener('click', generateSample);
+    $('btnNormalizeImported').addEventListener('click', normalizeImportedIntoBuilder);
+    $('btnExportCurrent').addEventListener('click', () => {
+      const data = state.currentJson || state.imported || exportFromNormalized(readBuilderModel());
+      downloadText('sbom.json', JSON.stringify(data, null, 2));
+    });
+
+    $('btnRunValidation').addEventListener('click', () => {
+      if (state.imported) renderValidation(validateImported(state.imported, state.detected));
+      else renderValidation([makeAlert('warning', 'No imported document loaded. Validation can still be reviewed on generated builder output if you export and re-import it.')]);
+      renderViewer();
+    });
+
+    $('btnAutoFixDates').addEventListener('click', () => {
+      $('docTimestamp').value = toLocalInputValue(new Date(state.normalized.timestamp || new Date()));
+      syncBuilderHeaderFromUI();
+      refreshPreview();
+    });
+
+    ['builderFormat','docName','docSupplier','docAuthor','docTool','docTimestamp','rootType','rootName','rootVersion','docNamespaceSeed','docLicense'].forEach((id) => {
+      $(id).addEventListener('input', refreshPreview);
+      $(id).addEventListener('change', refreshPreview);
+    });
+    $('btnAddComponent').addEventListener('click', addComponent);
+    $('btnGenerateFromBuilder').addEventListener('click', refreshPreview);
+    $('btnDownloadBuilder').addEventListener('click', () => downloadText('sbom-export.json', $('builderPreview').textContent || '{}'));
+    $('btnCopyBuilder').addEventListener('click', () => copyText($('builderPreview').textContent || '{}'));
+    $('componentFilter').addEventListener('input', renderComponentsTable);
+  }
+
+  function bootstrap() {
+    initTabs();
+    wireEvents();
+    state.normalized = createEmptyNormalized();
+    renderDetection(null, null);
+    renderValidation([]);
+    renderViewer();
+    renderBuilder();
+    refreshPreview();
+  }
+
+  bootstrap();
+})();
+</script>
+</body>
+</html>

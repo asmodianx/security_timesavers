@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FEMA ICS Master Suite v3.1</title>
+    <style>
+        :root { --fema-blue: #003366; --border: 1px solid #000; --accent: #27ae60; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: #e9ecef; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        
+        #toolbar { background: var(--fema-blue); color: white; padding: 10px 20px; display: flex; gap: 10px; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        select { padding: 6px; border-radius: 4px; border: none; width: 350px; font-size: 13px; cursor: pointer; }
+        .btn { border: none; padding: 7px 15px; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; font-size: 11px; transition: opacity 0.2s; }
+        .btn-exp { background: #2980b9; } .btn-imp { background: #8e44ad; } .btn-prt { background: var(--accent); }
+        .btn:hover { opacity: 0.8; }
+
+        #viewport { flex: 1; overflow-y: auto; padding: 30px; display: flex; justify-content: center; }
+        .ics-page { background: white; padding: 0.5in; margin-bottom: 30px; border: 1px solid #ccc; box-sizing: border-box; box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative; }
+        .portrait { width: 8.5in; min-height: 11in; }
+        .landscape { width: 11in; min-height: 8.5in; }
+        .t-card { width: 3.5in; min-height: 5.5in; border-top: 15px solid var(--fema-blue); }
+
+        .block { border: var(--border); margin-top: -1px; padding: 8px; position: relative; min-height: 40px; }
+        .block-num { font-weight: bold; font-size: 10px; background: #eee; border-right: var(--border); border-bottom: var(--border); padding: 2px 5px; position: absolute; top:0; left:0; z-index: 5; }
+        .block-label { font-weight: bold; font-size: 11px; text-transform: uppercase; margin-left: 28px; display: block; margin-bottom: 4px; }
+        .block-desc { font-size: 9px; color: #666; font-style: italic; margin-left: 28px; display: block; margin-bottom: 5px; }
+        
+        input, textarea { width: 100%; border: 1px solid #eee; padding: 6px; box-sizing: border-box; font-size: 13px; margin-top: 2px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        th, td { border: var(--border); font-size: 10px; padding: 4px; }
+        th { background: #f8f9fa; text-align: left; }
+        
+        .table-wrap { position: relative; }
+        .add-row { position: absolute; right: -35px; bottom: 0; width: 26px; height: 26px; background: var(--accent); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        
+        .img-preview img { max-width: 100%; max-height: 500px; display: block; margin: 10px auto; border: 1px solid #ddd; }
+        .img-placeholder { border: 2px dashed #ccc; padding: 30px; text-align: center; color: #888; cursor: pointer; font-size: 12px; background: #fcfcfc; }
+
+        @media print { #toolbar, .add-row, .img-placeholder { display: none !important; } #viewport { padding: 0; background: white; } .ics-page { border: 1px solid #000; box-shadow: none; margin: 0; width: 100% !important; min-height: auto; } }
+    </style>
+</head>
+<body>
+
+<div id="toolbar">
+    <strong>ICS MASTER v3.1</strong>
+    <select id="form-selector"></select>
+    <button class="btn btn-exp" onclick="app.export()">Export JSON</button>
+    <button class="btn btn-imp" onclick="document.getElementById('file-inp').click()">Import JSON</button>
+    <input type="file" id="file-inp" style="display:none" onchange="app.import(this)">
+    <button class="btn btn-prt" onclick="window.print()">Print PDF</button>
+</div>
+
+<div id="viewport"><div id="target"></div></div>
+
+<script src="ics_data.js"></script>
+<script>
+class ICSEngine {
+    constructor() {
+        this.target = document.getElementById('target');
+        this.selector = document.getElementById('form-selector');
+        this.init();
+    }
+
+    init() {
+        if (typeof ICS_FORMS_DB === 'undefined') {
+            this.target.innerHTML = "<h2 style='color:red; padding:50px;'>Error: ics_data.js not found!</h2>";
+            return;
+        }
+        for (let key in ICS_FORMS_DB) {
+            let opt = document.createElement('option');
+            opt.value = key;
+            opt.textContent = `${key.toUpperCase().replace('_','-')} : ${ICS_FORMS_DB[key].title}`;
+            this.selector.appendChild(opt);
+        }
+        this.selector.onchange = (e) => this.draw(e.target.value);
+        this.draw('ics201');
+    }
+
+    draw(id) {
+        const f = ICS_FORMS_DB[id];
+        this.target.innerHTML = `
+            <div class="ics-page ${f.mode}" id="form-body" data-id="${id}">
+                <div style="border-bottom:3px solid #000; margin-bottom:15px; text-align:center;">
+                    <h2 style="margin:5px 0; text-transform:uppercase;">${f.title}</h2>
+                    <small style="float:right; font-weight:bold;">FEMA ${id.toUpperCase().replace('_','-')}</small>
+                </div>
+                ${f.fields.map(field => this.renderField(field)).join('')}
+            </div>`;
+    }
+
+    renderField(f) {
+        let input = "";
+        if (f.t === "text") input = `<input type="text">`;
+        if (f.t === "area") input = `<textarea rows="4"></textarea>`;
+        if (f.t === "dt") input = `<input type="datetime-local">`;
+        if (f.t === "dt_range") input = `<div style="display:flex;gap:10px;"><input type="datetime-local"><input type="datetime-local"></div>`;
+        if (f.t === "image") input = `<div class="img-wrap"><input type="file" accept="image/*" style="display:none" onchange="app.handleImg(this)"><div class="img-placeholder" onclick="this.previousElementSibling.click()">Click to Upload Map or Graphic</div><div class="img-preview"></div></div>`;
+        if (f.t === "table") {
+            input = `<div class="table-wrap"><table data-cols="${f.c.length}"><thead><tr>${f.c.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>${this.rows(f.c.length, 3)}</tbody></table><button class="add-row" onclick="app.addRow(this)">+</button></div>`;
+        }
+        return `
+            <div class="block">
+                <span class="block-num">${f.n}</span>
+                <span class="block-label">${f.l}</span>
+                ${f.d ? `<span class="block-desc">${f.d}</span>` : ''}
+                <div class="input-wrap">${input}</div>
+            </div>`;
+    }
+
+    rows(cols, count) {
+        let r = "";
+        for (let i=0; i<count; i++) r += `<tr>${Array(cols).fill(0).map(()=>`<td><input type="text" style="border:none"></td>`).join('')}</tr>`;
+        return r;
+    }
+
+    addRow(btn) {
+        const table = btn.previousElementSibling;
+        const row = table.querySelector('tbody').insertRow();
+        for (let i=0; i<parseInt(table.dataset.cols); i++) row.insertCell().innerHTML = `<input type="text" style="border:none">`;
+    }
+
+    handleImg(inp) {
+        const reader = new FileReader();
+        const preview = inp.parentNode.querySelector('.img-preview');
+        reader.onload = (e) => {
+            preview.innerHTML = `<img src="${e.target.result}">`;
+            inp.parentNode.querySelector('.img-placeholder').style.display = 'none';
+        };
+        if (inp.files) reader.readAsDataURL(inp.files);
+    }
+
+    export() {
+        const page = document.getElementById('form-body');
+        const data = { id: page.dataset.id, fields: [] };
+        page.querySelectorAll('.block').forEach(b => {
+            const lbl = b.querySelector('.block-label').innerText;
+            const img = b.querySelector('.img-preview img');
+            if (img) data.fields.push({ label: lbl, val: img.src, type: 'image' });
+            else {
+                const inps = b.querySelectorAll('input, textarea');
+                if (inps.length === 1) data.fields.push({ label: lbl, val: inps.value });
+                else if (inps.length > 1) {
+                    const tbl = b.querySelector('tbody');
+                    if (tbl) {
+                        const rows = Array.from(tbl.querySelectorAll('tr')).map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
+                        data.fields.push({ label: lbl, val: rows, type: 'table' });
+                    } else {
+                        data.fields.push({ label: lbl, val: Array.from(inps).map(i => i.value), type: 'multi' });
+                    }
+                }
+            }
+        });
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `ICS_${data.id}_DATA.json`;
+        a.click();
+    }
+
+    import(inp) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = JSON.parse(e.target.result);
+            this.draw(data.id);
+            this.selector.value = data.id;
+            setTimeout(() => {
+                const blocks = document.querySelectorAll('.block');
+                data.fields.forEach((f, i) => {
+                    const b = Array.from(blocks).find(el => el.querySelector('.block-label').innerText === f.label);
+                    if (!b) return;
+                    if (f.type === 'table') {
+                        const tbody = b.querySelector('tbody'); tbody.innerHTML = "";
+                        f.val.forEach(rVals => {
+                            const row = tbody.insertRow();
+                            rVals.forEach(v => row.insertCell().innerHTML = `<input type="text" style="border:none" value="${v}">`);
+                        });
+                    } else if (f.type === 'image') {
+                        b.querySelector('.img-preview').innerHTML = `<img src="${f.val}">`;
+                        b.querySelector('.img-placeholder').style.display = 'none';
+                    } else if (f.type === 'multi') {
+                        const inps = b.querySelectorAll('input');
+                        f.val.forEach((v, idx) => { if(inps[idx]) inps[idx].value = v; });
+                    } else if (b.querySelector('input')) b.querySelector('input').value = f.val;
+                    else if (b.querySelector('textarea')) b.querySelector('textarea').value = f.val;
+                });
+            }, 150);
+        };
+        reader.readAsText(inp.files);
+    }
+}
+const app = new ICSEngine();
+</script>
+</body>
+</html>
