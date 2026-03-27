@@ -17,10 +17,11 @@ Tools:
   - FEMA ICS
 - Vendor Assessment
   - JVAT - an simplified adaptation of the Educause HECVAT in javascript
+  - SBOM - Software bill of materials offline sbom reader/editor
 - Analysis
   - Email - email header parser for eml and msg formated emails
   - FileIOC - a local javascript tool to extract IOC's from documents and to show a PDF screen shot.
   - DeepBlueJS - A standalone offline Javascript adaptation of the SANS institutes DeepBlueCLI powershell tool for windows, with the ability to ingest Sigma Rules.
-  - SBOM - Software bill of materials offline sbom reader/editor
+
  
 
