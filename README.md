@@ -1,4 +1,6 @@
-This is AI generated code therefore public domain code.  Please review before using.
+This is AI generated code therefore public domain code.
+I have looked over these scripts but as a best practice you should review all code you intend to use.
+This is povided as is with no warranty or any other promise.
 
 Tools:
 - Cyber Threat Intel
