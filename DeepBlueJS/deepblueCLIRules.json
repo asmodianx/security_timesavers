@@ -1,0 +1,198 @@
+[
+  {
+    "id": "db_encoded_powershell",
+    "title": "Encoded PowerShell Command",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.execution", "attack.t1059.001"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 4688 },
+      { "field": "command_line", "op": "regex", "value": "-enc\\s+[A-Za-z0-9+/=]{20,}" }
+    ]]
+  },
+  {
+    "id": "db_long_command_line",
+    "title": "Suspiciously Long Command Line",
+    "severity": "medium",
+    "logsource": "security",
+    "tags": ["attack.execution"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 4688 },
+      { "field": "command_line", "op": "regex", "value": ".{300,}" }
+    ]]
+  },
+  {
+    "id": "db_powershell_downloadstring",
+    "title": "PowerShell DownloadString",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.execution", "attack.t1105"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "command_line", "op": "contains", "value": "Net.WebClient" },
+      { "field": "command_line", "op": "contains", "value": "DownloadString" }
+    ]]
+  },
+  {
+    "id": "db_powershell_compression",
+    "title": "Compressed or Obfuscated PowerShell",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.defense_evasion", "attack.t1027"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "command_line", "op": "regex", "value": "FromBase64String|IO\\.Compression" }
+    ]]
+  },
+  {
+    "id": "db_powershell_wmic",
+    "title": "PowerShell Launched via WMIC",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.execution", "attack.t1047"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "image", "op": "contains", "value": "wmic.exe" },
+      { "field": "command_line", "op": "contains", "value": "powershell" }
+    ]]
+  },
+  {
+    "id": "db_user_created",
+    "title": "New User Account Created",
+    "severity": "medium",
+    "logsource": "security",
+    "tags": ["attack.persistence", "attack.t1136"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 4720 }
+    ]]
+  },
+  {
+    "id": "db_user_added_admin",
+    "title": "User Added to Administrators Group",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.privilege_escalation", "attack.t1098"],
+    "logic": "any",
+    "conditions": [
+      [{ "field": "event_id", "op": "equals", "value": 4728 }],
+      [{ "field": "event_id", "op": "equals", "value": 4732 }]
+    ]
+  },
+  {
+    "id": "db_special_privileges",
+    "title": "Special Privileges Assigned",
+    "severity": "medium",
+    "logsource": "security",
+    "tags": ["attack.privilege_escalation"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 4672 }
+    ]]
+  },
+  {
+    "id": "db_service_install",
+    "title": "New Service Installed",
+    "severity": "high",
+    "logsource": "system",
+    "tags": ["attack.persistence", "attack.t1543.003"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 7045 }
+    ]]
+  },
+  {
+    "id": "db_eventlog_stopped",
+    "title": "Windows Event Log Service Stopped",
+    "severity": "high",
+    "logsource": "system",
+    "tags": ["attack.defense_evasion", "attack.t1070"],
+    "logic": "any",
+    "conditions": [
+      [{ "field": "event_id", "op": "equals", "value": 7035 }],
+      [{ "field": "event_id", "op": "equals", "value": 7036 }]
+    ]
+  },
+  {
+    "id": "db_clear_event_logs",
+    "title": "Event Logs Cleared",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.defense_evasion", "attack.t1070.001"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 1102 }
+    ]]
+  },
+  {
+    "id": "db_audit_policy_change",
+    "title": "Audit Policy Changed",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.defense_evasion", "attack.t1562.002"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 4719 }
+    ]]
+  },
+  {
+    "id": "db_lsass_access",
+    "title": "LSASS Access Indicator",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.credential_access", "attack.t1003.001"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "message", "op": "contains", "value": "lsass.exe" }
+    ]]
+  },
+  {
+    "id": "db_explicit_credentials",
+    "title": "Explicit Credentials Used",
+    "severity": "medium",
+    "logsource": "security",
+    "tags": ["attack.credential_access", "attack.t1078"],
+    "logic": "all",
+    "conditions": [[
+      { "field": "event_id", "op": "equals", "value": 4648 }
+    ]]
+  },
+  {
+    "id": "db_psexec",
+    "title": "PsExec Execution",
+    "severity": "high",
+    "logsource": "security",
+    "tags": ["attack.lateral_movement", "attack.t1021.002"],
+    "logic": "any",
+    "conditions": [
+      [{ "field": "command_line", "op": "contains", "value": "psexec" }],
+      [{ "field": "image", "op": "contains", "value": "psexesvc" }]
+    ]
+  },
+  {
+    "id": "db_account_enum",
+    "title": "Account Enumeration Commands",
+    "severity": "low",
+    "logsource": "security",
+    "tags": ["attack.discovery", "attack.t1087"],
+    "logic": "any",
+    "conditions": [
+      [{ "field": "command_line", "op": "contains", "value": "net user" }],
+      [{ "field": "command_line", "op": "contains", "value": "net group" }]
+    ]
+  },
+  {
+    "id": "db_system_info",
+    "title": "System Information Discovery",
+    "severity": "low",
+    "logsource": "security",
+    "tags": ["attack.discovery", "attack.t1082"],
+    "logic": "any",
+    "conditions": [
+      [{ "field": "command_line", "op": "contains", "value": "systeminfo" }],
+      [{ "field": "command_line", "op": "contains", "value": "whoami" }]
+    ]
+  }
+]

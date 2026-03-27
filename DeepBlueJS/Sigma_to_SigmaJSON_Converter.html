@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Sigma YAML → SigmaJSON Converter (Offline)</title>
+<style>
+  body { font-family: monospace; padding: 1em; }
+  textarea { width: 100%; height: 260px; }
+  .row { display: flex; gap: 1em; }
+  .col { flex: 1; min-width: 300px; }
+  button { margin: 0.4em 0.2em 0.4em 0; }
+  pre { background: #f4f4f4; padding: 0.75em; overflow: auto; max-height: 320px; }
+  .ok { color: #0a6; }
+  .warn { color: #b60; }
+  .err { color: #b00; }
+  small { color: #666; }
+  code { background: #f4f4f4; padding: 0 0.2em; }
+</style>
+</head>
+<body>
+
+<h1>Sigma YAML → SigmaJSON Converter (Offline)</h1>
+<p>
+  Converts <b>Sigma YAML</b> into <b>SigmaJSON</b> compatible with your browser triage engine.
+  Supports <code>---</code> separated rule packs, multi-selection, ATT&CK tags, and validation warnings.
+</p>
+
+<section>
+  <h2>1) Input Sigma YAML (one rule or multiple separated by <code>---</code>)</h2>
+  <textarea id="yamlInput" placeholder="Paste Sigma YAML here..."></textarea>
+  <div>
+    <button id="btnConvert">Convert</button>
+    <button id="btnLoadSample">Load Sample</button>
+    <button id="btnClear">Clear</button>
+  </div>
+  <small>
+    Supported: <code>title</code>, <code>id</code>, <code>level</code>, <code>tags</code>, <code>logsource.service</code>,
+    <code>detection.selection*</code>, and <code>detection.condition</code> using basic <code>and</code>/<code>or</code>.
+    Unsupported Sigma features will generate warnings.
+  </small>
+</section>
+
+<div class="row">
+  <div class="col">
+    <section>
+      <h2>2) Validation Warnings</h2>
+      <pre id="warnOut" class="warn">None</pre>
+    </section>
+  </div>
+  <div class="col">
+    <section>
+      <h2>3) Output SigmaJSON</h2>
+      <div>
+        <button id="btnDownload">Download JSON</button>
+        <button id="btnCopy">Copy to Clipboard</button>
+      </div>
+      <pre id="jsonOut" class="ok">{}</pre>
+    </section>
+  </div>
+</div>
+
+<section>
+  <h2>Output Schema (SigmaJSON)</h2>
+  <pre>[
+  {
+    "id": "rule_id",
+    "title": "Rule Title",
+    "severity": "high|medium|low|info",
+    "logsource": "security|system|application|...",
+    "tags": ["attack.txxxx", "..."],
+    "logic": "all|any",
+    "conditions": [
+      [ { "field": "event_id", "op": "equals", "value": 4688 }, { "field": "command_line", "op": "regex", "value": "..." } ],
+      [ { ... } ]
+    ]
+  }
+]</pre>
+</section>
+
+<script>
+/**
+ * Sigma YAML → SigmaJSON Converter (Offline)
+ * - No external libs
+ * - Minimal YAML parser (Sigma-Lite+)
+ * - Supports rule packs via '---' separators
+ * - Supports selection blocks and basic condition parsing
+ */
+
+const $ = (id) => document.getElementById(id);
+
+const FIELD_MAP = {
+  "EventID": "event_id",
+  "Channel": "channel",
+  "Computer": "computer",
+  "User": "user",
+  "Image": "image",
+  "CommandLine": "command_line",
+  "Message": "message"
+};
+
+const SUPPORTED_OPS = new Set(["equals", "contains", "contains|all", "startswith", "endswith", "regex", "in"]);
+
+// ---------- Minimal YAML Parsing (Indent-based, Sigma-Lite) ----------
+function splitDocs(yamlText) {
+  // Split on lines that are exactly '---' (possibly surrounded by whitespace)
+  const parts = yamlText.split(/^\s*---\s*$/m).map(s => s.trim()).filter(Boolean);
+  return parts;
+}
+
+function parseValue(raw) {
+  let v = raw.trim();
+
+  // Strip surrounding quotes
+  v = v.replace(/^["']|["']$/g, "");
+
+  // Array syntax: [a, b, c]
+  if (v.startsWith("[") && v.endsWith("]")) {
+    const inner = v.slice(1, -1).trim();
+    if (!inner) return [];
+    return inner.split(",").map(x => x.trim().replace(/^["']|["']$/g, ""));
+  }
+
+  // Numeric
+  if (/^-?\d+$/.test(v)) return Number(v);
+
+  // Boolean
+  if (v === "true") return true;
+  if (v === "false") return false;
+
+  return v;
+}
+
+function parseYAMLSigmaLite(yamlText) {
+  // Very small subset parser:
+  // - key: value
+  // - nested objects by indentation
+  // - lists supported in two forms:
+  //    tags: [a,b]
+  //    tags:
+  //      - a
+  //      - b
+  const lines = yamlText.split(/\r?\n/);
+  const root = {};
+  const stack = [{ indent: -1, obj: root, key: null }];
+  let currentListKey = null;
+  let currentListIndent = null;
+
+  for (let rawLine of lines) {
+    if (!rawLine.trim() || rawLine.trim().startsWith("#")) continue;
+
+    const indent = rawLine.match(/^ */)[0].length;
+    const line = rawLine.trim();
+
+    // Handle list item: - value
+    if (line.startsWith("- ")) {
+      const item = parseValue(line.slice(2));
+      // find nearest parent
+      while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
+      const parent = stack[stack.length - 1].obj;
+
+      if (currentListKey && currentListIndent !== null && indent >= currentListIndent) {
+        if (!Array.isArray(parent[currentListKey])) parent[currentListKey] = [];
+        parent[currentListKey].push(item);
+      } else {
+        // Try to attach to last key if it's an array
+        // (best effort)
+        const last = stack[stack.length - 1];
+        if (last.key && Array.isArray(parent[last.key])) parent[last.key].push(item);
+      }
+      continue;
+    }
+
+    // key: value
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+
+    const key = line.slice(0, idx).trim();
+    const rest = line.slice(idx + 1).trim();
+
+    // unwind stack to correct parent based on indent
+    while (stack.length && stack[stack.length - 1].indent >= indent) stack.pop();
+
+    const parent = stack[stack.length - 1].obj;
+
+    if (rest === "") {
+      // start nested object or list
+      parent[key] = parent[key] ?? {};
+      // Track list key possibility (if later lines are "- item")
+      currentListKey = key;
+      currentListIndent = indent + 2; // list items usually indented under key
+      stack.push({ indent, obj: parent[key], key });
+    } else {
+      parent[key] = parseValue(rest);
+      // reset list tracking unless this key is explicitly array
+      currentListKey = key;
+      currentListIndent = indent + 2;
+      // keep last key for possible list extension
+      stack.push({ indent, obj: parent, key });
+    }
+  }
+
+  return root;
+}
+
+// ---------- Condition & Selection Compilation ----------
+function normalizeFieldName(field) {
+  if (FIELD_MAP[field]) return FIELD_MAP[field];
+  return field.toLowerCase();
+}
+
+function parseFieldWithOp(fieldKey, warnings) {
+  // Sigma allows "Field|contains", "Field|regex" etc.
+  if (!fieldKey.includes("|")) return { field: normalizeFieldName(fieldKey), op: "equals" };
+
+  const parts = fieldKey.split("|").map(s => s.trim());
+  const field = normalizeFieldName(parts[0]);
+  const op = parts.slice(1).join("|"); // preserve 'contains|all'
+
+  if (!SUPPORTED_OPS.has(op)) {
+    warnings.push(`Unsupported operator: '${op}' (field '${fieldKey}'). It will still be emitted but may not run in engine.`);
+  }
+  // Map Sigma operator to engine operator names (mostly same)
+  return { field, op };
+}
+
+function compileSelection(selectionObj, warnings) {
+  const group = [];
+  for (const [k, v] of Object.entries(selectionObj || {})) {
+    const { field, op } = parseFieldWithOp(k, warnings);
+
+    // Normalize EventID numeric
+    let value = v;
+    if (field === "event_id" && typeof value === "string" && /^\d+$/.test(value)) {
+      value = Number(value);
+    }
+
+    // Engine expects ops: equals|contains|startswith|endswith|regex|in
+    // Sigma's contains|all is not natively supported by our engine unless you add it;
+    // we'll translate it into multiple contains checks if value is an array.
+    if (op === "contains|all") {
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          group.push({ field, op: "contains", value: item });
+        }
+      } else {
+        warnings.push(`'contains|all' used but value is not an array for field '${k}'. Treating as simple contains.`);
+        group.push({ field, op: "contains", value });
+      }
+      continue;
+    }
+
+    // Translate Sigma 'in' value list into engine 'in'
+    if (op === "in" && !Array.isArray(value)) {
+      warnings.push(`Operator 'in' expects an array value for '${k}'.`);
+    }
+
+    group.push({ field, op: op === "equals" ? "equals" : op, value });
+  }
+  return group;
+}
+
+function extractSelections(detectionObj) {
+  // Return an ordered list of selections: [{name, obj}]
+  const selections = [];
+  for (const [k, v] of Object.entries(detectionObj || {})) {
+    if (k === "condition") continue;
+    if (k.startsWith("selection")) {
+      selections.push({ name: k, obj: v });
+    }
+  }
+  // If user used plain "selection" without suffix, keep it.
+  // If nothing exists but detection has a direct "selection", also handle.
+  return selections;
+}
+
+// Basic condition parser:
+// Supported forms:
+//  - selection
+//  - selection1 or selection2
+//  - selection1 and selection2
+//  - (selection1 or selection2) and selection3   (we warn; we will approximate)
+// We compile into engine model:
+//  - logic any => OR between groups
+//  - logic all => AND across groups (but engine groups are AND; AND across groups is not represented)
+// To avoid changing engine, we choose:
+//  - For OR between selections: logic = any, conditions = [group1, group2, ...]
+//  - For single selection: logic = all, conditions = [group]
+//  - For AND between selections: we merge their conditions into a single AND group (best effort)
+function compileCondition(conditionStr, selectionMap, warnings) {
+  const cond = (conditionStr || "").trim();
+  if (!cond) return { logic: "all", groups: [] };
+
+  // unsupported keywords
+  const unsupportedTokens = ["1 of", "all of", "them", "near", "count", "timeframe"];
+  for (const t of unsupportedTokens) {
+    if (cond.includes(t)) warnings.push(`Condition uses unsupported construct '${t}': '${cond}'.`);
+  }
+
+  // Remove parentheses for basic handling (warn)
+  if (/[()]/.test(cond)) {
+    warnings.push(`Condition contains parentheses; parser uses best-effort flattening: '${cond}'.`);
+  }
+  const flat = cond.replace(/[()]/g, " ").replace(/\s+/g, " ").trim();
+
+  // OR split (top-level approximation)
+  if (flat.includes(" or ")) {
+    const parts = flat.split(" or ").map(s => s.trim());
+    const groups = [];
+    for (const name of parts) {
+      if (!selectionMap[name]) {
+        warnings.push(`Condition references unknown selection '${name}'.`);
+        continue;
+      }
+      groups.push(selectionMap[name]);
+    }
+    return { logic: "any", groups };
+  }
+
+  // AND split
+  if (flat.includes(" and ")) {
+    const parts = flat.split(" and ").map(s => s.trim());
+    // merge all into one AND group
+    const merged = [];
+    for (const name of parts) {
+      if (!selectionMap[name]) {
+        warnings.push(`Condition references unknown selection '${name}'.`);
+        continue;
+      }
+      merged.push(...selectionMap[name]);
+    }
+    return { logic: "all", groups: [merged] };
+  }
+
+  // Single selection name
+  if (selectionMap[flat]) {
+    return { logic: "all", groups: [selectionMap[flat]] };
+  }
+
+  warnings.push(`Condition not understood or references missing selection: '${cond}'. Defaulting to 'selection' if present.`);
+  if (selectionMap["selection"]) return { logic: "all", groups: [selectionMap["selection"]] };
+  return { logic: "all", groups: [] };
+}
+
+// ---------- Sigma → SigmaJSON ----------
+function slugify(s) {
+  return String(s || "rule").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+function convertSigmaDocToSigmaJSON(doc, warnings) {
+  const title = doc.title || "Untitled Rule";
+  const id = doc.id || slugify(title);
+  const severity = doc.level || "medium";
+
+  // tags passthrough
+  let tags = [];
+  if (Array.isArray(doc.tags)) tags = doc.tags.slice();
+  else if (typeof doc.tags === "string") tags = [doc.tags];
+
+  // logsource.service passthrough (best effort)
+  const service = doc.logsource && doc.logsource.service ? String(doc.logsource.service).toLowerCase() : "unknown";
+
+  if (!doc.detection) {
+    warnings.push(`[${title}] Missing detection block.`);
+    return null;
+  }
+
+  const selections = extractSelections(doc.detection);
+  if (selections.length === 0) {
+    warnings.push(`[${title}] No 'selection*' blocks found in detection.`);
+  }
+
+  // Compile selections to AND-groups
+  const selectionMap = {};
+  for (const sel of selections) {
+    if (typeof sel.obj !== "object" || sel.obj === null || Array.isArray(sel.obj)) {
+      warnings.push(`[${title}] Selection '${sel.name}' is not an object. Skipping.`);
+      continue;
+    }
+    selectionMap[sel.name] = compileSelection(sel.obj, warnings);
+  }
+
+  // If there is a plain "selection" key but it came through oddly, handle it:
+  if (!selectionMap["selection"] && doc.detection.selection && typeof doc.detection.selection === "object") {
+    selectionMap["selection"] = compileSelection(doc.detection.selection, warnings);
+  }
+
+  const conditionStr = doc.detection.condition || "selection";
+  const { logic, groups } = compileCondition(conditionStr, selectionMap, warnings);
+
+  // Validation warnings for unsupported sections
+  const knownTop = new Set(["title","id","description","author","status","references","tags","falsepositives","level","logsource","detection"]);
+  for (const k of Object.keys(doc)) {
+    if (!knownTop.has(k)) warnings.push(`[${title}] Unhandled top-level key '${k}' (ignored).`);
+  }
+
+  // Warn if no compiled groups
+  if (!groups || groups.length === 0) warnings.push(`[${title}] No executable conditions compiled from selections/condition.`);
+
+  return {
+    id,
+    title,
+    severity,
+    logsource: service,
+    tags,
+    logic,
+    conditions: groups
+  };
+}
+
+// ---------- UI actions ----------
+function convertAll() {
+  const yamlText = $("yamlInput").value || "";
+  const warnings = [];
+  const outRules = [];
+
+  const docs = splitDocs(yamlText);
+  if (docs.length === 0) {
+    $("warnOut").textContent = "No input provided.";
+    $("jsonOut").textContent = "[]";
+    return;
+  }
+
+  for (let i = 0; i < docs.length; i++) {
+    try {
+      const parsed = parseYAMLSigmaLite(docs[i]);
+      const rule = convertSigmaDocToSigmaJSON(parsed, warnings);
+      if (rule) outRules.push(rule);
+    } catch (e) {
+      warnings.push(`[Doc ${i+1}] Parse/convert error: ${e.message}`);
+    }
+  }
+
+  $("warnOut").textContent = warnings.length ? warnings.join("\n") : "None";
+  $("jsonOut").textContent = JSON.stringify(outRules, null, 2);
+}
+
+function downloadJSON() {
+  const text = $("jsonOut").textContent || "[]";
+  const blob = new Blob([text], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "sigma_rules.sigmajson";
+  a.click();
+}
+
+async function copyJSON() {
+  const text = $("jsonOut").textContent || "[]";
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Copied to clipboard.");
+  } catch {
+    alert("Clipboard copy failed (browser restriction). You can manually select and copy from the output.");
+  }
+}
+
+function loadSample() {
+  $("yamlInput").value = `title: Encoded PowerShell Command
+id: deepblue_encoded_powershell
+logsource:
+  product: windows
+  service: security
+tags:
+  - attack.execution
+  - attack.t1059.001
+detection:
+  selection:
+    EventID: 4688
+    CommandLine|regex: '-enc\\s+[A-Za-z0-9+/=]{20,}'
+  condition: selection
+level: high
+---
+title: PowerShell DownloadString
+id: deepblue_downloadstring
+logsource:
+  product: windows
+  service: security
+tags: [attack.execution, attack.t1105]
+detection:
+  selection1:
+    EventID: 4688
+    CommandLine|contains: Net.WebClient
+    CommandLine|contains: DownloadString
+  condition: selection1
+level: high`;
+}
+
+function clearAll() {
+  $("yamlInput").value = "";
+  $("warnOut").textContent = "None";
+  $("jsonOut").textContent = "[]";
+}
+
+$("btnConvert").addEventListener("click", convertAll);
+$("btnDownload").addEventListener("click", downloadJSON);
+$("btnCopy").addEventListener("click", copyJSON);
+$("btnLoadSample").addEventListener("click", loadSample);
+$("btnClear").addEventListener("click", clearAll);
+</script>
+
+</body>
+</html>

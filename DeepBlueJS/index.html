@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Offline DFIR Triage Engine</title>
+
+<style>
+  body {
+    font-family: monospace;
+    padding: 1em;
+    background: #ffffff;
+  }
+
+  h1, h2 {
+    margin-bottom: 0.25em;
+  }
+
+  section {
+    margin-bottom: 1.5em;
+    padding-bottom: 1em;
+    border-bottom: 1px solid #ccc;
+  }
+
+  input, button {
+    margin-top: 0.5em;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 1em;
+  }
+
+  th, td {
+    border: 1px solid #ccc;
+    padding: 4px;
+    vertical-align: top;
+  }
+
+  th {
+    background: #eee;
+  }
+
+  .status {
+    font-style: italic;
+    margin-top: 0.5em;
+  }
+</style>
+</head>
+
+<body>
+
+<h1>Offline DFIR Triage Engine</h1>
+<p>
+  Browser‑based detection engine for DeepBlue‑style triage using SigmaJSON rules.
+</p>
+
+<!-- RULE LOADING -->
+<section>
+  <h2>1. Load SigmaJSON Rule Pack</h2>
+  <input type="file" id="ruleInput" multiple accept=".json">
+  <div class="status" id="ruleStatus">No rules loaded</div>
+</section>
+
+<!-- LOG LOADING -->
+<section>
+  <h2>2. Load Log Chunk (JSON)</h2>
+  <input type="file" id="logInput" accept=".json">
+  <div class="status" id="logStatus">No log chunk loaded</div>
+</section>
+
+<!-- ANALYSIS -->
+<section>
+  <h2>3. Run Detection</h2>
+  <button onclick="runDetection()">Analyze</button>
+</section>
+
+<!-- RESULTS -->
+<section>
+  <h2>Findings</h2>
+  <table id="results">
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>Rule</th>
+        <th>Severity</th>
+        <th>User</th>
+        <th>Detail</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<!-- EXPORT -->
+<section>
+  <h2>Export Findings</h2>
+  <button onclick="exportFindings()">Export Findings (JSON)</button>
+</section>
+
+<script>
+/* ============================
+   GLOBAL STATE
+============================ */
+
+let RULES = [];
+let EVENTS = [];
+let FINDINGS = [];
+
+/* ============================
+   RULE LOADING
+============================ */
+
+document.getElementById("ruleInput").addEventListener("change", async (e) => {
+  RULES = [];
+
+  for (const file of e.target.files) {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+
+    if (Array.isArray(parsed)) {
+      RULES.push(...parsed);
+    } else {
+      RULES.push(parsed);
+    }
+  }
+
+  document.getElementById("ruleStatus").textContent =
+    `Loaded ${RULES.length} rules`;
+});
+
+/* ============================
+   LOG LOADING
+============================ */
+
+document.getElementById("logInput").addEventListener("change", async (e) => {
+  const text = await e.target.files[0].text();
+  EVENTS = JSON.parse(text);
+
+  document.getElementById("logStatus").textContent =
+    `Loaded ${EVENTS.length} events`;
+});
+
+/* ============================
+   DETECTION ENGINE
+============================ */
+
+function runDetection() {
+  FINDINGS = [];
+  const tbody = document.querySelector("#results tbody");
+  tbody.innerHTML = "";
+
+  for (const event of EVENTS) {
+    for (const rule of RULES) {
+      if (evaluateRule(rule, event)) {
+        const finding = {
+          ts: event.ts || "",
+          rule: rule.title,
+          severity: rule.severity,
+          user: event.user || "",
+          detail: event.command_line || event.message || ""
+        };
+
+        FINDINGS.push(finding);
+
+        const row = tbody.insertRow();
+        row.insertCell().textContent = finding.ts;
+        row.insertCell().textContent = finding.rule;
+        row.insertCell().textContent = finding.severity;
+        row.insertCell().textContent = finding.user;
+        row.insertCell().textContent = finding.detail;
+      }
+    }
+  }
+}
+
+/* ============================
+   RULE EVALUATION
+============================ */
+
+function evaluateRule(rule, event) {
+  const groups = rule.conditions || [];
+  const logic = rule.logic || "all";
+
+  const groupResults = groups.map(group =>
+    group.every(cond => evaluateCondition(cond, event))
+  );
+
+  return logic === "any"
+    ? groupResults.some(Boolean)
+    : groupResults.every(Boolean);
+}
+
+function evaluateCondition(cond, event) {
+  const value = event[cond.field];
+  if (value === undefined || value === null) return false;
+
+  switch (cond.op) {
+    case "equals":
+      return value == cond.value;
+
+    case "contains":
+      return String(value).includes(cond.value);
+
+    case "startswith":
+      return String(value).startsWith(cond.value);
+
+    case "endswith":
+      return String(value).endsWith(cond.value);
+
+    case "regex":
+      return new RegExp(cond.value, "i").test(String(value));
+
+    case "in":
+      return Array.isArray(cond.value) && cond.value.includes(value);
+
+    default:
+      return false;
+  }
+}
+
+/* ============================
+   EXPORT
+============================ */
+
+function exportFindings() {
+  const blob = new Blob(
+    [JSON.stringify(FINDINGS, null, 2)],
+    { type: "application/json" }
+  );
+
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dfir_findings.json";
+  a.click();
+}
+</script>
+
+</body>
+</html>
