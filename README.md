@@ -2,6 +2,11 @@ This is AI generated code therefore public domain code.
 I have looked over these scripts but as a best practice you should review all code you intend to use.
 This is povided as is with no warranty or any other promise.
 
+Intent:
+This is a collection of AI generated tools that are completly offline. A vast majority of browsers will run these as and most devices have browsers.
+A problem with Powershell/Python/bash its extremly prone to requiring complex development environments and tools tend to be extremly version spicific.
+Combine that with includes with supply chain vulnarabilities then this is an earnest attempt to create a set of tools that just work.
+
 Tools:
 - Cyber Threat Intel
   - CTI_assistant - A step by step work flow to perform intake on intellegence and to tag the intellegence
