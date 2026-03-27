@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>University ICS / FEMA Tabletop Trainer (No-Popup Print)</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --panel:#121c31;
+    --panel2:#182642;
+    --text:#e9f1ff;
+    --muted:#aeb9d7;
+    --accent:#6ea5ff;
+    --accent2:#91d2ff;
+    --good:#4fc96f;
+    --warn:#f0bf5b;
+    --bad:#f57a7a;
+    --border:#2a3d63;
+    --printText:#111;
+    --printBorder:#cfcfcf;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:linear-gradient(180deg,#08101d,#0d1630 35%,#0f1b35);
+    color:var(--text);
+  }
+  .app{display:grid;grid-template-columns:320px 1fr;min-height:100vh}
+  .sidebar{
+    border-right:1px solid var(--border);
+    background:rgba(8,13,24,.92);
+    padding:18px;
+    position:sticky;top:0;height:100vh;overflow:auto
+  }
+  .main{padding:20px}
+  .card{
+    background:rgba(18,28,49,.92);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:16px;
+    box-shadow:0 10px 24px rgba(0,0,0,.22)
+  }
+  .hero{background:linear-gradient(135deg,#1c2d53,#244071 60%,#31579d);border:1px solid #446ec0}
+  .hero h1{margin:0 0 8px 0;font-size:1.35rem}
+  .hero p{margin:0;color:#dce8ff;line-height:1.45}
+  .small{font-size:.92rem;color:var(--muted)}
+  .stage-list{list-style:none;padding:0;margin:0}
+  .stage-item{border:1px solid var(--border);background:rgba(24,38,66,.86);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+  .stage-item.active{border-color:var(--accent);background:rgba(43,69,120,.88)}
+  .stage-item.done{border-color:var(--good)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+  .col-12{grid-column:span 12}.col-8{grid-column:span 8}.col-6{grid-column:span 6}.col-4{grid-column:span 4}
+  @media (max-width:1100px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto}.col-12,.col-8,.col-6,.col-4{grid-column:span 12}}
+  .banner{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;background:linear-gradient(120deg,rgba(47,80,141,.95),rgba(24,38,67,.96));border:1px solid #5179cf;border-radius:16px;padding:16px;margin-bottom:16px}
+  .banner h2{margin:8px 0 0 0}.banner p{margin:6px 0 0 0;color:#dce8ff}
+  .pill{display:inline-block;border:1px solid rgba(133,176,255,.35);background:rgba(104,160,255,.15);color:#cfe1ff;border-radius:999px;padding:5px 9px;margin-right:8px;margin-bottom:8px;font-size:.88rem}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .stat{background:rgba(24,38,66,.82);border:1px solid var(--border);border-radius:12px;padding:10px}
+  .stat .value{font-size:1.35rem;font-weight:bold;margin-top:6px}
+  .bar{height:16px;border-radius:999px;overflow:hidden;background:rgba(8,13,24,.85);border:1px solid var(--border)}
+  .bar > div{height:100%;width:0%;background:linear-gradient(90deg,#2f9152,#b7cb4e,#d89434,#c8555d)}
+  label{display:block;margin-top:10px}
+  input[type=text], textarea, select{
+    width:100%;background:rgba(9,14,26,.95);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font:inherit
+  }
+  textarea{min-height:88px;resize:vertical}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  button{border:none;cursor:pointer;border-radius:12px;padding:10px 14px;color:white;background:linear-gradient(180deg,#3562b3,#284c8c);border:1px solid #4b78cb;font:inherit}
+  button.secondary{background:rgba(24,38,66,.95);border-color:var(--border)}
+  button.good{background:linear-gradient(180deg,#2f9050,#23693c);border-color:#5dc47d}
+  button.warn{background:linear-gradient(180deg,#b58522,#8c681f);border-color:#d2a95c}
+  button.bad{background:linear-gradient(180deg,#913849,#682632);border-color:#cc6777}
+  button:disabled{opacity:.55;cursor:not-allowed}
+  .toggle{display:inline-flex;align-items:center;gap:8px;margin:4px;padding:7px 10px;border-radius:999px;background:rgba(24,38,66,.76);border:1px solid var(--border)}
+  .toggle input{accent-color:var(--accent)}
+  .question{background:rgba(24,38,66,.72);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+  .question h4{margin:0 0 10px 0}
+  .choices{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+  .choice{border:1px solid var(--border);background:rgba(9,14,26,.95);color:var(--text);border-radius:999px;padding:8px 12px}
+  .choice.selected{background:rgba(43,67,117,.94);border-color:var(--accent)}
+  .log{max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:12px;background:rgba(9,14,26,.9);padding:10px}
+  .entry{border-bottom:1px solid rgba(255,255,255,.08);padding:8px 4px}.entry:last-child{border-bottom:none}
+  .tag{display:inline-block;border-radius:999px;padding:4px 8px;font-size:.82rem;background:rgba(104,160,255,.15);border:1px solid rgba(104,160,255,.35);color:#c8deff}
+  .muted-box{background:rgba(13,20,36,.76);border:1px dashed var(--border);border-radius:12px;padding:12px;color:var(--muted)}
+  .org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+  .org-card{border:1px solid var(--border);background:rgba(20,31,54,.85);border-radius:12px;padding:10px}
+  .org-card.active{border-color:var(--good)}
+  .org-card h4{margin:0 0 6px 0;font-size:.98rem}.org-card p{margin:0;color:var(--muted);font-size:.88rem}
+  details{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:rgba(16,25,44,.76)}
+  summary{cursor:pointer;font-weight:bold}
+  .footer-note{color:var(--muted);font-size:.9rem;line-height:1.45}
+  .print-shell{max-width:1000px;margin:0 auto}
+  .print-banner{background:#f2f5fb;border:1px solid #d5dceb;color:#18335f;border-radius:12px;padding:12px 14px;margin-bottom:16px}
+  .print-box{border:1px solid var(--printBorder);border-radius:10px;padding:12px;margin-bottom:12px;background:#fff;color:var(--printText)}
+  .print-box h2,.print-box h3{margin-top:0}
+  .print-tag{display:inline-block;border:1px solid #c7d1e0;border-radius:999px;padding:4px 8px;margin:4px 6px 0 0;background:#f7f9fc;color:#213a66}
+  .print-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .print-toolbar button{color:#fff}
+  .hidden{display:none !important}
+  @media print{
+    body{background:#fff;color:#111}
+    .sidebar,.non-print,.print-only-toolbar{display:none !important}
+    .app{display:block}
+    .main{padding:0}
+    #app{padding:0;margin:0}
+    .print-shell{max-width:none;margin:0}
+    .print-banner{background:#fff;border:1px solid #ccc;color:#111}
+    .print-box{page-break-inside:avoid;break-inside:avoid;box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar non-print">
+    <div class="card hero">
+      <h1>University ICS / FEMA Tabletop Trainer</h1>
+      <p>Single-file offline training tool for discussing how an incident evolves from a small initial response to a larger multi-function response with ICS, command expansion, documentation, EOC coordination, and recovery transition.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Stages</h3>
+      <ul class="stage-list" id="stageList"></ul>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Exercise Summary</h3>
+      <div class="stats">
+        <div class="stat"><div>Stage</div><div class="value" id="statStage">ICS-100</div></div>
+        <div class="stat"><div>Roles</div><div class="value" id="statRoles">0</div></div>
+        <div class="stat"><div>Docs</div><div class="value" id="statDocs">0</div></div>
+        <div class="stat"><div>Decisions</div><div class="value" id="statDecisions">0</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div class="small">Complexity</div>
+        <div class="bar"><div id="complexityBar"></div></div>
+        <div class="small" id="complexityLabel" style="margin-top:6px">Initial Response</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Save / Print</h3>
+      <div class="toolbar">
+        <button class="secondary" id="saveBtn" type="button">Export JSON</button>
+        <button class="secondary" id="loadBtn" type="button">Import JSON</button>
+        <button class="warn" id="previewBtn" type="button">Print Preview</button>
+        <button class="bad" id="resetBtn" type="button">Reset</button>
+      </div>
+      <input type="file" id="filePicker" accept="application/json" style="display:none" />
+      <p class="footer-note">Everything is local to the browser. No server, no tracking, no external libraries, and no pop-up windows for printing.</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div id="app"></div>
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var STAGES = [
+    {
+      id: 'ics100',
+      label: 'ICS-100',
+      title: 'Initial Response / First Operational Period',
+      complexity: 20,
+      audience: 'First responder, duty officer, supervisor, initial incident commander',
+      overview: 'Use this for the person or small team first dealing with the incident. Focus on life safety, stabilization, immediate notifications, and establishing enough structure to brief the next layer of leadership.',
+      objectives: [
+        'Recognize when a routine issue has become an incident requiring structured management.',
+        'Establish initial command, set immediate objectives, and document early actions.',
+        'Capture assumptions, hazards, impacts, and immediate notifications.'
+      ],
+      examples: ['Single-building outage','Localized cyber incident in one unit','Lab spill with limited impact','Small protest affecting one facility'],
+      defaultRoles: ['Initial Incident Commander', 'Safety', 'Documentation Recorder'],
+      commandStaff: ['Safety Officer', 'Public Information Officer', 'Liaison Officer'],
+      generalStaff: ['Operations Section Chief', 'Planning Section Chief', 'Logistics Section Chief', 'Finance/Admin Section Chief'],
+      specialists: ['IT/Cyber Specialist', 'Facilities Specialist', 'Health & Safety Specialist', 'Legal/Compliance Advisor'],
+      docs: [
+        { name: 'ICS 201 Incident Briefing', desc: 'Initial incident snapshot and handoff briefing.' },
+        { name: 'Incident Log / Unit Log', desc: 'Chronological record of actions and decisions.' },
+        { name: 'Initial Notifications', desc: 'Who was contacted, when, and why.' }
+      ],
+      questions: [
+        { id: 's1q1', text: 'What is the first priority right now?', choices: ['Life safety', 'Incident stabilization', 'Mission / property protection', 'Information verification'] },
+        { id: 's1q2', text: 'Who should hold initial incident command?', choices: ['Discovering responder until relieved', 'On-duty supervisor', 'Public safety lead', 'Technical lead', 'Unified command immediately'] },
+        { id: 's1q3', text: 'Which specialist must be brought in immediately?', choices: ['None yet', 'IT / cyber', 'Facilities / utilities', 'Health & safety', 'Legal / communications'] }
+      ],
+      escalation: ['More than one department is affected','Potential injuries or serious hazards emerge','Media or parent/public interest appears','Operations will continue beyond one shift','Additional resources are needed outside the local team'],
+      prompt: 'Advance when the incident exceeds one supervisor’s practical span of control or requires sustained coordination.'
+    },
+    {
+      id: 'ics200',
+      label: 'ICS-200',
+      title: 'Moderately Complex Incident / Initial Expansion',
+      complexity: 40,
+      audience: 'Supervisors, unit leads, section leads, and staff likely to manage resources',
+      overview: 'Use this when the incident needs a more formal structure, operational periods, delegated section responsibilities, and deliberate resource tracking.',
+      objectives: [
+        'Move from one leader to a manageable organization with delegated responsibilities.',
+        'Define objectives, tactics, and reporting lines for the operational period.',
+        'Track assignments, resources, and communications more deliberately.'
+      ],
+      examples: ['Account compromise campaign affecting multiple units','Weather closure affecting multiple buildings','Residence hall disruption requiring relocation support','Cross-campus utilities failure'],
+      defaultRoles: ['Incident Commander', 'Operations Section Chief', 'Planning Section Chief'],
+      commandStaff: ['Safety Officer', 'Public Information Officer', 'Liaison Officer'],
+      generalStaff: ['Operations Section Chief', 'Planning Section Chief', 'Logistics Section Chief', 'Finance/Admin Section Chief'],
+      specialists: ['Student Affairs Representative', 'HR Representative', 'Accessibility/ADA Support', 'Research Operations Specialist'],
+      docs: [
+        { name: 'ICS 201 (updated)', desc: 'Maintain the common operating picture and handoff.' },
+        { name: 'ICS 202 Incident Objectives', desc: 'Objectives for the operational period.' },
+        { name: 'ICS 203 Organization Assignment List', desc: 'Record command and general staff structure.' },
+        { name: 'ICS 204 Assignment List', desc: 'Track assignments by branch, division, or group.' },
+        { name: 'Communication Plan (high level)', desc: 'Primary communications and notification paths.' }
+      ],
+      questions: [
+        { id: 's2q1', text: 'Which sections must be activated now?', choices: ['Operations only', 'Operations + Planning', 'Operations + Planning + Logistics', 'All General Staff sections'] },
+        { id: 's2q2', text: 'What planning rhythm should be used?', choices: ['Ad hoc verbal updates', 'Every 2 hours', 'Every 4 hours', 'Once per shift / day'] },
+        { id: 's2q3', text: 'Has span of control become a problem?', choices: ['No', 'Possibly — add unit leaders', 'Yes — create branches/groups', 'Yes — move to unified command'] }
+      ],
+      escalation: ['Cross-campus impacts','Sustained operations across multiple operational periods','Need for procurement or cost tracking','Need for external agency coordination','Need for formal public information management'],
+      prompt: 'Advance when the incident spans multiple operational periods, departments, or external partners.'
+    },
+    {
+      id: 'ics300',
+      label: 'ICS-300',
+      title: 'Expanding Incident / Advanced Coordination',
+      complexity: 65,
+      audience: 'Command and General Staff, department operations centers, senior coordinators',
+      overview: 'Use this for expanding incidents requiring multiple operational periods, advanced planning support, more robust sections, and deeper coordination between functions.',
+      objectives: [
+        'Manage a larger structure across multiple operational periods.',
+        'Establish a repeatable planning cycle and common operating picture.',
+        'Add specialists, branches, divisions, or groups as the incident demands.'
+      ],
+      examples: ['Major cyber incident with legal/regulatory impact','Campus unrest requiring safety and communications coordination','Tornado/severe weather damage affecting housing and operations','High-profile event incident under intense public attention'],
+      defaultRoles: ['Incident Commander / Unified Command', 'Operations', 'Planning', 'Logistics', 'Finance/Admin'],
+      commandStaff: ['Safety Officer', 'Public Information Officer', 'Liaison Officer', 'Command Advisors'],
+      generalStaff: ['Operations Section Chief', 'Planning Section Chief', 'Logistics Section Chief', 'Finance/Admin Section Chief', 'Intelligence / Investigations Function'],
+      specialists: ['Privacy Specialist', 'Vendor/Contract Specialist', 'International Programs Advisor', 'Continuity Advisor'],
+      docs: [
+        { name: 'ICS 202 Incident Objectives', desc: 'Operational period objectives.' },
+        { name: 'ICS 203 Organization Assignment List', desc: 'Formal organizational structure.' },
+        { name: 'ICS 204 Assignment List', desc: 'Detailed assignments.' },
+        { name: 'ICS 205 Communications Plan', desc: 'Incident communications methods.' },
+        { name: 'ICS 206 Medical Plan', desc: 'Medical support considerations as applicable.' },
+        { name: 'ICS 207 Organizational Chart', desc: 'Visual structure.' },
+        { name: 'ICS 214 Unit Log', desc: 'Activity log for sections or leaders.' },
+        { name: 'ICS 215 / 215A', desc: 'Operational planning worksheet and safety analysis.' }
+      ],
+      questions: [
+        { id: 's3q1', text: 'Should command remain single or become unified?', choices: ['Single command still works', 'Unified command with 2 partners', 'Unified command with 3+ partners', 'Area/strategic oversight is also needed'] },
+        { id: 's3q2', text: 'Which planning support elements must be formalized?', choices: ['Situation + Documentation', 'Situation + Resources + Documentation', 'Full Planning Section', 'Planning + Intelligence/Investigations'] },
+        { id: 's3q3', text: 'How should public information be organized?', choices: ['One PIO is enough', 'PIO plus departmental communicators', 'Joint Information approach needed', 'Executive messaging and rumor control required'] }
+      ],
+      escalation: ['Multiple jurisdictions or major partners','Reputational, legal, or regulatory implications','Complex resource ordering and staging','Need for coordinated intelligence/investigations','EOC activation becoming necessary'],
+      prompt: 'Advance when strategic, legal, executive, or multi-jurisdiction issues become central.'
+    },
+    {
+      id: 'ics400',
+      label: 'ICS-400',
+      title: 'Complex / Major Incident and Senior Coordination',
+      complexity: 85,
+      audience: 'Senior command staff, executives, major incident managers, policy groups',
+      overview: 'Use this for highly complex incidents requiring prolonged operations, major policy decisions, advanced coordination, scarce resource prioritization, and transition planning toward recovery.',
+      objectives: [
+        'Support strategic decisions, policy coordination, and executive communication.',
+        'Manage complex command relationships and prolonged operations.',
+        'Coordinate incident management with EOC, MAC, executive, and recovery structures.'
+      ],
+      examples: ['Catastrophic weather event','Mass casualty incident','Long-duration ransomware and continuity crisis','Regional public safety event affecting the institution for days'],
+      defaultRoles: ['Unified Command', 'Full Command Staff', 'Full General Staff', 'Executive Policy Group Liaison'],
+      commandStaff: ['Safety Officer', 'Public Information Officer', 'Liaison Officer', 'Legal / Policy Advisor', 'Security / Intelligence Advisor'],
+      generalStaff: ['Operations', 'Planning', 'Logistics', 'Finance/Admin', 'Intelligence / Investigations', 'Recovery / Continuity Coordination'],
+      specialists: ['Insurance / Claims', 'Family Assistance Support', 'Academic Continuity Lead', 'Mental Health Support', 'Donor / External Relations'],
+      docs: [
+        { name: 'Incident Action Plan packet (high level)', desc: 'Objectives, assignments, communications, and safety elements for the period.' },
+        { name: 'ICS 209 / Executive Situation Summary', desc: 'Higher-level incident status as appropriate.' },
+        { name: 'Cost / Claims / Procurement Tracking', desc: 'Fiscal accountability for a prolonged incident.' },
+        { name: 'Demobilization Planning', desc: 'Transition and resource release planning.' },
+        { name: 'Continuity / Recovery Notes', desc: 'Track transition from response to recovery.' }
+      ],
+      questions: [
+        { id: 's4q1', text: 'What strategic coordination mechanism is now required?', choices: ['Incident Command only', 'Incident Command + EOC', 'Incident Command + EOC + Executive Policy Group', 'Area Command / MAC support as well'] },
+        { id: 's4q2', text: 'How should scarce resources be prioritized?', choices: ['By life safety only', 'By mission critical functions', 'By legal/regulatory urgency', 'By executive policy priorities with incident input'] },
+        { id: 's4q3', text: 'When should recovery planning formally begin?', choices: ['Not yet', 'This operational period', 'Immediately with a dedicated lead', 'Recovery is already dominant'] }
+      ],
+      escalation: ['Multi-day or multi-week operations','Regional coordination','Competing critical priorities','Political / executive consequences','Response transitioning toward recovery governance'],
+      prompt: 'Advance to EOC / broader coordination when policy guidance, mutual aid, and cross-agency prioritization dominate.'
+    },
+    {
+      id: 'eoc800',
+      label: 'EOC / ICS-800',
+      title: 'EOC, Multi-Agency Coordination, and Broader Framework Context',
+      complexity: 100,
+      audience: 'EOC staff, executives, liaison officers, external coordination leads',
+      overview: 'Use this to discuss how the incident organization interfaces with an EOC, multi-agency coordination, policy groups, mutual aid, and the broader response framework at a high level.',
+      objectives: [
+        'Clarify the difference between incident command functions and EOC support functions.',
+        'Track policy guidance, executive information needs, resource prioritization, and partner coordination.',
+        'Introduce broader framework context without turning the exercise into a federal doctrine course.'
+      ],
+      examples: ['Regional storm response with local partners','Statewide cyber campaign affecting multiple institutions','Large public event / disaster requiring external support and coordinated messaging'],
+      defaultRoles: ['EOC Manager / Director', 'Agency Representatives', 'Liaison Officer', 'Situation Support', 'Resource Support'],
+      commandStaff: ['Policy Advisors', 'Public Information Interface', 'Liaison Officer'],
+      generalStaff: ['Situation Support', 'Resource Support', 'Communications / Information Support', 'External Coordination Support'],
+      specialists: ['Mutual Aid Coordinator', 'State/Local EM Liaison', 'Recovery / Continuity Cell', 'Grant / Reporting Lead'],
+      docs: [
+        { name: 'EOC Activation / Status Board', desc: 'Track activation level, priorities, and support role.' },
+        { name: 'Situation Reports', desc: 'Recurring summaries to leadership and partners.' },
+        { name: 'Resource Request / Mutual Aid Tracker', desc: 'Track support requests and commitments.' },
+        { name: 'Executive Decision Log', desc: 'Record major policy decisions and approvals.' },
+        { name: 'Recovery Transition Tracker', desc: 'Record closure and handoff actions.' }
+      ],
+      questions: [
+        { id: 's5q1', text: 'Why is the EOC activated or engaged?', choices: ['To improve situational awareness', 'To coordinate resources', 'To support policy/executive decisions', 'All of the above'] },
+        { id: 's5q2', text: 'Which external coordination issue matters most now?', choices: ['Mutual aid/resources', 'Public information consistency', 'Government/partner information sharing', 'Recovery funding/reporting'] },
+        { id: 's5q3', text: 'What should be handed off from response governance to recovery governance?', choices: ['Remaining damage/issues', 'Resource and cost picture', 'Policy/legal follow-ups', 'All of the above'] }
+      ],
+      escalation: ['External mutual aid','Cross-agency policy decisions','Sustained leadership communications','Recovery governance replacing response governance'],
+      prompt: 'This is the highest instructional stage in this trainer.'
+    }
+  ];
+
+  var state = {
+    stage: 0,
+    incidentName: 'University Tabletop Scenario',
+    facilitator: '',
+    location: '',
+    scenarioSeed: 'Start with a manageable campus incident and escalate complexity with injects.',
+    orgNotes: '',
+    decisions: {},
+    roles: {},
+    docs: {},
+    log: [],
+    printPreview: false
+  };
+
+  function initDefaults(){
+    STAGES.forEach(function(s, idx){
+      s.defaultRoles.forEach(function(r){ if (state.roles[r] === undefined) state.roles[r] = idx === 0; });
+      s.docs.forEach(function(d){
+        if (state.docs[d.name] === undefined) state.docs[d.name] = idx === 0 && (d.name.indexOf('ICS 201') !== -1 || d.name.indexOf('Incident Log') !== -1);
+      });
+      s.questions.forEach(function(q){ if (!state.decisions[q.id]) state.decisions[q.id] = {choice:'', note:''}; });
+    });
+  }
+  initDefaults();
+
+  var stageList = document.getElementById('stageList');
+  var app = document.getElementById('app');
+
+  function nowStamp(){ return new Date().toLocaleString(); }
+  function currentStage(){ return STAGES[state.stage]; }
+  function countActive(obj){ return Object.values(obj).filter(Boolean).length; }
+  function countAnswered(){ return Object.values(state.decisions).filter(function(v){ return v && (v.choice || (v.note && v.note.trim())); }).length; }
+
+  function esc(str){
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  }
+
+  function complexityLabel(v){
+    if (v <= 25) return 'Initial Response';
+    if (v <= 50) return 'Moderate / Expanding';
+    if (v <= 75) return 'Advanced / Multi-Period';
+    if (v <= 95) return 'Complex / Major Incident';
+    return 'EOC / Multi-Agency Coordination';
+  }
+
+  function writeLog(type, text){
+    state.log.unshift({type:type, text:text, at:nowStamp()});
+    if (state.log.length > 250) state.log.length = 250;
+    render();
+  }
+
+  function renderStageList(){
+    stageList.innerHTML = '';
+    STAGES.forEach(function(s, i){
+      var li = document.createElement('li');
+      li.className = 'stage-item' + (i === state.stage ? ' active' : '') + (i < state.stage ? ' done' : '');
+      li.innerHTML = '<strong>' + esc(s.label) + '</strong> — ' + esc(s.title) + '<div class="small">Target complexity: ' + s.complexity + '%</div>';
+      li.addEventListener('click', function(){ state.stage = i; render(); });
+      stageList.appendChild(li);
+    });
+  }
+
+  function toggleMarkup(name, checked, type){
+    return '<label class="toggle"><input type="checkbox" data-' + type + '="' + esc(name) + '" ' + (checked ? 'checked' : '') + ' /> <span>' + esc(name) + '</span></label>';
+  }
+
+  function questionMarkup(q){
+    var saved = state.decisions[q.id] || {choice:'', note:''};
+    return '<div class="question">' +
+      '<h4>' + esc(q.text) + '</h4>' +
+      '<div class="choices">' + q.choices.map(function(c){
+        return '<button type="button" class="choice ' + (saved.choice === c ? 'selected' : '') + '" data-q="' + esc(q.id) + '" data-choice="' + esc(c) + '">' + esc(c) + '</button>';
+      }).join('') + '</div>' +
+      '<label class="small">Decision note / assumptions / triggers for re-evaluation</label>' +
+      '<textarea data-note="' + esc(q.id) + '">' + esc(saved.note || '') + '</textarea>' +
+      '</div>';
+  }
+
+  function orgCards(stage){
+    var map = {};
+    stage.defaultRoles.concat(stage.commandStaff, stage.generalStaff, stage.specialists).forEach(function(role){ map[role] = true; });
+    var all = Object.keys(map);
+    return '<div class="org-grid">' + all.map(function(role){
+      return '<div class="org-card ' + (state.roles[role] ? 'active' : '') + '">' +
+        '<h4>' + esc(role) + '</h4>' +
+        '<p>' + (state.roles[role] ? 'Activated in current tabletop state.' : 'Available if complexity justifies activation.') + '</p>' +
+        '</div>';
+    }).join('') + '</div>';
+  }
+
+  function renderLog(){
+    if (!state.log.length) return '<div class="muted-box">No timeline entries yet. Add injects, notifications, major decisions, or transitions here.</div>';
+    return state.log.map(function(e){
+      return '<div class="entry"><div><span class="tag">' + esc(e.type) + '</span> <span class="small">' + esc(e.at) + '</span></div><div style="margin-top:6px">' + esc(e.text) + '</div></div>';
+    }).join('');
+  }
+
+  function appView(){
+    var s = currentStage();
+    var commandMap = {};
+    s.defaultRoles.concat(s.commandStaff).forEach(function(r){ commandMap[r] = true; });
+    var command = Object.keys(commandMap);
+    var general = s.generalStaff.slice();
+    var specialists = s.specialists.slice();
+
+    return '<div class="banner non-print">' +
+      '<div><div>' +
+      '<span class="pill">' + esc(s.label) + '</span>' +
+      '<span class="pill">' + esc(s.audience) + '</span>' +
+      '<span class="pill">Complexity ' + s.complexity + '%</span>' +
+      '</div><h2>' + esc(s.title) + '</h2><p>' + esc(s.overview) + '</p></div>' +
+      '<div class="tag">Stage ' + (state.stage + 1) + ' of ' + STAGES.length + '</div></div>' +
+      '<div class="grid">' +
+      '<section class="card col-8"><h3 style="margin-top:0">Scenario and Learning Focus</h3>' +
+      '<p><strong>Scenario Seed:</strong> ' + esc(state.scenarioSeed) + '</p>' +
+      '<p><strong>University Examples:</strong> ' + s.examples.map(esc).join('; ') + '</p>' +
+      '<div class="grid"><div class="col-6"><h4 style="margin:0 0 8px 0">Learning Objectives</h4><ul>' + s.objectives.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="col-6"><h4 style="margin:0 0 8px 0">Escalation Signals</h4><ul>' + s.escalation.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div></div>' +
+      '<div class="muted-box"><strong>Facilitator prompt:</strong> ' + esc(s.prompt) + '</div></section>' +
+      '<section class="card col-4"><h3 style="margin-top:0">Exercise Metadata</h3>' +
+      '<label class="small">Incident / Exercise Name</label><input type="text" id="incidentName" value="' + esc(state.incidentName) + '" />' +
+      '<label class="small">Facilitator</label><input type="text" id="facilitator" value="' + esc(state.facilitator) + '" />' +
+      '<label class="small">Location / Team</label><input type="text" id="location" value="' + esc(state.location) + '" />' +
+      '<label class="small">Scenario Seed / Opening Inject</label><textarea id="scenarioSeed">' + esc(state.scenarioSeed) + '</textarea>' +
+      '<div class="toolbar"><button class="good" id="saveMetaBtn" type="button">Save Metadata</button></div></section>' +
+      '<section class="card col-6"><h3 style="margin-top:0">Command Structure Builder</h3>' +
+      '<div><strong>Command / Command Staff</strong></div><div>' + command.map(function(r){ return toggleMarkup(r, !!state.roles[r], 'role'); }).join('') + '</div>' +
+      '<div style="margin-top:12px"><strong>General Staff</strong></div><div>' + general.map(function(r){ return toggleMarkup(r, !!state.roles[r], 'role'); }).join('') + '</div>' +
+      '<div style="margin-top:12px"><strong>Specialists / Advisors</strong></div><div>' + specialists.map(function(r){ return toggleMarkup(r, !!state.roles[r], 'role'); }).join('') + '</div>' +
+      '<label class="small">Organization Notes</label><textarea id="orgNotes">' + esc(state.orgNotes) + '</textarea>' +
+      '<div class="toolbar"><button class="good" id="saveOrgBtn" type="button">Save Structure Notes</button></div></section>' +
+      '<section class="card col-6"><h3 style="margin-top:0">Organization Snapshot</h3>' + orgCards(s) + '<p class="footer-note">This does not force a structure. It is a facilitator aid for discussing when the command structure should expand and which specialist positions become necessary.</p></section>' +
+      '<section class="card col-8"><h3 style="margin-top:0">Decision Walkthrough</h3><p class="small">Capture decisions, assumptions, triggers, delegated responsibilities, and when the team would reconsider the current structure.</p>' + s.questions.map(questionMarkup).join('') + '<div class="toolbar"><button class="good" id="saveDecisionsBtn" type="button">Save Decision Notes</button></div></section>' +
+      '<section class="card col-4"><h3 style="margin-top:0">Documentation Tracker</h3><p class="small">These are high-level tabletop reminders, not replacements for official FEMA or local forms.</p><div>' + s.docs.map(function(d){ return toggleMarkup(d.name + ' — ' + d.desc, !!state.docs[d.name], 'doc'); }).join('') + '</div>' +
+      '<details><summary>Common additional documentation prompts</summary><ul><li>ICS 205A communications list</li><li>ICS 206 medical details (if applicable)</li><li>ICS 207 organizational chart</li><li>ICS 214 unit logs</li><li>ICS 221 demobilization</li><li>Executive decision logs / policy logs</li></ul></details></section>' +
+      '<section class="card col-8"><h3 style="margin-top:0">Action Log / Timeline</h3><div class="toolbar" style="margin-bottom:10px"><input type="text" id="quickLog" placeholder="Add an inject, notification, status change, major decision, or handoff..." /><button id="addLogBtn" type="button">Add Log Entry</button></div><div class="log">' + renderLog() + '</div></section>' +
+      '<section class="card col-4"><h3 style="margin-top:0">Stage Navigation</h3><p><strong>Advance Criteria:</strong> ' + esc(s.prompt) + '</p><ul>' + s.escalation.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><div class="toolbar"><button class="secondary" id="prevStageBtn" type="button" ' + (state.stage === 0 ? 'disabled' : '') + '>Previous Stage</button><button id="nextStageBtn" type="button" ' + (state.stage === STAGES.length - 1 ? 'disabled' : '') + '>Next Stage</button></div></section>' +
+      '<section class="card col-12"><h3 style="margin-top:0">Facilitator Notes</h3>' +
+      '<details open><summary>How to use this tool in a university tabletop</summary><ul><li>Start with a narrow incident and one or two injects.</li><li>Use the decision prompts to discuss authority, priorities, and documentation.</li><li>When complexity increases, activate more roles and move to the next stage.</li><li>Use the log as the running narrative of the exercise.</li><li>Export JSON at the end as the exercise working record, then produce a formal after-action report separately.</li></ul></details>' +
+      '<details><summary>What this trainer intentionally does not do</summary><ul><li>It does not reproduce official FEMA forms in full detail.</li><li>It does not replace FEMA coursework, local emergency plans, or institutional authority structures.</li><li>It does not prescribe one exact org chart; it supports discussion about when to expand the structure.</li></ul></details>' +
+      '<details><summary>High-level learning map</summary><ul><li><strong>ICS-100:</strong> first response, simple command, initial briefing, basic documentation.</li><li><strong>ICS-200:</strong> supervisory expansion, operational periods, section activation, resource tracking.</li><li><strong>ICS-300:</strong> advanced coordination, multiple operational periods, unified command, planning support.</li><li><strong>ICS-400:</strong> strategic complexity, prolonged operations, policy decisions, transition to recovery.</li><li><strong>EOC / ICS-800 context:</strong> EOC support, policy/executive coordination, mutual aid, broader framework alignment.</li></ul></details>' +
+      '</section></div>';
+  }
+
+  function buildPrintPreview(){
+    var activeRoles = Object.keys(state.roles).filter(function(k){ return state.roles[k]; });
+    var activeDocs = Object.keys(state.docs).filter(function(k){ return state.docs[k]; });
+    var answered = Object.entries(state.decisions).filter(function(entry){ var v = entry[1]; return v && (v.choice || (v.note && v.note.trim())); });
+    var logs = state.log.slice().reverse();
+
+    return '<div class="print-shell">' +
+      '<div class="print-toolbar non-print print-only-toolbar">' +
+      '<button class="secondary" id="backFromPreviewBtn" type="button">Back to Exercise</button>' +
+      '<button class="warn" id="printNowBtn" type="button">Print Current View</button>' +
+      '<button class="secondary" id="saveBtnPreview" type="button">Export JSON</button>' +
+      '</div>' +
+      '<div class="print-banner"><strong>Print Preview</strong> — this view prints from the current tab and does not use pop-up windows.</div>' +
+      '<div class="print-box"><h1 style="margin-top:0">' + esc(state.incidentName) + '</h1>' +
+      '<p><strong>Facilitator:</strong> ' + esc(state.facilitator || 'Not specified') + '<br>' +
+      '<strong>Location / Team:</strong> ' + esc(state.location || 'Not specified') + '<br>' +
+      '<strong>Current Stage:</strong> ' + esc(currentStage().label) + ' — ' + esc(currentStage().title) + '<br>' +
+      '<strong>Complexity:</strong> ' + currentStage().complexity + '% (' + esc(complexityLabel(currentStage().complexity)) + ')</p></div>' +
+      '<div class="print-box"><h2>Scenario Seed</h2><p>' + esc(state.scenarioSeed) + '</p></div>' +
+      '<div class="print-box"><h2>Active Roles</h2>' +
+      (activeRoles.length ? activeRoles.map(function(r){ return '<span class="print-tag">' + esc(r) + '</span>'; }).join('') : '<p>None selected.</p>') +
+      '</div>' +
+      '<div class="print-box"><h2>Tracked Documentation</h2>' +
+      (activeDocs.length ? activeDocs.map(function(d){ return '<span class="print-tag">' + esc(d) + '</span>'; }).join('') : '<p>None selected.</p>') +
+      '</div>' +
+      '<div class="print-box"><h2>Organization Notes</h2><p>' + (state.orgNotes ? esc(state.orgNotes) : 'No organization notes recorded.') + '</p></div>' +
+      '<div class="print-box"><h2>Decision Notes</h2>' +
+      (answered.length ? answered.map(function(entry){
+        var k = entry[0], v = entry[1];
+        return '<div style="margin-bottom:10px"><strong>' + esc(k) + '</strong><br>Choice: ' + esc(v.choice || 'Not selected') + '<br>Note: ' + esc(v.note || 'No note recorded') + '</div>';
+      }).join('') : '<p>No decision notes saved.</p>') + '</div>' +
+      '<div class="print-box"><h2>Timeline</h2>' +
+      (logs.length ? logs.map(function(e){ return '<p><strong>' + esc(e.at) + ' • ' + esc(e.type) + '</strong><br>' + esc(e.text) + '</p>'; }).join('') : '<p>No timeline entries.</p>') + '</div>' +
+      '<div class="print-box"><h2>Facilitator Reminder</h2><p>This summary is a local tabletop facilitation aid. It is intended to support the exercise and can be used as input to more formal documentation afterward.</p></div>' +
+      '</div>';
+  }
+
+  function render(){
+    renderStageList();
+    app.innerHTML = state.printPreview ? buildPrintPreview() : appView();
+    document.getElementById('statStage').textContent = currentStage().label;
+    document.getElementById('statRoles').textContent = String(countActive(state.roles));
+    document.getElementById('statDocs').textContent = String(countActive(state.docs));
+    document.getElementById('statDecisions').textContent = String(countAnswered());
+    document.getElementById('complexityBar').style.width = currentStage().complexity + '%';
+    document.getElementById('complexityLabel').textContent = complexityLabel(currentStage().complexity);
+    bindAppEvents();
+  }
+
+  function exportState(){
+    var payload = { app: 'University ICS / FEMA Tabletop Trainer', version: 2, savedAt: new Date().toISOString(), state: state };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    var safe = (state.incidentName || 'ics_tabletop').replace(/[^a-z0-9-_]+/gi,'_').replace(/^_+|_+$/g,'');
+    a.download = safe + '_tabletop_state.json';
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  }
+
+  function importState(obj){
+    if (!obj || !obj.state) throw new Error('Invalid JSON state file.');
+    var s = obj.state;
+    state.stage = s.stage != null ? s.stage : state.stage;
+    state.incidentName = s.incidentName != null ? s.incidentName : state.incidentName;
+    state.facilitator = s.facilitator != null ? s.facilitator : state.facilitator;
+    state.location = s.location != null ? s.location : state.location;
+    state.scenarioSeed = s.scenarioSeed != null ? s.scenarioSeed : state.scenarioSeed;
+    state.orgNotes = s.orgNotes != null ? s.orgNotes : state.orgNotes;
+    state.decisions = s.decisions != null ? s.decisions : state.decisions;
+    state.roles = s.roles != null ? s.roles : state.roles;
+    state.docs = s.docs != null ? s.docs : state.docs;
+    state.log = s.log != null ? s.log : state.log;
+    state.printPreview = false;
+    render();
+    writeLog('File', 'Imported saved tabletop state.');
+  }
+
+  function saveMetadata(){
+    state.incidentName = document.getElementById('incidentName').value.trim() || state.incidentName;
+    state.facilitator = document.getElementById('facilitator').value.trim();
+    state.location = document.getElementById('location').value.trim();
+    state.scenarioSeed = document.getElementById('scenarioSeed').value.trim() || state.scenarioSeed;
+    writeLog('Metadata', 'Saved exercise metadata.');
+  }
+
+  function saveOrgNotes(){
+    state.orgNotes = document.getElementById('orgNotes').value;
+    writeLog('Organization', 'Saved structure notes.');
+  }
+
+  function saveDecisionNotes(){
+    document.querySelectorAll('[data-note]').forEach(function(area){
+      var id = area.getAttribute('data-note');
+      if (!state.decisions[id]) state.decisions[id] = {choice:'', note:''};
+      state.decisions[id].note = area.value;
+    });
+    writeLog('Decision', 'Saved decision notes for ' + currentStage().label + '.');
+  }
+
+  function showPrintPreview(){
+    if (!state.printPreview){
+      state.printPreview = true;
+      render();
+    }
+  }
+
+  function hidePrintPreview(){
+    if (state.printPreview){
+      state.printPreview = false;
+      render();
+    }
+  }
+
+  function printCurrentView(){
+    window.print();
+  }
+
+  function bindAppEvents(){
+    var saveMetaBtn = document.getElementById('saveMetaBtn');
+    if (saveMetaBtn) saveMetaBtn.addEventListener('click', saveMetadata);
+
+    var saveOrgBtn = document.getElementById('saveOrgBtn');
+    if (saveOrgBtn) saveOrgBtn.addEventListener('click', saveOrgNotes);
+
+    var saveDecisionsBtn = document.getElementById('saveDecisionsBtn');
+    if (saveDecisionsBtn) saveDecisionsBtn.addEventListener('click', saveDecisionNotes);
+
+    var addLogBtn = document.getElementById('addLogBtn');
+    if (addLogBtn) addLogBtn.addEventListener('click', function(){
+      var input = document.getElementById('quickLog');
+      var txt = input.value.trim();
+      if (!txt) return;
+      writeLog('Timeline', txt);
+      input.value = '';
+    });
+
+    var prevStageBtn = document.getElementById('prevStageBtn');
+    if (prevStageBtn) prevStageBtn.addEventListener('click', function(){
+      if (state.stage > 0){ state.stage -= 1; writeLog('Stage', 'Moved to ' + currentStage().label + '.'); }
+    });
+
+    var nextStageBtn = document.getElementById('nextStageBtn');
+    if (nextStageBtn) nextStageBtn.addEventListener('click', function(){
+      if (state.stage < STAGES.length - 1){
+        state.stage += 1;
+        currentStage().defaultRoles.forEach(function(r){ state.roles[r] = true; });
+        currentStage().docs.forEach(function(d){
+          if (d.name.indexOf('ICS 202') !== -1 || d.name.indexOf('ICS 203') !== -1 || d.name.indexOf('Incident Action Plan') !== -1 || d.name.indexOf('Situation Reports') !== -1 || d.name.indexOf('EOC Activation') !== -1) state.docs[d.name] = true;
+        });
+        writeLog('Stage', 'Escalated to ' + currentStage().label + ' — ' + currentStage().title + '.');
+      }
+    });
+
+    document.querySelectorAll('[data-role]').forEach(function(cb){
+      cb.addEventListener('change', function(e){
+        var role = e.target.getAttribute('data-role');
+        state.roles[role] = e.target.checked;
+        writeLog('Organization', (e.target.checked ? 'Activated role: ' : 'Deactivated role: ') + role);
+      });
+    });
+
+    document.querySelectorAll('[data-doc]').forEach(function(cb){
+      cb.addEventListener('change', function(e){
+        var raw = e.target.getAttribute('data-doc');
+        var docName = raw.split(' — ')[0];
+        state.docs[docName] = e.target.checked;
+        writeLog('Documentation', (e.target.checked ? 'Tracking started: ' : 'Tracking stopped: ') + docName);
+      });
+    });
+
+    document.querySelectorAll('[data-q]').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        var id = e.target.getAttribute('data-q');
+        var choice = e.target.getAttribute('data-choice');
+        if (!state.decisions[id]) state.decisions[id] = {choice:'', note:''};
+        state.decisions[id].choice = choice;
+        render();
+      });
+    });
+
+    document.querySelectorAll('[data-note]').forEach(function(area){
+      area.addEventListener('change', function(e){
+        var id = e.target.getAttribute('data-note');
+        if (!state.decisions[id]) state.decisions[id] = {choice:'', note:''};
+        state.decisions[id].note = e.target.value;
+      });
+    });
+
+    var backBtn = document.getElementById('backFromPreviewBtn');
+    if (backBtn) backBtn.addEventListener('click', hidePrintPreview);
+
+    var printNowBtn = document.getElementById('printNowBtn');
+    if (printNowBtn) printNowBtn.addEventListener('click', printCurrentView);
+
+    var saveBtnPreview = document.getElementById('saveBtnPreview');
+    if (saveBtnPreview) saveBtnPreview.addEventListener('click', exportState);
+  }
+
+  function bindGlobal(){
+    document.getElementById('saveBtn').addEventListener('click', exportState);
+    document.getElementById('loadBtn').addEventListener('click', function(){ document.getElementById('filePicker').click(); });
+    document.getElementById('previewBtn').addEventListener('click', showPrintPreview);
+    document.getElementById('filePicker').addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(){
+        try{ importState(JSON.parse(reader.result)); }
+        catch(err){ alert(err.message || 'Could not import JSON.'); }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    });
+    document.getElementById('resetBtn').addEventListener('click', function(){
+      if (!confirm('Reset the tabletop state?')) return;
+      state.stage = 0;
+      state.incidentName = 'University Tabletop Scenario';
+      state.facilitator = '';
+      state.location = '';
+      state.scenarioSeed = 'Start with a manageable campus incident and escalate complexity with injects.';
+      state.orgNotes = '';
+      state.decisions = {};
+      state.roles = {};
+      state.docs = {};
+      state.log = [];
+      state.printPreview = false;
+      initDefaults();
+      render();
+    });
+    window.addEventListener('afterprint', function(){
+      if (state.printPreview) {
+        /* stay in preview mode after printing so the user can review or return manually */
+      }
+    });
+  }
+
+  bindGlobal();
+  render();
+  writeLog('System', 'Initialized trainer at ICS-100.');
+})();
+</script>
+</body>
+</html>
