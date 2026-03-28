@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STIX CaseFile Pro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <aside id="sidebar">
+            <h2>STIX Palette</h2>
+            <div class="search-container">
+                <input type="text" id="node-search" placeholder="Search nodes or types...">
+            </div>
+            <div class="modes">
+                <button id="btn-move" class="active">Move</button>
+                <button id="btn-link">Link</button>
+            </div>
+            
+            <div id="palette" class="palette-grid"></div>
+            
+            <hr>
+            <div class="actions">
+                <button class="btn-primary" id="export-button">Export STIX Bundle</button>
+                <button class="btn-secondary" id="load-button">Load STIX Bundle</button>
+                <button class="btn-graphic" id="export-graphic-button">Export PDF/SVG</button>
+                <input type="file" id="import-input" style="display:none" accept=".json">
+            </div>
+        </aside>
+        
+        <main id="workspace">
+            <svg id="canvas" width="100%" height="100%">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="22" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#888" />
+                    </marker>
+                </defs>
+                <g id="viewport-group">
+                    <g id="edges-group"></g>
+                    <g id="nodes-group"></g>
+                </g>
+            </svg>
+            <div class="canvas-hint">Middle-Click: Pan | Scroll: Zoom | Delete: Remove</div>
+        </main>
+
+        <div id="inspector" class="hidden">
+            <h3>Metadata</h3>
+            <div id="inspector-content"></div>
+            <button class="btn-close" id="close-inspector">Close</button>
+        </div>
+    </div>
+    <script src="stix_library.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
