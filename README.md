@@ -12,6 +12,7 @@ Tools:
   - CTI_assistant - A step by step work flow to perform intake on intellegence and to tag the intellegence
   - Logsculpt - a means of creating extraction rules and adding custom tagging for internal documentation
   - attack - An offline Mitre ATT&CK search this is easier to use than their website. (mitre json dataset download required)
+  - stix_palette - An offline Stix v2 json bundle editor.  This may not be interoperable with misp as older versions mirror XML which leads to poor data structures.  Stix v2 is flatter.
 - Tabletop Exercise aids
   - nist_ir - NIST Incident Response exercise aid
   - fema_tabletop - FEMA ICS incident complexity tabletop aid
