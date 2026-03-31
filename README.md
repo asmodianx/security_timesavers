@@ -6,6 +6,7 @@ Intent:
 This is a collection of AI generated tools that are completly offline. A vast majority of browsers will run these as and most devices have browsers.
 A problem with Powershell/Python/bash its extremly prone to requiring complex development environments and tools tend to be extremly version spicific.
 Combine that with includes with supply chain vulnarabilities then this is an earnest attempt to create a set of tools that just work.
+Most of these are completly standalone, JVAT however uses one CDN include for GPG support which I may fix later. Ipenrichment uses dns so its not totally local.
 
 Tools:
 - Cyber Threat Intel
@@ -17,14 +18,15 @@ Tools:
   - nist_ir - NIST Incident Response exercise aid
   - fema_tabletop - FEMA ICS incident complexity tabletop aid
 - Incident Response
-  - fema_ics FEMA ICS-2xx interactive html form library 
+  - fema_ics - FEMA ICS-2xx interactive html form library
+  - sentinelflow - A standalone HTML/JS case logging system, simple but hits all the right phases. 
 - Vendor Assessment
-  - JVAT - an simplified adaptation of the Educause HECVAT in javascript
+  - JVAT - an simplified adaptation of the Educause HECVAT in javascript 
   - SBOM - Software bill of materials offline sbom reader/editor
 - Analysis
   - Email - email header parser for eml and msg formated emails
   - FileIOC - a local javascript tool to extract IOC's from documents and to show a PDF screen shot.
   - DeepBlueJS - A standalone offline Javascript adaptation of the SANS institutes DeepBlueCLI powershell tool for windows, with the ability to ingest Sigma Rules.
-
+  - ip_enrichment - A fully standalone HTML/JS ip address enrichment system with custom lookup tables and dns to enrich lists of urls and ip addresses
  
 
