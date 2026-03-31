@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SentinelFlow v14.0 | NIST Multi-Page IR Utility</title>
+    <style>
+        :root {
+            --bg: #0d1117; --card: #161b22; --text: #c9d1d9;
+            --accent: #58a6ff; --cti: #d299ff; --forensic: #39d353; --border: #30363d;
+        }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Navigation & Metrics */
+        nav { width: 340px; background: var(--card); border-right: 1px solid var(--border); padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; flex-shrink: 0; }
+        .metric-tile { background: var(--bg); padding: 12px; border-radius: 6px; border-left: 4px solid var(--accent); margin-bottom: 10px; }
+        .metric-label { font-size: 0.7rem; text-transform: uppercase; color: #8b949e; display: flex; justify-content: space-between; }
+        .metric-value { font-family: monospace; font-size: 1.2rem; display: block; margin-top: 5px; }
+        
+        .timer-btn { background: #30363d; border: 1px solid var(--border); color: #8b949e; font-size: 0.6rem; cursor: pointer; padding: 2px 5px; border-radius: 3px; }
+        .timer-btn.active { color: var(--forensic); border-color: var(--forensic); }
+
+        .nav-item { padding: 10px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-size: 0.9rem; border: 1px solid transparent; }
+        .nav-item.active { background: var(--accent); color: white; font-weight: bold; }
+        .nav-report { border: 1px solid var(--forensic); color: var(--forensic); margin-top: 10px; text-align: center; }
+
+        /* Main Area */
+        main { flex: 1; padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+        .form-container { width: 100%; max-width: 1000px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 2rem; }
+        
+        #case-header-display { width: 100%; border-bottom: 2px solid var(--accent); margin-bottom: 2rem; padding-bottom: 10px; }
+        #case-header-display h1 { margin: 0; color: var(--accent); font-size: 1.8rem; }
+
+        .rte-toolbar { background: #21262d; border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; padding: 5px; display: flex; gap: 5px; }
+        .rte-btn { background: #30363d; border: 1px solid var(--border); color: white; padding: 4px 8px; cursor: pointer; border-radius: 3px; font-size: 0.7rem; }
+        .rte-editor { min-height: 120px; background: var(--bg); border: 1px solid var(--border); border-radius: 0 0 6px 6px; padding: 12px; color: white; overflow-y: auto; }
+
+        .module-section { margin-top: 1.5rem; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); display: none; }
+        .cti-conclusion-box { display: none; background: #1c1a26; border: 1px solid var(--cti); padding: 15px; border-radius: 8px; margin-top: 1rem; }
+
+        .coc-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.8rem; }
+        .coc-table th { background: #21262d; color: var(--forensic); padding: 8px; text-align: left; border: 1px solid var(--border); }
+        .coc-table td { border: 1px solid var(--border); }
+        .coc-table input { border: none; background: transparent; padding: 8px; width: 100%; color: white; }
+
+        .file-item { display: flex; justify-content: space-between; align-items: center; background: #21262d; padding: 8px 12px; border-radius: 4px; margin-bottom: 5px; }
+        .file-download-link { color: var(--accent); text-decoration: none; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--accent); padding: 2px 6px; border-radius: 3px; }
+
+        .field-group { margin-bottom: 1.2rem; break-inside: avoid; }
+        label { display: block; font-weight: bold; margin-bottom: 6px; color: #8b949e; font-size: 0.85rem; text-transform: uppercase; }
+        input, select { width: 100%; padding: 10px; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 6px; }
+
+        .btn { padding: 10px 15px; cursor: pointer; border: none; border-radius: 6px; font-weight: bold; }
+        .btn-primary { background: var(--accent); color: white; }
+
+        /* CRITICAL PRINT FIXES */
+        @media print { 
+            html, body { height: auto !important; overflow: visible !important; position: static !important; }
+            nav, .no-print, .rte-toolbar, .btn-toggle, #module-cti, #attachment-section { display: none !important; } 
+            body { background: white; color: black; } 
+            main { display: block !important; overflow: visible !important; height: auto !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .form-container { border: none !important; box-shadow: none !important; width: 100% !important; max-width: none !important; padding: 0 !important; margin: 0 !important; background: transparent !important; } 
+            #case-header-display, .cti-conclusion-box { display: block !important; }
+            #case-header-display h1 { color: #000 !important; }
+            .module-section { display: block !important; border: 1px solid #000 !important; background: white !important; color: #000 !important; padding: 15px !important; break-inside: avoid; }
+            .module-section.empty-coc { display: none !important; }
+            .rte-editor { border: none !important; padding: 0 !important; min-height: auto !important; color: black !important; overflow: visible !important; height: auto !important; }
+            .report-phase-header { color: #000 !important; border-bottom: 2px solid #000 !important; margin-top: 2rem !important; font-weight: bold !important; font-size: 1.2rem !important; }
+            .field-group label { color: #333 !important; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="no-print">
+    <h2 style="margin:0; color:var(--accent)">SentinelFlow</h2>
+    
+    <div class="nav-section-title" style="color:#8b949e; font-size:0.7rem; margin-top:1rem;">SOC PERFORMANCE</div>
+    <div class="metric-tile">
+        <span class="metric-label">MTTA (Acknowledge) <button id="mtta-toggle" class="timer-btn" onclick="toggleTimer('mtta')">START</button></span>
+        <span id="mtta-val" class="metric-value">00:00:00</span>
+    </div>
+    <div class="metric-tile">
+        <span class="metric-label">MTTR (Response) <button id="mttr-toggle" class="timer-btn" onclick="toggleTimer('mttr')">START</button></span>
+        <span id="mttr-val" class="metric-value">00:00:00</span>
+    </div>
+
+    <div class="nav-section-title" style="color:#8b949e; font-size:0.7rem; margin-top:1rem;">NIST PHASES</div>
+    <div id="nav-links"></div>
+    <div class="nav-item nav-report" id="nav-full-report" onclick="renderFullReport()">Generate Full Report</div>
+
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px;">
+        <button class="btn btn-primary" onclick="exportSTIX()">Export STIX Bundle</button>
+        <button class="btn" style="background:#30363d; color:white" onclick="document.getElementById('import-trigger').click()">Import STIX/JSON</button>
+        <input type="file" id="import-trigger" style="display:none" onchange="importSTIX(event)">
+        <button class="btn" style="background:#238636; color:white" onclick="preparePrint()">Print / Export PDF</button>
+    </div>
+</nav>
+
+<main id="main-content">
+    <div id="case-header-display">
+        <h1 id="header-case-title">CASE: UNTITLED</h1>
+        <div id="header-metadata" style="font-size:0.8rem; color:#8b949e;"></div>
+    </div>
+
+    <div class="scenario-selector no-print" style="margin-bottom: 2rem; width: 100%; max-width: 1000px; display: flex; gap: 10px;">
+        <select id="scenario-mode" style="flex:1" onchange="updateScenario(this.value)">
+            <option value="incident">Security Incident</option>
+            <option value="case">Security Case</option>
+            <option value="support">Technical Support</option>
+            <option value="intel">Intel Request (CTI)</option>
+        </select>
+        <input type="text" id="case-name" placeholder="Case Title / Identifier..." style="flex:2" oninput="saveData('case_title', this.value)">
+    </div>
+
+    <div id="form-shell" class="form-container">
+        <h1 id="form-title" style="margin-top:0; color:var(--accent)" class="no-print">Phase Title</h1>
+        <div id="form-fields"></div>
+
+        <div id="module-controls" class="no-print" style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+            <button class="btn btn-toggle" id="toggle-cti-btn" onclick="toggleModule('cti')">+ CTI Assessment</button>
+            <button class="btn btn-toggle" id="toggle-coc-btn" onclick="toggleModule('coc')">+ Chain of Custody</button>
+        </div>
+
+        <div id="module-cti" class="module-section" style="border-color:var(--cti); background:#1c1a26;">
+            <h3 style="color:var(--cti); margin-top:0;">CTI Assessment Form</h3>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="field-group"><label>Reliability</label><select id="cti-rel" onchange="saveData('rel', this.selectedIndex)">
+                    <option value="0">A: Completely Reliable</option><option value="1">B: Usually Reliable</option><option value="2">C: Fairly Reliable</option>
+                    <option value="3">D: Not Usually Reliable</option><option value="4">E: Unreliable</option><option value="5" selected>F: Cannot Be Judged</option>
+                </select></div>
+                <div class="field-group"><label>Credibility</label><select id="cti-cred" onchange="saveData('cred', this.selectedIndex)">
+                    <option value="0">1: Confirmed</option><option value="1">2: Probably True</option><option value="2">3: Possibly True</option>
+                    <option value="3">4: Doubtful</option><option value="4">5: Improbable</option><option value="5" selected>6: Cannot Be Judged</option>
+                </select></div>
+                <div class="field-group"><label>TLP Marking</label><select id="cti-tlp" onchange="saveData('tlp', this.value)">
+                    <option>CLEAR</option><option>GREEN</option><option>AMBER</option><option>AMBER+STRICT</option><option>RED</option>
+                </select></div>
+                <div class="field-group"><label>Analytic Confidence</label><select id="cti-conf" onchange="saveData('confidence', this.value)">
+                    <option>Low</option><option>Moderate</option><option>High</option>
+                </select></div>
+            </div>
+        </div>
+
+        <div id="cti-conclusion" class="cti-conclusion-box">
+            <h3 style="color:var(--cti); margin-top:0; border-bottom:1px solid var(--cti);">CTI ASSESSMENT SUMMARY</h3>
+            <div id="cti-conclusion-text" style="font-weight:bold;"></div>
+        </div>
+
+        <div id="module-coc" class="module-section" style="border-color:var(--forensic); background:#161e16;">
+            <h3 style="color:var(--forensic); margin-top:0;">Chain of Custody</h3>
+            <table class="coc-table">
+                <thead><tr><th>Item #</th><th>Description</th><th>Date/Time</th><th>Released By</th><th>Received By</th><th>Location</th></tr></thead>
+                <tbody id="coc-body"></tbody>
+            </table>
+            <button class="btn no-print" onclick="addCoCRow()" style="background:#30363d; color:white; font-size:0.7rem; margin-top:10px;">+ Add Entry</button>
+        </div>
+
+        <div id="attachment-section" class="no-print" style="margin-top: 2rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+            <label>Attachments (Click Download below to retrieve)</label>
+            <input type="file" id="file-input" multiple onchange="handleFileUpload(event)">
+            <div id="file-list" style="margin-top:10px; font-size:0.8rem; opacity:0.6"></div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const NIST_FORMS = {
+        preparation: { title: "1. Preparation", fields: [{ id: "prep_narrative", label: "Preparation Details", type: "rich" }] },
+        intake: { title: "2. Intake", fields: [{ id: "intake_narrative", label: "Initial Narrative", type: "rich" }] },
+        analysis: { title: "3. Analysis", fields: [{ id: "analysis_narrative", label: "Technical Findings", type: "rich" }] },
+        containment: { title: "4. Containment", fields: [{ id: "contain_narrative", label: "Recovery Actions", type: "rich" }] },
+        post: { title: "5. Lessons Learned", fields: [{ id: "post_narrative", label: "Incident Summary", type: "rich" }] }
+    };
+
+    let formData = { coc: [], rel: 5, cred: 5, tlp: 'CLEAR', confidence: 'Low', case_title: '' };
+    let attachments = [];
+    let timers = { mtta: 0, mttr: 0, mttaActive: false, mttrActive: false };
+    let activeModules = { cti: false, coc: false };
+    let currentPhase = 'preparation';
+
+    setInterval(() => {
+        if (timers.mttaActive) timers.mtta++;
+        if (timers.mttrActive) timers.mttr++;
+        document.getElementById('mtta-val').innerText = formatSeconds(timers.mtta);
+        document.getElementById('mttr-val').innerText = formatSeconds(timers.mttr);
+    }, 1000);
+
+    function formatSeconds(sec) {
+        const h = String(Math.floor(sec/3600)).padStart(2,'0');
+        const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+        const s = String(sec%60).padStart(2,'0');
+        return `${h}:${m}:${s}`;
+    }
+
+    function toggleTimer(type) {
+        timers[type + 'Active'] = !timers[type + 'Active'];
+        const btn = document.getElementById(type + '-toggle');
+        btn.innerText = timers[type + 'Active'] ? 'STOP' : 'START';
+        btn.classList.toggle('active', timers[type + 'Active']);
+    }
+
+    function insertTimestamp() {
+        const ts = `[${new Date().toLocaleString()}] `;
+        document.execCommand('insertText', false, ts);
+    }
+
+    function init() {
+        const nav = document.getElementById('nav-links');
+        nav.innerHTML = '';
+        Object.keys(NIST_FORMS).forEach(k => {
+            const d = document.createElement('div');
+            d.className = 'nav-item'; d.id = `nav-${k}`; d.innerText = NIST_FORMS[k].title;
+            d.onclick = () => renderPhase(k);
+            nav.appendChild(d);
+        });
+        renderPhase('preparation');
+    }
+
+    function renderPhase(key) {
+        currentPhase = key;
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const activeNav = document.getElementById(`nav-${key}`);
+        if(activeNav) activeNav.classList.add('active');
+        document.getElementById('form-title').innerText = NIST_FORMS[key].title;
+        document.getElementById('module-controls').style.display = (key === 'analysis') ? 'block' : 'none';
+        document.getElementById('module-cti').style.display = (key === 'analysis' && activeModules.cti) ? 'block' : 'none';
+        document.getElementById('module-coc').style.display = (key === 'analysis' && activeModules.coc) ? 'block' : 'none';
+        const container = document.getElementById('form-fields');
+        container.innerHTML = '';
+        renderFields(NIST_FORMS[key].fields, container);
+    }
+
+    function renderFields(fields, container) {
+        fields.forEach(f => {
+            const val = formData[f.id] || '';
+            container.innerHTML += `<div class="field-group"><label>${f.label}</label>
+                <div class="rte-toolbar no-print">
+                    <button class="rte-btn" onclick="document.execCommand('bold')">B</button>
+                    <button class="rte-btn" onclick="document.execCommand('italic')">I</button>
+                    <button class="rte-btn" onclick="document.execCommand('insertUnorderedList')">• List</button>
+                    <button class="rte-btn" onclick="insertTimestamp()">🕒 Time</button>
+                </div>
+                <div class="rte-editor" contenteditable="true" oninput="saveData('${f.id}', this.innerHTML)">${val}</div></div>`;
+        });
+    }
+
+    function updateCTIConclusion() {
+        const rel = "ABCDEF"[formData.rel];
+        const cred = (formData.cred + 1);
+        const conclusion = `ADMIRALTY: ${rel}${cred} | TLP: ${formData.tlp} | CONFIDENCE: ${formData.confidence}`;
+        document.getElementById('cti-conclusion-text').innerText = conclusion;
+        document.getElementById('cti-conclusion').style.display = activeModules.cti ? 'block' : 'none';
+    }
+
+    function renderFullReport() {
+        currentPhase = 'report';
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById('nav-full-report').classList.add('active');
+        document.getElementById('form-title').innerText = "FULL NIST IR REPORT";
+        const container = document.getElementById('form-fields');
+        container.innerHTML = '';
+        Object.keys(NIST_FORMS).forEach(phaseKey => {
+            const phase = NIST_FORMS[phaseKey];
+            container.innerHTML += `<div class="report-phase-header">${phase.title}</div>`;
+            renderFields(phase.fields, container);
+            if (phaseKey === 'analysis') { 
+                updateCTIConclusion(); 
+                // In Full Report view, we move the CTI summary to after Analysis findings
+                const ctiBox = document.getElementById('cti-conclusion').cloneNode(true);
+                ctiBox.style.display = activeModules.cti ? 'block' : 'none';
+                container.appendChild(ctiBox);
+            }
+        });
+    }
+
+    function preparePrint() {
+        document.getElementById('header-case-title').innerText = `CASE: ${formData.case_title || 'UNTITLED'}`;
+        document.getElementById('header-metadata').innerText = `Type: ${document.getElementById('scenario-mode').value.toUpperCase()} | Generated: ${new Date().toLocaleString()}`;
+        updateCTIConclusion();
+        window.print();
+    }
+
+    function toggleModule(m) {
+        activeModules[m] = !activeModules[m];
+        document.getElementById(`module-${m}`).style.display = activeModules[m] ? 'block' : 'none';
+        document.getElementById(`toggle-${m}-btn`).innerText = activeModules[m] ? `- Remove ${m.toUpperCase()}` : `+ Add ${m.toUpperCase()}`;
+        if (m === 'coc' && formData.coc.length === 0) addCoCRow();
+        updateCTIConclusion();
+    }
+
+    function saveData(id, val) { 
+        formData[id] = val; 
+        if (id === 'case_title' || id === 'case-name') {
+            document.getElementById('header-case-title').innerText = `CASE: ${val || 'UNTITLED'}`;
+            document.getElementById('header-metadata').innerText = `Type: ${document.getElementById('scenario-mode').value.toUpperCase()} | Generated: ${new Date().toLocaleString()}`;
+        }
+        updatePrintStatus(); 
+    }
+
+    function updatePrintStatus() {
+        const hasData = formData.coc && formData.coc.some(row => row.some(cell => cell.trim() !== ""));
+        document.getElementById('module-coc').classList.toggle('empty-coc', !hasData);
+    }
+
+    function addCoCRow(data = ["", "", "", "", "", ""]) {
+        const tbody = document.getElementById('coc-body');
+        const row = tbody.insertRow();
+        data.forEach(val => row.insertCell().innerHTML = `<input type="text" value="${val}" oninput="syncCoC()">`);
+    }
+
+    function syncCoC() { 
+        formData.coc = Array.from(document.querySelectorAll('#coc-body tr')).map(r => Array.from(r.querySelectorAll('input')).map(i => i.value));
+        updatePrintStatus();
+    }
+
+    function updateFileListView() {
+        const list = document.getElementById('file-list');
+        list.innerHTML = '';
+        attachments.forEach((a) => {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `<span>📎 ${a.name}</span><a href="${a.data}" download="${a.name}" class="file-download-link">DOWNLOAD</a>`;
+            list.appendChild(div);
+        });
+    }
+
+    async function handleFileUpload(event) {
+        const files = Array.from(event.target.files);
+        for (let file of files) {
+            const reader = new FileReader();
+            reader.onload = (f) => {
+                attachments.push({ name: file.name, mime: file.type, data: f.target.result });
+                updateFileListView();
+            };
+            reader.readAsDataURL(file);
+        }
+        event.target.value = '';
+    }
+
+    function exportSTIX() {
+        const bundle = {
+            type: "bundle", id: `bundle--${crypto.randomUUID()}`,
+            objects: [{
+                type: "incident", id: `incident--${crypto.randomUUID()}`,
+                name: formData.case_title || "SentinelFlow Case",
+                description: JSON.stringify({ formData, activeModules, timers }),
+                created: new Date().toISOString()
+            }]
+        };
+        attachments.forEach(a => {
+            const payloadParts = a.data.split(',');
+            const base64Content = payloadParts.length > 1 ? payloadParts : payloadParts;
+            bundle.objects.push({ 
+                type: "artifact", id: `artifact--${crypto.randomUUID()}`, 
+                payload_bin: base64Content, x_file_name: a.name, mime_type: a.mime 
+            });
+        });
+        const blob = new Blob([JSON.stringify(bundle, null, 2)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `STIX-CASE-${Date.now()}.json`; a.click();
+    }
+
+    function importSTIX(event) {
+        const file = event.target.files;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (f) => {
+            try {
+                const bundle = JSON.parse(f.target.result);
+                const inc = bundle.objects.find(o => o.type === 'incident');
+                if (inc) {
+                    const state = JSON.parse(inc.description);
+                    formData = state.formData || state;
+                    activeModules = state.activeModules || { cti: false, coc: false };
+                    timers = state.timers || { mtta: 0, mttr: 0, mttaActive: false, mttrActive: false };
+                    
+                    document.getElementById('case-name').value = formData.case_title || '';
+                    document.getElementById('header-case-title').innerText = `CASE: ${formData.case_title || 'UNTITLED'}`;
+                    document.getElementById('toggle-cti-btn').innerText = activeModules.cti ? "- Remove CTI" : "+ Add CTI";
+                    document.getElementById('toggle-coc-btn').innerText = activeModules.coc ? "- Remove COC" : "+ Add COC";
+                    
+                    attachments = bundle.objects.filter(o => o.type === 'artifact').map(a => {
+                        let rawData = a.payload_bin;
+                        if (Array.isArray(rawData)) { rawData = rawData.join(','); } 
+                        
+                        const prefix = `data:${a.mime_type || 'application/octet-stream'};base64,`;
+                        const finalData = rawData.startsWith('data:') ? rawData : (prefix + rawData);
+                        return { name: a.x_file_name, mime: a.mime_type, data: finalData };
+                    });
+                    
+                    updateFileListView();
+                    document.getElementById('coc-body').innerHTML = '';
+                    if (formData.coc) formData.coc.forEach(r => addCoCRow(r));
+                    renderPhase('preparation');
+                    alert("Imported Successfully");
+                }
+            } catch (err) { console.error(err); alert("Error parsing STIX file."); }
+        };
+        reader.readAsText(file[0]);
+    }
+    window.onload = init;
+</script>
+</body>
+</html>
