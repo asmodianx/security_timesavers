@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>IP / Host Enrichment Tool (Generic Lookup Help)</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    margin: 20px;
+    background: #fafafa;
+    color: #222;
+  }
+  h1, h2, h3 { margin-bottom: 8px; }
+  textarea {
+    width: 100%;
+    height: 140px;
+    box-sizing: border-box;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  button, input[type="file"] {
+    margin: 6px 4px 6px 0;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 12px;
+    background: #fff;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    font-size: 12px;
+    vertical-align: top;
+    text-align: left;
+  }
+  th { background: #eee; }
+  .tag {
+    display: inline-block;
+    background: #dfefff;
+    border: 1px solid #b8d8ff;
+    padding: 2px 5px;
+    margin: 1px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+  .sev-info { background:#e7f4ea; border-color:#a6d8b5; }
+  .sev-low { background:#eef6ff; border-color:#bfdcff; }
+  .sev-medium { background:#fff4d9; border-color:#ffd36a; }
+  .sev-high { background:#ffe3e3; border-color:#ffaaaa; }
+  .sev-critical { background:#ffd6d6; border-color:#ff6f6f; font-weight:700; }
+  .small { color:#666; font-size:12px; }
+  .panel {
+    background:#fff;
+    border:1px solid #ddd;
+    padding:12px;
+    margin-bottom:14px;
+  }
+  #status {
+    margin-top:10px;
+    font-size:13px;
+    white-space: pre-wrap;
+  }
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .lookup-block { margin-bottom: 4px; }
+  .meta-box {
+    margin-top: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 10px;
+    color: #555;
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: none;
+    border: 1px dashed #ccc;
+    padding: 4px;
+    background: #fcfcfc;
+  }
+  .lookup-block.open .meta-box { display: block; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 600; }
+  pre.help {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-x: auto;
+    background: #f6f8fa;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  ul.tight li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<h1>Host / IP Enrichment Tool</h1>
+<p class="small">
+Self-contained browser tool for passive host enrichment using DNS, reverse DNS, RDAP, and multiple JSON lookup tables. (This uses DNS so there is some data leakage possible here)
+</p>
+
+<div class="panel">
+  <h2>1) Input targets</h2>
+  <p class="small">Enter one IP, hostname, or URL per line.</p>
+  <textarea id="input" placeholder="8.8.8.8
+example.org
+https://www.microsoft.com
+10.10.10.15"></textarea>
+</div>
+
+<div class="panel">
+  <h2>2) Load lookup tables</h2>
+  <p class="small">
+    Supported table types:
+    <span class="mono">cidr</span>,
+    <span class="mono">ip</span>,
+    <span class="mono">hostname</span>,
+    <span class="mono">domain_suffix</span>,
+    <span class="mono">regex</span>
+  </p>
+  <input type="file" id="lookupFiles" accept=".json,application/json" multiple />
+  <button type="button" id="clearLookupsBtn">Clear Loaded Lookups</button>
+  <div id="lookupSummary" class="small">No lookup tables loaded.</div>
+</div>
+
+<div class="panel">
+  <h2>Lookup Table JSON Format</h2>
+  <p class="small">
+    Each lookup file must be a JSON object with a <span class="mono">type</span> and an <span class="mono">entries</span> array.
+    The tool accepts multiple lookup files at once and applies all matching entries to each host.
+  </p>
+
+  <h3>Required top-level fields</h3>
+  <ul class="tight small">
+    <li><span class="mono">name</span> — Friendly name shown in the UI.</li>
+    <li><span class="mono">type</span> — One of: <span class="mono">cidr</span>, <span class="mono">ip</span>, <span class="mono">hostname</span>, <span class="mono">domain_suffix</span>, <span class="mono">regex</span>.</li>
+    <li><span class="mono">entries</span> — Array of lookup records.</li>
+    <li><span class="mono">description</span> — Optional human-readable description.</li>
+    <li><span class="mono">defaultTags</span> — Optional tags automatically added to every match from this table.</li>
+  </ul>
+
+  <h3>Required entry fields</h3>
+  <ul class="tight small">
+    <li><span class="mono">value</span> — The value to match (for example a CIDR, IP, hostname, suffix, or regex pattern).</li>
+    <li><span class="mono">label</span> — Friendly label shown in results.</li>
+    <li><span class="mono">severity</span> — Optional. Suggested values: <span class="mono">info</span>, <span class="mono">low</span>, <span class="mono">medium</span>, <span class="mono">high</span>, <span class="mono">critical</span>.</li>
+    <li><span class="mono">tags</span> — Optional string array added when the entry matches.</li>
+    <li><span class="mono">meta</span> — Optional object for arbitrary structured metadata.</li>
+  </ul>
+
+  <h3>Type behavior</h3>
+  <ul class="tight small">
+    <li><span class="mono">cidr</span> — Matches the resolved IP against a CIDR block like <span class="mono">10.0.0.0/8</span>.</li>
+    <li><span class="mono">ip</span> — Exact IP match like <span class="mono">8.8.8.8</span>.</li>
+    <li><span class="mono">hostname</span> — Exact hostname match like <span class="mono">vpn.example.org</span>.</li>
+    <li><span class="mono">domain_suffix</span> — Hostname ends-with match like <span class="mono">.example.org</span>.</li>
+    <li><span class="mono">regex</span> — JavaScript regular expression pattern matched against the normalized input, hostname, and IP.</li>
+  </ul>
+
+  <details open>
+    <summary>Example: CIDR lookup table</summary>
+    <pre class="help" id="exampleCidr">{
+  "name": "Internal Network Ranges",
+  "description": "Example internal and public network ranges",
+  "type": "cidr",
+  "defaultTags": ["network-list"],
+  "entries": [
+    {
+      "value": "10.20.30.0/24",
+      "label": "Operations Server Segment",
+      "severity": "info",
+      "tags": ["internal", "server"],
+      "meta": {
+        "owner": "Operations",
+        "zone": "server-segment"
+      }
+    },
+    {
+      "value": "198.51.100.0/24",
+      "label": "Public Web Segment",
+      "severity": "info",
+      "tags": ["public", "web"],
+      "meta": {
+        "owner": "Web Team",
+        "zone": "public-edge"
+      }
+    }
+  ]
+}</pre>
+    <button type="button" onclick="copyExample('exampleCidr')">Copy CIDR Example</button>
+  </details>
+
+  <details>
+    <summary>Example: exact IP watchlist</summary>
+    <pre class="help" id="exampleIp">{
+  "name": "Threat IP Watchlist",
+  "type": "ip",
+  "defaultTags": ["watchlist", "threat-intel"],
+  "entries": [
+    {
+      "value": "45.9.148.114",
+      "label": "Known scanner",
+      "severity": "high",
+      "tags": ["scanner", "osint"],
+      "meta": {
+        "source": "case-2026-001"
+      }
+    }
+  ]
+}</pre>
+    <button type="button" onclick="copyExample('exampleIp')">Copy IP Example</button>
+  </details>
+
+  <details>
+    <summary>Example: suspicious domain suffix list</summary>
+    <pre class="help" id="exampleSuffix">{
+  "name": "Suspicious Domain Suffixes",
+  "type": "domain_suffix",
+  "defaultTags": ["domain-watch"],
+  "entries": [
+    {
+      "value": ".example-bad.tld",
+      "label": "Known suspicious suffix",
+      "severity": "medium",
+      "tags": ["osint"],
+      "meta": {
+        "feed": "analyst-maintained"
+      }
+    }
+  ]
+}</pre>
+    <button type="button" onclick="copyExample('exampleSuffix')">Copy Suffix Example</button>
+  </details>
+
+  <details>
+    <summary>Example: regex table</summary>
+    <pre class="help" id="exampleRegex">{
+  "name": "Regex Flags",
+  "type": "regex",
+  "defaultTags": ["pattern-match"],
+  "entries": [
+    {
+      "value": "(^|\\.)test(-|\\.)",
+      "label": "Test naming pattern",
+      "severity": "low",
+      "tags": ["test-dev"],
+      "meta": {
+        "note": "Matches test-style hostnames"
+      }
+    }
+  ]
+}</pre>
+    <button type="button" onclick="copyExample('exampleRegex')">Copy Regex Example</button>
+  </details>
+
+  <details>
+    <summary>Practical notes</summary>
+    <ul class="tight small">
+      <li>Use one JSON file per logical source when possible (for example <span class="mono">internal_networks.json</span>, <span class="mono">watchlist_ips.json</span>, <span class="mono">suspicious_domains.json</span>).</li>
+      <li>The same host may match multiple tables and multiple entries. All hits are preserved.</li>
+      <li>For <span class="mono">regex</span> tables, use standard JavaScript regex syntax without surrounding slashes.</li>
+      <li>The <span class="mono">meta</span> object is preserved in exports and is good for owner, ticket, source feed, disposition, or notes.</li>
+      <li>If you want tags added automatically to every entry in the file, use <span class="mono">defaultTags</span>.</li>
+    </ul>
+  </details>
+</div>
+
+<div class="panel">
+  <h2>3) Enrich</h2>
+  <button type="button" id="enrichBtn">Enrich Targets</button>
+  <button type="button" id="exportJsonBtn">Export JSON</button>
+  <button type="button" id="exportCsvBtn">Export CSV</button>
+  <div id="status">Ready.</div>
+</div>
+
+<div class="panel">
+  <h2>Results</h2>
+  <table id="results">
+    <thead>
+      <tr>
+        <th>Input</th>
+        <th>IP</th>
+        <th>Hostname</th>
+        <th>ASN</th>
+        <th>Org</th>
+        <th>Country</th>
+        <th>Built-in Class</th>
+        <th>Lookup Hits</th>
+        <th>Tags</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const DOH_ENDPOINT = "https://cloudflare-dns.com/dns-query";
+
+  const BUILTIN_CIDR_CLASSES = [
+    { cidr: "10.0.0.0/8", name: "RFC1918-10", trust: "internal", tags: ["private", "rfc1918"] },
+    { cidr: "172.16.0.0/12", name: "RFC1918-172", trust: "internal", tags: ["private", "rfc1918"] },
+    { cidr: "192.168.0.0/16", name: "RFC1918-192", trust: "internal", tags: ["private", "rfc1918"] },
+    { cidr: "127.0.0.0/8", name: "Loopback", trust: "local", tags: ["loopback"] },
+    { cidr: "169.254.0.0/16", name: "Link-Local", trust: "local", tags: ["apipa", "link-local"] },
+    { cidr: "224.0.0.0/4", name: "Multicast", trust: "special", tags: ["multicast"] }
+  ];
+
+  let hosts = [];
+  let lookupTables = [];
+
+  const inputEl = document.getElementById("input");
+  const lookupFilesEl = document.getElementById("lookupFiles");
+  const lookupSummaryEl = document.getElementById("lookupSummary");
+  const statusEl = document.getElementById("status");
+  const tbodyEl = document.querySelector("#results tbody");
+
+  window.copyExample = async function(id) {
+    const text = document.getElementById(id)?.textContent || "";
+    try {
+      await navigator.clipboard.writeText(text);
+      setStatus(`Copied ${id} to clipboard.`);
+    } catch {
+      setStatus(`Unable to copy automatically. You can still select and copy the example manually.`);
+    }
+  };
+
+  function setStatus(msg) { statusEl.textContent = msg; }
+  function uniq(arr) { return [...new Set((arr || []).filter(Boolean))]; }
+  function normalizeInput(line) {
+    line = (line || "").trim();
+    if (!line) return null;
+    try {
+      if (line.includes("://")) return new URL(line).hostname;
+    } catch {}
+    return line;
+  }
+  function isIPv4(v) {
+    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(v)) return false;
+    return v.split(".").every(o => Number(o) >= 0 && Number(o) <= 255);
+  }
+  function looksLikeHostname(value) {
+    return /^[a-zA-Z0-9.-]+$/.test(value) && !isIPv4(value);
+  }
+  function parsePTRName(ip) { return ip.split(".").reverse().join(".") + ".in-addr.arpa"; }
+  function ipToInt(ip) {
+    return ip.split(".").reduce((a, o) => ((a << 8) + Number(o)) >>> 0, 0) >>> 0;
+  }
+  function cidrMatch(ip, cidr) {
+    const [net, bitsStr] = cidr.split("/");
+    const bits = Number(bitsStr);
+    if (!isIPv4(ip) || !isIPv4(net) || Number.isNaN(bits) || bits < 0 || bits > 32) return false;
+    const mask = bits === 0 ? 0 : ((~0 << (32 - bits)) >>> 0);
+    return (ipToInt(ip) & mask) === (ipToInt(net) & mask);
+  }
+  function classifyBuiltInCIDR(ip) {
+    for (const c of BUILTIN_CIDR_CLASSES) {
+      if (cidrMatch(ip, c.cidr)) return c;
+    }
+    return { name: "Public", trust: "external", tags: ["public"] };
+  }
+  function compact(obj) {
+    const out = {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (v !== null && v !== undefined && v !== "") out[k] = v;
+    }
+    return out;
+  }
+
+  async function dnsLookup(name, type = "A") {
+    try {
+      const url = `${DOH_ENDPOINT}?name=${encodeURIComponent(name)}&type=${encodeURIComponent(type)}`;
+      const res = await fetch(url, { headers: { accept: "application/dns-json" } });
+      if (!res.ok) return [];
+      const j = await res.json();
+      return Array.isArray(j.Answer) ? j.Answer.map(a => a.data) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function rdapLookup(ip) {
+    try {
+      const res = await fetch(`https://rdap.arin.net/registry/ip/${encodeURIComponent(ip)}`);
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  }
+
+  function normalizeLookupTable(json, filename) {
+    if (!json || typeof json !== "object") throw new Error("Lookup table must be a JSON object");
+    const type = json.type;
+    const supportedTypes = ["cidr", "ip", "hostname", "domain_suffix", "regex"];
+    if (!supportedTypes.includes(type)) {
+      throw new Error(`Unsupported lookup table type "${type}" in ${filename}`);
+    }
+    if (!Array.isArray(json.entries)) {
+      throw new Error(`Lookup table ${filename} must contain an \"entries\" array`);
+    }
+    const table = {
+      name: json.name || filename,
+      description: json.description || "",
+      type,
+      defaultTags: Array.isArray(json.defaultTags) ? json.defaultTags : [],
+      entries: json.entries.map((e, idx) => ({
+        value: e.value,
+        label: e.label || `${json.name || filename} entry ${idx + 1}`,
+        severity: e.severity || "info",
+        tags: Array.isArray(e.tags) ? e.tags : [],
+        meta: (e.meta && typeof e.meta === "object") ? e.meta : {}
+      }))
+    };
+    if (table.type === "regex") {
+      for (const entry of table.entries) {
+        try { entry._regex = new RegExp(entry.value, "i"); }
+        catch { throw new Error(`Invalid regex \"${entry.value}\" in table \"${table.name}\"`); }
+      }
+    }
+    return table;
+  }
+
+  async function loadLookupFiles(fileList) {
+    const loaded = [];
+    for (const file of fileList) {
+      try {
+        const text = await file.text();
+        const json = JSON.parse(text);
+        loaded.push(normalizeLookupTable(json, file.name));
+      } catch (err) {
+        alert(`Failed to load ${file.name}: ${err.message}`);
+      }
+    }
+    lookupTables.push(...loaded);
+    renderLookupSummary();
+  }
+
+  function renderLookupSummary() {
+    if (!lookupTables.length) {
+      lookupSummaryEl.textContent = "No lookup tables loaded.";
+      return;
+    }
+    lookupSummaryEl.innerHTML = "";
+    lookupTables.forEach((t, i) => {
+      const div = document.createElement("div");
+      div.textContent = `${i + 1}. ${t.name} — type: ${t.type}, entries: ${t.entries.length}${t.description ? ", " + t.description : ""}`;
+      lookupSummaryEl.appendChild(div);
+    });
+  }
+
+  function buildHit(table, entry, matchType, matchedValue) {
+    return compact({
+      sourceTable: table.name,
+      tableType: table.type,
+      matchType,
+      matchedValue,
+      label: entry.label,
+      severity: entry.severity,
+      tags: uniq([...(table.defaultTags || []), ...(entry.tags || [])]),
+      meta: entry.meta
+    });
+  }
+
+  function addHit(host, hit) {
+    host.lookupHits.push(hit);
+    host.tags = uniq([...(host.tags || []), ...(hit.tags || [])]);
+  }
+
+  function applyLookupTables(host) {
+    for (const table of lookupTables) {
+      for (const entry of table.entries) {
+        switch (table.type) {
+          case "cidr":
+            if (host.ip && cidrMatch(host.ip, entry.value)) addHit(host, buildHit(table, entry, "cidr", entry.value));
+            break;
+          case "ip":
+            if (host.ip && host.ip === entry.value) addHit(host, buildHit(table, entry, "ip", entry.value));
+            break;
+          case "hostname":
+            if (host.hostname && host.hostname.toLowerCase() === String(entry.value).toLowerCase()) addHit(host, buildHit(table, entry, "hostname", entry.value));
+            break;
+          case "domain_suffix":
+            if (host.hostname && host.hostname.toLowerCase().endsWith(String(entry.value).toLowerCase())) addHit(host, buildHit(table, entry, "domain_suffix", entry.value));
+            break;
+          case "regex":
+            if ((host.inputNormalized && entry._regex.test(host.inputNormalized)) || (host.hostname && entry._regex.test(host.hostname)) || (host.ip && entry._regex.test(host.ip))) {
+              addHit(host, buildHit(table, entry, "regex", entry.value));
+            }
+            break;
+        }
+      }
+    }
+  }
+
+  async function enrichOne(rawInput) {
+    const normalized = normalizeInput(rawInput);
+    if (!normalized) return null;
+    const host = {
+      input: rawInput,
+      inputNormalized: normalized,
+      ip: null,
+      hostname: null,
+      asn: null,
+      org: null,
+      country: null,
+      builtInClass: null,
+      builtInTrust: null,
+      tags: [],
+      lookupHits: [],
+      enrichment: { dnsA: [], dnsAAAA: [], rdnsPTR: [], rdap: false }
+    };
+    if (isIPv4(normalized)) {
+      host.ip = normalized;
+      const ptr = await dnsLookup(parsePTRName(normalized), "PTR");
+      host.enrichment.rdnsPTR = ptr;
+      if (ptr.length) host.hostname = ptr[0].replace(/\.$/, "");
+    } else if (looksLikeHostname(normalized)) {
+      host.hostname = normalized;
+      const a = await dnsLookup(normalized, "A");
+      const aaaa = await dnsLookup(normalized, "AAAA");
+      host.enrichment.dnsA = a;
+      host.enrichment.dnsAAAA = aaaa;
+      if (a.length) host.ip = a[0];
+    }
+    if (host.ip) {
+      const builtIn = classifyBuiltInCIDR(host.ip);
+      host.builtInClass = builtIn.name;
+      host.builtInTrust = builtIn.trust;
+      host.tags = uniq([...(host.tags || []), ...(builtIn.tags || []), builtIn.trust]);
+      const rdap = await rdapLookup(host.ip);
+      if (rdap) {
+        host.enrichment.rdap = true;
+        host.country = rdap.country || null;
+        if (rdap.autnum) host.asn = rdap.autnum;
+        const registrant = Array.isArray(rdap.entities) ? rdap.entities.find(e => Array.isArray(e.roles) && e.roles.includes("registrant")) : null;
+        if (registrant && Array.isArray(registrant.vcardArray) && Array.isArray(registrant.vcardArray[1])) {
+          const fn = registrant.vcardArray[1].find(v => v[0] === "fn");
+          if (fn) host.org = fn[3];
+        }
+      }
+    }
+    applyLookupTables(host);
+    return host;
+  }
+
+  function severityClass(sev) { return "sev-" + String(sev || "info").toLowerCase(); }
+  function makeTag(text, className = "") {
+    const span = document.createElement("span");
+    span.className = `tag ${className}`.trim();
+    span.textContent = text;
+    return span;
+  }
+
+  function renderHosts() {
+    tbodyEl.innerHTML = "";
+    for (const host of hosts) {
+      const tr = document.createElement("tr");
+      function td(text = "") {
+        const cell = document.createElement("td");
+        cell.textContent = text;
+        return cell;
+      }
+      tr.appendChild(td(host.input || ""));
+      tr.appendChild(td(host.ip || ""));
+      tr.appendChild(td(host.hostname || ""));
+      tr.appendChild(td(host.asn || ""));
+      tr.appendChild(td(host.org || ""));
+      tr.appendChild(td(host.country || ""));
+      tr.appendChild(td(host.builtInClass || ""));
+
+      const hitsTd = document.createElement("td");
+      if (host.lookupHits.length) {
+        host.lookupHits.forEach(hit => {
+          const block = document.createElement("div");
+          block.className = "lookup-block";
+          const badge = makeTag(`${hit.sourceTable} | ${hit.label} | ${hit.severity}`, severityClass(hit.severity));
+          badge.style.cursor = "pointer";
+          const metaBox = document.createElement("div");
+          metaBox.className = "meta-box";
+          metaBox.textContent = JSON.stringify(hit.meta || {}, null, 2);
+          badge.addEventListener("click", () => block.classList.toggle("open"));
+          block.appendChild(badge);
+          if (hit.meta && Object.keys(hit.meta).length) block.appendChild(metaBox);
+          hitsTd.appendChild(block);
+        });
+      }
+      tr.appendChild(hitsTd);
+
+      const tagsTd = document.createElement("td");
+      uniq(host.tags).forEach(tag => tagsTd.appendChild(makeTag(tag)));
+      tr.appendChild(tagsTd);
+      tbodyEl.appendChild(tr);
+    }
+  }
+
+  function downloadFile(filename, content, type) {
+    const blob = new Blob([content], { type });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function exportJSON() {
+    if (!hosts.length) return alert("No host data to export.");
+    downloadFile("hosts.json", JSON.stringify(hosts, null, 2), "application/json");
+  }
+  function csvEscape(v) {
+    const s = (v ?? "").toString().replace(/"/g, '""');
+    return `"${s}"`;
+  }
+  function exportCSV() {
+    if (!hosts.length) return alert("No host data to export.");
+    const rows = [];
+    const headers = ["input","inputNormalized","ip","hostname","asn","org","country","builtInClass","builtInTrust","tags","lookupHitCount","lookupHits"];
+    rows.push(headers.join(","));
+    for (const h of hosts) {
+      rows.push([
+        h.input, h.inputNormalized, h.ip, h.hostname, h.asn, h.org, h.country,
+        h.builtInClass, h.builtInTrust, (h.tags || []).join("|"), h.lookupHits.length,
+        JSON.stringify(h.lookupHits)
+      ].map(csvEscape).join(","));
+    }
+    downloadFile("hosts.csv", rows.join("\n"), "text/csv");
+  }
+
+  async function enrichTargets() {
+    const lines = inputEl.value.split("\n").map(s => s.trim()).filter(Boolean);
+    if (!lines.length) return alert("Please enter at least one IP, hostname, or URL.");
+    hosts = [];
+    renderHosts();
+    setStatus(`Running enrichment...\nTargets: ${lines.length}`);
+    for (let i = 0; i < lines.length; i++) {
+      setStatus(`Running enrichment...\n${i + 1}/${lines.length}: ${lines[i]}`);
+      const result = await enrichOne(lines[i]);
+      if (result) hosts.push(result);
+    }
+    renderHosts();
+    setStatus(`Complete.\nTargets processed: ${hosts.length}\nLookup tables loaded: ${lookupTables.length}`);
+  }
+
+  lookupFilesEl.addEventListener("change", async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    await loadLookupFiles(files);
+    e.target.value = "";
+  });
+  document.getElementById("clearLookupsBtn").addEventListener("click", () => {
+    lookupTables = [];
+    renderLookupSummary();
+  });
+  document.getElementById("enrichBtn").addEventListener("click", enrichTargets);
+  document.getElementById("exportJsonBtn").addEventListener("click", exportJSON);
+  document.getElementById("exportCsvBtn").addEventListener("click", exportCSV);
+})();
+</script>
+
+</body>
+</html>
