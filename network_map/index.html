@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subway Style Network Mapper v3</title>
+  <style>
+    :root{
+      --bg:#0f172a; --panel:#111827; --panel2:#1f2937; --text:#e5e7eb; --muted:#94a3b8; --accent:#38bdf8;
+      --canvas:#f8fafc; --grid:rgba(15,23,42,.07); --shadow:0 10px 28px rgba(2,6,23,.18);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%;font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    body{overflow:hidden}
+    .app{display:grid;grid-template-columns:300px 1fr;height:100vh}
+    .sidebar{background:linear-gradient(180deg,var(--panel),#0b1220);border-right:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;overflow:auto}
+    .head,.section,.toolbar{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .head h1{margin:0 0 6px;font-size:1.08rem}
+    .head p,.muted{margin:0;color:var(--muted);font-size:.86rem;line-height:1.35}
+    .toolbar,.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn,input,select{font:inherit}
+    .btn{padding:8px 11px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:var(--panel2);color:var(--text);cursor:pointer}
+    .btn:hover{filter:brightness(1.08)}
+    .btn.primary{background:#0ea5e9;border-color:#0ea5e9;color:#082f49;font-weight:700}
+    .btn.warn{background:#d97706;border-color:#d97706}
+    .btn.good{background:#059669;border-color:#059669}
+    .btn.active{outline:2px solid var(--accent)}
+    .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+    h2{margin:0 0 10px;font-size:.86rem;text-transform:uppercase;letter-spacing:.08em;color:#cbd5e1}
+    .palette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .palette-item{padding:12px;border-radius:12px;border:1px dashed rgba(255,255,255,.18);text-align:center;background:rgba(255,255,255,.03);user-select:none;cursor:grab}
+    .palette-item:active{cursor:grabbing}
+    .palette-icon{font-size:1.7rem;line-height:1}
+    .palette-name{font-size:.82rem;margin-top:8px}
+    .field{display:grid;gap:5px;margin-bottom:10px}
+    .field label{font-size:.82rem;color:#cbd5e1}
+    .field input{width:100%;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text)}
+    input[type=color]{padding:0;height:38px}
+    .canvas-wrap{position:relative;overflow:hidden;background:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+      var(--canvas);
+      background-size:24px 24px,24px 24px,auto;
+    }
+    .canvas-toolbar{position:absolute;left:12px;top:12px;z-index:30;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-radius:12px;background:rgba(17,24,39,.92);border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow)}
+    .canvas-toolbar label{font-size:.82rem;color:#cbd5e1}
+    .canvas-toolbar input[type=text]{width:220px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text)}
+    .canvas-toolbar input[type=color]{width:36px;height:36px;border:none;background:transparent;padding:0}
+    .canvas{position:absolute;inset:0;overflow:hidden}
+    #linkLayer{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:auto;overflow:visible}
+    #nodesLayer{position:absolute;inset:0;z-index:2;pointer-events:none}
+    .node{position:absolute;width:124px;min-height:82px;border-radius:18px;border:3px solid #0f172a;background:#fff;color:#0f172a;box-shadow:0 8px 24px rgba(15,23,42,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 8px;cursor:move;user-select:none;pointer-events:auto}
+    .node.concept{width:auto;min-width:120px;min-height:62px;padding:10px 16px;border-radius:999px}
+    .node.selected{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,.22),0 8px 24px rgba(15,23,42,.18)}
+    .node.source{border-color:#16a34a}
+    .node-icon{font-size:1.8rem;line-height:1}
+    .node.concept .node-icon,.node.concept .subtitle{display:none}
+    .title{font-weight:700;font-size:.86rem;text-align:center;line-height:1.15;max-width:100%;word-wrap:break-word}
+    .subtitle{font-size:.7rem;color:#475569;text-align:center;line-height:1.15}
+    .link-hit{pointer-events:stroke;cursor:pointer}
+    .link-line{pointer-events:none}
+    .link-label{font:12px Segoe UI, Arial, sans-serif;fill:#334155;paint-order:stroke;stroke:rgba(255,255,255,.95);stroke-width:4px;stroke-linejoin:round;pointer-events:none}
+    .status{position:absolute;right:12px;bottom:12px;max-width:470px;z-index:30;padding:10px 12px;border-radius:12px;background:rgba(17,24,39,.92);border:1px solid rgba(255,255,255,.12);box-shadow:var(--shadow);font-size:.86rem}
+    .status strong{color:#fff}
+    .kbd{display:inline-block;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.08);font-size:.78rem}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="head">
+      <h1>Subway Style Network Mapper</h1>
+      <p>Drag devices onto the canvas, connect them with orthogonal subway lines, and export to JSON or SVG.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn primary" id="newBtn">New Map</button>
+      <button class="btn" id="undoBtn">Undo</button>
+      <button class="btn" id="exportJsonBtn">Export JSON</button>
+      <button class="btn good" id="exportSvgBtn">Export SVG</button>
+      <button class="btn" id="importBtn">Import JSON</button>
+      <input id="fileInput" type="file" accept="application/json" hidden>
+    </div>
+
+    <div class="section">
+      <h2>Palette</h2>
+      <div id="palette" class="palette"></div>
+      <p class="muted" style="margin-top:10px">Drag an item onto the canvas.</p>
+    </div>
+
+    <div class="section">
+      <h2>Selected Node</h2>
+      <div class="field"><label for="nodeLabel">Label</label><input id="nodeLabel" type="text" placeholder="Device label"></div>
+      <div class="field"><label for="nodeSubtitle">Subtitle / details</label><input id="nodeSubtitle" type="text" placeholder="IP, model, VLAN, zone"></div>
+      <div class="field"><label for="nodeColor">Fill color</label><input id="nodeColor" type="color" value="#ffffff"></div>
+      <div class="row"><button class="btn" id="duplicateBtn">Duplicate</button><button class="btn warn" id="deleteNodeBtn">Delete</button></div>
+    </div>
+
+    <div class="section">
+      <h2>Tips</h2>
+      <p class="muted">The empty nodes layer is now <strong>click-through</strong>, so exposed line segments can be selected normally. Click a line, then press <span class="kbd">Delete</span> or use <em>Delete Link</em>.</p>
+      <p class="muted" style="margin-top:8px">Undo: <span class="kbd">Ctrl+Z</span> / <span class="kbd">Cmd+Z</span></p>
+    </div>
+  </aside>
+
+  <main class="canvas-wrap">
+    <div class="canvas-toolbar">
+      <button class="btn active" id="selectModeBtn">Select</button>
+      <button class="btn" id="connectModeBtn">Connect</button>
+      <label for="linkColor">Link</label>
+      <input id="linkColor" type="color" value="#2563eb">
+      <input id="linkLabel" type="text" placeholder="e.g. VLAN 20, Trunk, DMZ">
+      <button class="btn warn" id="deleteLinkBtn">Delete Link</button>
+    </div>
+
+    <div class="canvas" id="canvas">
+      <svg id="linkLayer" xmlns="http://www.w3.org/2000/svg"></svg>
+      <div id="nodesLayer"></div>
+    </div>
+
+    <div class="status" id="status"><strong>Ready.</strong> Drag a palette item onto the canvas.</div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const paletteItems = [
+    {type:'router', label:'Router', subtitle:'L3 / WAN', icon:'📡', fill:'#e0f2fe', concept:false},
+    {type:'switch', label:'Switch', subtitle:'L2 / access', icon:'🔀', fill:'#dbeafe', concept:false},
+    {type:'firewall', label:'Firewall', subtitle:'Policy / edge', icon:'🧱', fill:'#fee2e2', concept:false},
+    {type:'wifi', label:'Wi-Fi AP', subtitle:'Wireless', icon:'📶', fill:'#dcfce7', concept:false},
+    {type:'server', label:'Server', subtitle:'Service host', icon:'🖥️', fill:'#ede9fe', concept:false},
+    {type:'cloud', label:'Cloud', subtitle:'Internet / WAN', icon:'☁️', fill:'#f1f5f9', concept:false},
+    {type:'vlan', label:'VLAN', subtitle:'Segmentation', icon:'VLAN', fill:'#fef3c7', concept:true},
+    {type:'trunk', label:'Trunk', subtitle:'802.1Q', icon:'TRUNK', fill:'#fde68a', concept:true},
+    {type:'zone', label:'Zone', subtitle:'Trust boundary', icon:'ZONE', fill:'#fecaca', concept:true},
+    {type:'ssid', label:'SSID', subtitle:'Wireless segment', icon:'SSID', fill:'#d1fae5', concept:true}
+  ];
+
+  const state = {
+    mode: 'select',
+    nodes: [],
+    links: [],
+    selectedNodeId: null,
+    selectedLinkId: null,
+    connectSourceId: null,
+    drag: null,
+    history: [],
+    z: 10,
+    maxHistory: 100
+  };
+
+  const els = {
+    palette: document.getElementById('palette'),
+    canvas: document.getElementById('canvas'),
+    nodesLayer: document.getElementById('nodesLayer'),
+    linkLayer: document.getElementById('linkLayer'),
+    status: document.getElementById('status'),
+    nodeLabel: document.getElementById('nodeLabel'),
+    nodeSubtitle: document.getElementById('nodeSubtitle'),
+    nodeColor: document.getElementById('nodeColor'),
+    linkColor: document.getElementById('linkColor'),
+    linkLabel: document.getElementById('linkLabel'),
+    undoBtn: document.getElementById('undoBtn'),
+    fileInput: document.getElementById('fileInput')
+  };
+
+  function escapeHtml(str){
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function uid(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,9); }
+  function snap(n, size=12){ return Math.round(n/size)*size; }
+  function setStatus(html){ els.status.innerHTML = html; }
+  function normalizeColor(c){ const ctx=document.createElement('canvas').getContext('2d'); ctx.fillStyle=c; return ctx.fillStyle; }
+  function cloneState(){ return JSON.stringify({nodes:state.nodes,links:state.links,z:state.z}); }
+  function pushHistory(reason){
+    state.history.push({snapshot: cloneState(), reason});
+    if(state.history.length > state.maxHistory) state.history.shift();
+    els.undoBtn.disabled = !state.history.length;
+  }
+  function undo(){
+    if(!state.history.length){ setStatus('<strong>Nothing to undo.</strong>'); return; }
+    const last = state.history.pop();
+    const data = JSON.parse(last.snapshot);
+    state.nodes = data.nodes || [];
+    state.links = data.links || [];
+    state.z = data.z || 10;
+    state.selectedNodeId = null;
+    state.selectedLinkId = null;
+    state.connectSourceId = null;
+    render();
+    els.undoBtn.disabled = !state.history.length;
+    setStatus(`<strong>Undid:</strong> ${escapeHtml(last.reason)}.`);
+  }
+  function paletteItem(type){ return paletteItems.find(x => x.type === type); }
+  function nodeSize(node){ return node.concept ? {w:132,h:62} : {w:124,h:82}; }
+  function nodeCenter(node){ const s=nodeSize(node); return {x:node.x+s.w/2, y:node.y+s.h/2}; }
+  function orthPath(a,b){
+    const dx=b.x-a.x, dy=b.y-a.y;
+    if(Math.abs(dx) > Math.abs(dy)){
+      const mid = a.x + dx/2;
+      return `M ${a.x} ${a.y} L ${mid} ${a.y} L ${mid} ${b.y} L ${b.x} ${b.y}`;
+    }
+    const mid = a.y + dy/2;
+    return `M ${a.x} ${a.y} L ${a.x} ${mid} L ${b.x} ${mid} L ${b.x} ${b.y}`;
+  }
+  function labelPos(a,b){
+    const dx=b.x-a.x, dy=b.y-a.y;
+    if(Math.abs(dx) > Math.abs(dy)) return {x:a.x+dx/2+6, y:b.y-8};
+    return {x:b.x+6, y:a.y+dy/2-8};
+  }
+  function makeNode(type,x,y){
+    const p=paletteItem(type);
+    return {id:uid('node'), type, label:p.label, subtitle:p.subtitle, icon:p.icon, fill:p.fill, concept:p.concept, x:snap(x), y:snap(y), z:++state.z};
+  }
+
+  function renderPalette(){
+    els.palette.innerHTML='';
+    for(const item of paletteItems){
+      const d=document.createElement('div');
+      d.className='palette-item';
+      d.draggable=true;
+      d.dataset.type=item.type;
+      d.innerHTML=`<div class="palette-icon">${escapeHtml(item.icon)}</div><div class="palette-name">${escapeHtml(item.label)}</div>`;
+      d.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({type:item.type, from:'palette'}));
+        e.dataTransfer.effectAllowed='copy';
+      });
+      els.palette.appendChild(d);
+    }
+  }
+
+  function renderNodes(){
+    els.nodesLayer.innerHTML='';
+    const sorted=[...state.nodes].sort((a,b)=>(a.z||0)-(b.z||0));
+    for(const node of sorted){
+      const n=document.createElement('div');
+      n.className='node' + (node.concept ? ' concept' : '') + (node.id===state.selectedNodeId ? ' selected' : '') + (node.id===state.connectSourceId ? ' source' : '');
+      n.style.left=node.x+'px'; n.style.top=node.y+'px'; n.style.background=node.fill; n.style.zIndex=String(node.z || 10);
+      n.dataset.nodeId=node.id;
+      n.innerHTML = `<div class="node-icon">${escapeHtml(node.icon)}</div><div class="title">${escapeHtml(node.label)}</div><div class="subtitle">${escapeHtml(node.subtitle||'')}</div>`;
+      n.addEventListener('pointerdown', ev => {
+        if(state.mode === 'connect'){
+          handleConnect(node.id);
+          ev.stopPropagation();
+          return;
+        }
+        state.selectedNodeId = node.id;
+        state.selectedLinkId = null;
+        state.drag = {id:node.id, startX:ev.clientX, startY:ev.clientY, x:node.x, y:node.y, history:false};
+        render();
+        ev.stopPropagation();
+      });
+      n.addEventListener('dblclick', ev => {
+        const next = prompt('Rename node:', node.label);
+        if(next !== null){
+          pushHistory('Rename node');
+          node.label = next.trim() || node.label;
+          render();
+        }
+        ev.stopPropagation();
+      });
+      els.nodesLayer.appendChild(n);
+    }
+  }
+
+  function renderLinks(){
+    els.linkLayer.innerHTML='';
+    for(const link of state.links){
+      const src=state.nodes.find(n=>n.id===link.sourceId);
+      const dst=state.nodes.find(n=>n.id===link.targetId);
+      if(!src || !dst) continue;
+      const a=nodeCenter(src), b=nodeCenter(dst), d=orthPath(a,b), pos=labelPos(a,b);
+      const g=document.createElementNS('http://www.w3.org/2000/svg','g');
+      const hit=document.createElementNS('http://www.w3.org/2000/svg','path');
+      hit.setAttribute('d', d);
+      hit.setAttribute('stroke', 'rgba(0,0,0,0.001)');
+      hit.setAttribute('stroke-width', '26');
+      hit.setAttribute('fill', 'none');
+      hit.setAttribute('class', 'link-hit');
+      hit.addEventListener('pointerdown', ev => {
+        state.selectedLinkId = link.id;
+        state.selectedNodeId = null;
+        state.connectSourceId = null;
+        render();
+        setStatus(`<strong>Link selected.</strong> ${link.label ? 'Label: <em>'+escapeHtml(link.label)+'</em> · ' : ''}Color: <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:${link.color};vertical-align:-2px"></span> ${escapeHtml(link.color)}`);
+        ev.stopPropagation();
+      });
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+      p.setAttribute('d', d);
+      p.setAttribute('stroke', link.color || '#2563eb');
+      p.setAttribute('stroke-width', state.selectedLinkId===link.id ? '9' : '6');
+      p.setAttribute('stroke-linecap', 'round');
+      p.setAttribute('stroke-linejoin', 'round');
+      p.setAttribute('fill', 'none');
+      p.setAttribute('class','link-line');
+      if(state.selectedLinkId===link.id) p.setAttribute('filter','drop-shadow(0 0 4px rgba(14,165,233,.65))');
+      g.appendChild(hit); g.appendChild(p);
+      if(link.label){
+        const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+        t.setAttribute('x', pos.x); t.setAttribute('y', pos.y); t.setAttribute('class','link-label'); t.textContent=link.label;
+        g.appendChild(t);
+      }
+      els.linkLayer.appendChild(g);
+    }
+  }
+
+  function updateInspector(){
+    const node=state.nodes.find(n=>n.id===state.selectedNodeId);
+    els.nodeLabel.disabled = !node; els.nodeSubtitle.disabled = !node; els.nodeColor.disabled = !node;
+    if(!node){ els.nodeLabel.value=''; els.nodeSubtitle.value=''; els.nodeColor.value='#ffffff'; return; }
+    els.nodeLabel.value=node.label || '';
+    els.nodeSubtitle.value=node.subtitle || '';
+    els.nodeColor.value=normalizeColor(node.fill || '#ffffff');
+  }
+
+  function render(){ renderLinks(); renderNodes(); updateInspector(); }
+
+  function setMode(mode){
+    state.mode=mode;
+    document.getElementById('selectModeBtn').classList.toggle('active', mode==='select');
+    document.getElementById('connectModeBtn').classList.toggle('active', mode==='connect');
+    if(mode!=='connect') state.connectSourceId=null;
+    render();
+    setStatus(mode==='connect' ? '<strong>Connect mode.</strong> Click source node, then target node.' : '<strong>Select mode.</strong> Click a line to select it, then delete it.');
+  }
+
+  function handleConnect(nodeId){
+    if(!state.connectSourceId){
+      state.connectSourceId=nodeId; render();
+      const n=state.nodes.find(x=>x.id===nodeId);
+      setStatus(`<strong>Source selected:</strong> ${escapeHtml(n?.label || 'node')}. Click the target node.`);
+      return;
+    }
+    if(state.connectSourceId===nodeId){ state.connectSourceId=null; render(); setStatus('<strong>Connect cancelled.</strong>'); return; }
+    const exists=state.links.find(l => (l.sourceId===state.connectSourceId && l.targetId===nodeId) || (l.sourceId===nodeId && l.targetId===state.connectSourceId));
+    if(exists){ state.selectedLinkId=exists.id; state.connectSourceId=null; render(); setStatus('<strong>Link already exists.</strong>'); return; }
+    pushHistory('Create link');
+    const link={id:uid('link'), sourceId:state.connectSourceId, targetId:nodeId, color:els.linkColor.value || '#2563eb', label:els.linkLabel.value.trim()};
+    state.links.push(link);
+    state.selectedLinkId=link.id; state.connectSourceId=null;
+    render();
+    setStatus('<strong>Link created.</strong> Click it to reselect or delete it.');
+  }
+
+  els.canvas.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect='copy'; });
+  els.canvas.addEventListener('drop', e => {
+    e.preventDefault();
+    try{
+      const data=JSON.parse(e.dataTransfer.getData('text/plain'));
+      if(data.from==='palette' && data.type){
+        const r=els.canvas.getBoundingClientRect();
+        pushHistory('Add node');
+        const n=makeNode(data.type, e.clientX-r.left-62, e.clientY-r.top-40);
+        state.nodes.push(n); state.selectedNodeId=n.id; state.selectedLinkId=null;
+        render();
+        setStatus(`<strong>Added:</strong> ${escapeHtml(n.label)}.`);
+      }
+    }catch(err){ console.error(err); }
+  });
+
+  els.canvas.addEventListener('pointermove', e => {
+    if(!state.drag) return;
+    const n=state.nodes.find(x=>x.id===state.drag.id); if(!n) return;
+    const dx=e.clientX-state.drag.startX, dy=e.clientY-state.drag.startY;
+    if((dx||dy) && !state.drag.history){ pushHistory('Move node'); state.drag.history=true; }
+    n.x=snap(Math.max(0, state.drag.x+dx));
+    n.y=snap(Math.max(0, state.drag.y+dy));
+    render();
+  });
+  window.addEventListener('pointerup', () => { state.drag=null; });
+  els.canvas.addEventListener('pointerdown', () => {
+    state.selectedNodeId=null; state.selectedLinkId=null; if(state.mode!=='connect') state.connectSourceId=null; render();
+  });
+
+  els.nodeLabel.addEventListener('input', () => {
+    const n=state.nodes.find(x=>x.id===state.selectedNodeId); if(!n) return;
+    if(!els.nodeLabel.dataset.hist){ pushHistory('Edit node label'); els.nodeLabel.dataset.hist='1'; }
+    n.label=els.nodeLabel.value; render();
+  });
+  els.nodeLabel.addEventListener('blur', () => delete els.nodeLabel.dataset.hist);
+  els.nodeSubtitle.addEventListener('input', () => {
+    const n=state.nodes.find(x=>x.id===state.selectedNodeId); if(!n) return;
+    if(!els.nodeSubtitle.dataset.hist){ pushHistory('Edit node subtitle'); els.nodeSubtitle.dataset.hist='1'; }
+    n.subtitle=els.nodeSubtitle.value; render();
+  });
+  els.nodeSubtitle.addEventListener('blur', () => delete els.nodeSubtitle.dataset.hist);
+  els.nodeColor.addEventListener('input', () => {
+    const n=state.nodes.find(x=>x.id===state.selectedNodeId); if(!n) return;
+    pushHistory('Change node color');
+    n.fill=els.nodeColor.value; render();
+  });
+
+  document.getElementById('newBtn').addEventListener('click', () => {
+    if(!confirm('Clear the current map and start over?')) return;
+    pushHistory('New map');
+    state.nodes=[]; state.links=[]; state.selectedNodeId=null; state.selectedLinkId=null; state.connectSourceId=null; render();
+    setStatus('<strong>New map created.</strong>');
+  });
+  document.getElementById('undoBtn').addEventListener('click', undo);
+  document.getElementById('selectModeBtn').addEventListener('click', () => setMode('select'));
+  document.getElementById('connectModeBtn').addEventListener('click', () => setMode('connect'));
+  document.getElementById('deleteNodeBtn').addEventListener('click', () => {
+    if(!state.selectedNodeId) return;
+    pushHistory('Delete node');
+    const id=state.selectedNodeId;
+    state.nodes=state.nodes.filter(n=>n.id!==id);
+    state.links=state.links.filter(l=>l.sourceId!==id && l.targetId!==id);
+    state.selectedNodeId=null; render();
+    setStatus('<strong>Node deleted.</strong> Connected links were removed too.');
+  });
+  document.getElementById('duplicateBtn').addEventListener('click', () => {
+    const n=state.nodes.find(x=>x.id===state.selectedNodeId); if(!n) return;
+    pushHistory('Duplicate node');
+    const copy={...n,id:uid('node'),x:n.x+36,y:n.y+36,z:++state.z};
+    state.nodes.push(copy); state.selectedNodeId=copy.id; render();
+    setStatus('<strong>Node duplicated.</strong>');
+  });
+  document.getElementById('deleteLinkBtn').addEventListener('click', () => {
+    if(!state.selectedLinkId){ setStatus('<strong>No link selected.</strong> Click a line first.'); return; }
+    pushHistory('Delete link');
+    state.links=state.links.filter(l=>l.id!==state.selectedLinkId);
+    state.selectedLinkId=null; render();
+    setStatus('<strong>Link deleted.</strong>');
+  });
+
+  function download(name, text, mime){
+    const blob=new Blob([text], {type:mime});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  document.getElementById('exportJsonBtn').addEventListener('click', () => {
+    download('network_subway_map.json', JSON.stringify({version:3, nodes:state.nodes, links:state.links}, null, 2), 'application/json');
+    setStatus('<strong>Exported.</strong> JSON saved.');
+  });
+  document.getElementById('importBtn').addEventListener('click', () => els.fileInput.click());
+  els.fileInput.addEventListener('change', async () => {
+    const f=els.fileInput.files && els.fileInput.files[0]; if(!f) return;
+    try{
+      const data=JSON.parse(await f.text());
+      if(!Array.isArray(data.nodes) || !Array.isArray(data.links)) throw new Error('Invalid file format');
+      pushHistory('Import JSON');
+      state.nodes=data.nodes; state.links=data.links; state.selectedNodeId=null; state.selectedLinkId=null; state.connectSourceId=null;
+      state.z=Math.max(10, ...state.nodes.map(n=>Number(n.z||10)), 10);
+      render();
+      setStatus(`<strong>Imported.</strong> Loaded ${state.nodes.length} node(s) and ${state.links.length} link(s).`);
+    }catch(err){ alert('Could not import JSON: ' + err.message); }
+    els.fileInput.value='';
+  });
+
+  function svgText(text){ return escapeHtml(String(text ?? '')).replace(/\n/g,' '); }
+  function buildSvg(){
+    const w=Math.max(1200, ...state.nodes.map(n=>n.x+nodeSize(n).w+40), els.canvas.clientWidth || 0);
+    const h=Math.max(800, ...state.nodes.map(n=>n.y+nodeSize(n).h+40), els.canvas.clientHeight || 0);
+    const parts=[`<?xml version="1.0" encoding="UTF-8"?>`,`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`,`<rect width="100%" height="100%" fill="#f8fafc"/>`];
+    for(let x=0;x<w;x+=24) parts.push(`<line x1="${x}" y1="0" x2="${x}" y2="${h}" stroke="rgba(15,23,42,0.07)" stroke-width="1"/>`);
+    for(let y=0;y<h;y+=24) parts.push(`<line x1="0" y1="${y}" x2="${w}" y2="${y}" stroke="rgba(15,23,42,0.07)" stroke-width="1"/>`);
+    for(const link of state.links){
+      const s=state.nodes.find(n=>n.id===link.sourceId), t=state.nodes.find(n=>n.id===link.targetId); if(!s||!t) continue;
+      const a=nodeCenter(s), b=nodeCenter(t), d=orthPath(a,b), lp=labelPos(a,b);
+      parts.push(`<path d="${d}" fill="none" stroke="${svgText(link.color||'#2563eb')}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`);
+      if(link.label) parts.push(`<text x="${lp.x}" y="${lp.y}" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#334155" stroke="rgba(255,255,255,.95)" stroke-width="4" paint-order="stroke">${svgText(link.label)}</text>`);
+    }
+    const sorted=[...state.nodes].sort((a,b)=>(a.z||0)-(b.z||0));
+    for(const n of sorted){
+      const s=nodeSize(n);
+      if(n.concept){
+        parts.push(`<rect x="${n.x}" y="${n.y}" width="${s.w}" height="${s.h}" rx="31" ry="31" fill="${svgText(n.fill)}" stroke="#0f172a" stroke-width="3"/>`);
+        parts.push(`<text x="${n.x+s.w/2}" y="${n.y+s.h/2+5}" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="14" font-weight="700" fill="#0f172a">${svgText(n.label)}</text>`);
+      } else {
+        parts.push(`<rect x="${n.x}" y="${n.y}" width="${s.w}" height="${s.h}" rx="18" ry="18" fill="${svgText(n.fill)}" stroke="#0f172a" stroke-width="3"/>`);
+        parts.push(`<text x="${n.x+s.w/2}" y="${n.y+28}" text-anchor="middle" font-family="Segoe UI Emoji, Segoe UI Symbol, Segoe UI, Arial" font-size="24">${svgText(n.icon)}</text>`);
+        parts.push(`<text x="${n.x+s.w/2}" y="${n.y+58}" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="700" fill="#0f172a">${svgText(n.label)}</text>`);
+        if(n.subtitle) parts.push(`<text x="${n.x+s.w/2}" y="${n.y+72}" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="10.5" fill="#475569">${svgText(n.subtitle)}</text>`);
+      }
+    }
+    parts.push('</svg>');
+    return parts.join('');
+  }
+  document.getElementById('exportSvgBtn').addEventListener('click', () => {
+    download('network_subway_map.svg', buildSvg(), 'image/svg+xml');
+    setStatus('<strong>Exported.</strong> SVG saved.');
+  });
+
+  window.addEventListener('keydown', e => {
+    if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='z'){ undo(); e.preventDefault(); return; }
+    if((e.key==='Delete' || e.key==='Backspace') && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){
+      if(state.selectedNodeId){ document.getElementById('deleteNodeBtn').click(); e.preventDefault(); return; }
+      if(state.selectedLinkId){ document.getElementById('deleteLinkBtn').click(); e.preventDefault(); return; }
+    }
+    if(e.key.toLowerCase()==='v' && !e.ctrlKey && !e.metaKey) setMode('select');
+    if(e.key.toLowerCase()==='c' && !e.ctrlKey && !e.metaKey) setMode('connect');
+  });
+
+  function seed(){
+    const demo=[
+      {type:'cloud',x:820,y:120,label:'Internet',subtitle:'WAN'},
+      {type:'firewall',x:620,y:120,label:'Edge FW',subtitle:'External zone'},
+      {type:'router',x:430,y:120,label:'Core Router',subtitle:'L3 gateway'},
+      {type:'switch',x:240,y:120,label:'Core Switch',subtitle:'Distribution'},
+      {type:'switch',x:240,y:300,label:'Access SW',subtitle:'Closet A'},
+      {type:'wifi',x:430,y:300,label:'Wi-Fi AP',subtitle:'SSID: Campus'},
+      {type:'server',x:620,y:300,label:'App Server',subtitle:'10.10.20.15'},
+      {type:'zone',x:820,y:320,label:'DMZ',subtitle:''}
+    ];
+    state.nodes=demo.map(d => ({...makeNode(d.type,d.x,d.y), label:d.label, subtitle:d.subtitle}));
+    state.links=[
+      {id:uid('link'), sourceId:state.nodes[0].id, targetId:state.nodes[1].id, color:'#64748b', label:'ISP'},
+      {id:uid('link'), sourceId:state.nodes[1].id, targetId:state.nodes[2].id, color:'#ef4444', label:'Outside / Inside'},
+      {id:uid('link'), sourceId:state.nodes[2].id, targetId:state.nodes[3].id, color:'#2563eb', label:'Transit'},
+      {id:uid('link'), sourceId:state.nodes[3].id, targetId:state.nodes[4].id, color:'#2563eb', label:'Trunk'},
+      {id:uid('link'), sourceId:state.nodes[4].id, targetId:state.nodes[5].id, color:'#10b981', label:'SSID Campus'},
+      {id:uid('link'), sourceId:state.nodes[3].id, targetId:state.nodes[6].id, color:'#8b5cf6', label:'VLAN 20'},
+      {id:uid('link'), sourceId:state.nodes[1].id, targetId:state.nodes[7].id, color:'#f59e0b', label:'DMZ'}
+    ];
+  }
+
+  renderPalette();
+  seed();
+  els.undoBtn.disabled=true;
+  render();
+  setStatus('<strong>Demo loaded.</strong> The empty node layer is click-through now, so exposed links can be selected and deleted.');
+})();
+</script>
+</body>
+</html>
