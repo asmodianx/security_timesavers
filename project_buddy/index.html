@@ -1,0 +1,1433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PMBOK Process Wizard (Standalone)</title>
+<style>
+:root{
+  --bg:#0b1220;
+  --panel:#111a2e;
+  --panel2:#0e1730;
+  --text:#e7eefc;
+  --muted:#9fb0d0;
+  --line:#243256;
+  --btn:#1b2a4a;
+  --btn2:#15213b;
+  --accent:#66a6ff;
+  --ok:#43d19e;
+  --warn:#ffd166;
+  --bad:#ff5c77;
+  --shadow:0 12px 28px rgba(0,0,0,.25);
+  --sans:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:linear-gradient(180deg,#06101f,#0b1220 45%,#07111d);
+  color:var(--text);
+  font-family:var(--sans)
+}
+button,input,textarea,select{font:inherit}
+header{
+  position:sticky;top:0;z-index:10;padding:12px 16px;
+  border-bottom:1px solid var(--line);
+  background:rgba(17,26,46,.92);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:space-between;gap:12px
+}
+header h1{margin:0;font-size:17px}
+header .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.app{display:grid;grid-template-columns:360px 1fr;min-height:calc(100vh - 64px)}
+aside{padding:12px;border-right:1px solid var(--line);background:rgba(17,26,46,.55)}
+main{padding:14px 16px}
+.card{
+  background:rgba(17,26,46,.75);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:12px;
+  box-shadow:var(--shadow)
+}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+label{display:block;font-size:12px;color:var(--muted);margin:8px 0 6px}
+input[type="text"],input[type="date"],textarea,select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px;
+  background:rgba(14,23,48,.92);
+  color:var(--text);
+  outline:none
+}
+textarea{min-height:112px;resize:vertical}
+button{
+  padding:9px 12px;border:1px solid var(--line);border-radius:10px;
+  cursor:pointer;color:var(--text);
+  background:linear-gradient(180deg,var(--btn),var(--btn2))
+}
+button:hover{border-color:#3f5ea8}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.primary{border-color:#4779ff;background:linear-gradient(180deg,#3058ba,#1f3b87)}
+button.danger{border-color:#823143;background:linear-gradient(180deg,#61202f,#39111a)}
+button.ghost{background:transparent}
+button.small{padding:6px 9px;font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.right{margin-left:auto}
+.small{font-size:12px;color:var(--muted)}
+.tiny{font-size:11px;color:var(--muted)}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-bottom-width:3px;border-radius:6px;padding:1px 6px;color:var(--muted)}
+.hr{height:1px;background:var(--line);margin:12px 0}
+.phase-list{display:flex;flex-direction:column;gap:10px}
+.phase{border:1px solid var(--line);border-radius:14px;padding:10px;background:rgba(14,23,48,.65)}
+.phase.active{border-color:#4779ff;box-shadow:0 0 0 2px rgba(71,121,255,.16) inset}
+.phase h3{margin:0;font-size:14px}
+.phase .meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px;margin-top:6px}
+.process-list{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.process{
+  padding:8px;border-radius:10px;border:1px solid var(--line);
+  background:rgba(8,14,27,.55);cursor:pointer
+}
+.process.active{border-color:#66a6ff}
+.process-title{font-size:12px;line-height:1.25}
+.process-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px}
+.badge{
+  display:inline-flex;align-items:center;border:1px solid var(--line);
+  border-radius:999px;padding:3px 8px;font-size:11px;color:var(--muted);white-space:nowrap
+}
+.badge.ok{color:#c8ffe9;border-color:rgba(67,209,158,.45)}
+.badge.warn{color:#fff4d2;border-color:rgba(255,209,102,.45)}
+.badge.bad{color:#ffd6de;border-color:rgba(255,92,119,.45)}
+.notice{border-left:3px solid rgba(102,166,255,.7);background:rgba(14,23,48,.55);border-radius:10px;padding:10px 12px}
+.muted{color:var(--muted)}
+.section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px 0}
+.section-title h2{font-size:18px;margin:0}
+.section-title .meta{font-size:12px;color:var(--muted)}
+.attach-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.attach{
+  display:flex;justify-content:space-between;gap:8px;align-items:center;
+  border:1px solid var(--line);border-radius:12px;padding:10px;background:rgba(14,23,48,.6)
+}
+.attach .name{font-size:13px}
+.attach .meta{font-size:11px;color:var(--muted);margin-top:3px}
+.pillbar{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:11px;color:var(--muted)}
+.counter{font-size:12px;color:var(--muted)}
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,.58);display:none;
+  align-items:center;justify-content:center;z-index:1000;padding:18px
+}
+.modal{
+  width:min(950px,96vw);max-height:90vh;overflow:auto;
+  background:rgba(17,26,46,.98);border:1px solid var(--line);
+  border-radius:16px;padding:14px;box-shadow:var(--shadow)
+}
+.modal h2{margin:0;font-size:18px}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{
+  border-bottom:1px solid var(--line);
+  padding:8px 6px;text-align:left;vertical-align:top;font-size:13px
+}
+.table th{color:var(--muted);font-weight:600}
+.footer-actions{
+  position:sticky;bottom:0;padding-top:12px;
+  background:linear-gradient(180deg,rgba(11,18,32,0),rgba(11,18,32,.94) 40%)
+}
+@media (max-width: 1100px){
+  .app{grid-template-columns:1fr}
+  .grid2,.grid3{grid-template-columns:1fr}
+  aside{border-right:none;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>PMBOK Predictive Process Wizard</h1>
+    <div class="sub">Standalone file:// utility • 5 process groups • 49 processes • attachments inside JSON • pure-JS PDF export</div>
+  </div>
+  <div class="toolbar">
+    <button class="primary" id="btnNew">New Project</button>
+    <button id="btnImport">Import JSON</button>
+    <button id="btnExport">Export JSON</button>
+    <button id="btnPdfAll">Export Group PDFs</button>
+    <button id="btnReference">Reference</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside>
+    <div class="card">
+      <div class="grid2">
+        <div>
+          <label>Project Name</label>
+          <input type="text" id="projectName" placeholder="e.g., Campus ERP Upgrade">
+        </div>
+        <div>
+          <label>Sponsor</label>
+          <input type="text" id="projectSponsor" placeholder="Name / unit">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Project Manager</label>
+          <input type="text" id="projectManager" placeholder="Name">
+        </div>
+        <div>
+          <label>Version / Revision</label>
+          <input type="text" id="projectVersion" placeholder="e.g., Draft 0.3">
+        </div>
+      </div>
+
+      <label>Business Objective / Value Statement</label>
+      <textarea id="projectObjective" placeholder="Summarize what value the project will deliver and how success will be recognized."></textarea>
+      <div class="hr"></div>
+      <div class="small">Tip: attachments are embedded in the JSON export as base64. Large files will make the JSON large.</div>
+    </div>
+
+    <div class="card">
+      <label>Search Processes</label>
+      <input type="text" id="searchBox" placeholder="Search by process, knowledge area, tags, or notes">
+      <div class="hr"></div>
+      <div class="toolbar small">
+        <span class="counter" id="projectCounter">0 / 49 complete</span>
+        <button class="small ghost right" id="btnExpandAll">Expand All</button>
+      </div>
+    </div>
+
+    <div class="phase-list" id="phaseList"></div>
+  </aside>
+
+  <main>
+    <div class="card">
+      <div class="section-title">
+        <div>
+          <h2 id="processTitle">Process</h2>
+          <div class="meta" id="processMeta">Knowledge area</div>
+        </div>
+        <div class="toolbar">
+          <button id="btnPrev">◀ Prev</button>
+          <button id="btnNext">Next ▶</button>
+        </div>
+      </div>
+
+      <div class="pillbar" id="tagBar"></div>
+      <div class="hr"></div>
+
+      <div class="grid3">
+        <div>
+          <label>Status</label>
+          <select id="processStatus">
+            <option value="not_started">Not started</option>
+            <option value="in_progress">In progress</option>
+            <option value="done">Done</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
+        <div>
+          <label>Owner</label>
+          <input type="text" id="processOwner" placeholder="Responsible person">
+        </div>
+        <div>
+          <label>Target Date</label>
+          <input type="date" id="processDueDate">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Instructions (what to do)</label>
+          <textarea id="processInstructions"></textarea>
+        </div>
+        <div>
+          <label>Typical outputs / evidence to attach</label>
+          <textarea id="processOutputs"></textarea>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Notes / execution details</label>
+          <textarea id="processNotes" placeholder="Capture how you are performing this process, open questions, meeting notes, URLs, and rationale."></textarea>
+        </div>
+        <div>
+          <label>Decisions / approvals / changes</label>
+          <textarea id="processDecisions" placeholder="Record approvals, decision dates, sign-offs, and change outcomes."></textarea>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div>
+          <label>Risks / issues / watch items</label>
+          <textarea id="processRisks" placeholder="Record blockers, threats, opportunities, assumptions under review, or escalations."></textarea>
+        </div>
+        <div>
+          <label>Checklist / custom sub-tasks</label>
+          <textarea id="processChecklist" placeholder="Add a simple checklist or step breakdown for your organization-specific workflow."></textarea>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="toolbar">
+        <div>
+          <label style="margin:0 0 6px">Attachments</label>
+          <div class="small">Attach schedules, spreadsheets, charters, org charts, risk logs, screenshots, diagrams, or other evidence for this process.</div>
+        </div>
+        <div class="right toolbar">
+          <input type="file" id="attachmentInput" multiple>
+          <button class="danger" id="btnClearAttachments">Remove All (This Process)</button>
+        </div>
+      </div>
+
+      <div class="attach-list" id="attachmentList"></div>
+
+      <div class="footer-actions">
+        <div class="toolbar">
+          <button id="btnPdfProcess">Export Process PDF</button>
+          <button id="btnPdfGroup">Export Current Group PDF</button>
+          <span class="right tiny">Everything stays local to this file until you export.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="notice">
+        <strong>How this utility is structured:</strong>
+        <div class="small muted">The workflow follows the five traditional process groups and all 49 predictive project management processes. It also includes editable PMBOK 7 performance-domain tags for tailoring and modern cross-reference.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="referenceModal">
+  <div class="modal">
+    <div class="toolbar">
+      <h2>PMBOK Reference</h2>
+      <button class="right" id="btnCloseReference">Close</button>
+    </div>
+    <div class="notice"><strong>Copyright note:</strong> The instructions and prompts in this tool are original summaries. They are meant to operationalize PMBOK-aligned work without reproducing the PMBOK text.</div>
+    <div class="hr"></div>
+    <h3>Process Groups and Counts</h3>
+    <table class="table" id="referenceTable"></table>
+    <div class="hr"></div>
+    <h3>PMBOK 7 Principles (short labels)</h3>
+    <div class="pillbar" id="principlesBar"></div>
+    <div class="hr"></div>
+    <h3>PMBOK 7 Performance Domains</h3>
+    <div class="pillbar" id="domainBar"></div>
+  </div>
+</div>
+
+<input type="file" id="importInput" accept=".json,application/json" style="display:none">
+
+<script>
+(function(){
+  "use strict";
+
+  const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024; // 25 MB
+  const ALLOWED_DATA_URL_PREFIXES = [
+    "data:application/",
+    "data:image/",
+    "data:text/plain"
+  ];
+
+  function $(id){ return document.getElementById(id); }
+  function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
+  function nowIso(){ return new Date().toISOString(); }
+  function safeText(value){
+    return String(value === undefined || value === null ? "" : value)
+      .replace(/\r\n/g,"\n")
+      .replace(/\r/g,"\n");
+  }
+  function safeFilename(name){
+    return safeText(name || "download")
+      .replace(/[\\/:*?"<>|]+/g, "-")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function humanBytes(n){
+    if(!n) return "0 B";
+    const units = ["B","KB","MB","GB"];
+    let idx = 0;
+    let value = n;
+    while(value >= 1024 && idx < units.length - 1){
+      value = value / 1024;
+      idx++;
+    }
+    return (idx === 0 ? Math.round(value) : value.toFixed(1)) + " " + units[idx];
+  }
+  function labelForStatus(status){
+    if(status === "done") return "Done";
+    if(status === "in_progress") return "In progress";
+    if(status === "blocked") return "Blocked";
+    return "Not started";
+  }
+  function sanitizePdfText(text){
+    return safeText(text)
+      .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "?")
+      .replace(/\\/g, "\\\\")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)");
+  }
+  function pad10(n){
+    let s = String(n);
+    while(s.length < 10) s = "0" + s;
+    return s;
+  }
+  function addTag(container, label){
+    const span = document.createElement("span");
+    span.className = "pill";
+    span.textContent = label;
+    container.appendChild(span);
+  }
+  function buildStatusBadge(status){
+    const span = document.createElement("span");
+    span.className = "badge";
+    if(status === "done"){
+      span.classList.add("ok");
+      span.textContent = "Done";
+    } else if(status === "in_progress"){
+      span.classList.add("warn");
+      span.textContent = "In progress";
+    } else if(status === "blocked"){
+      span.classList.add("bad");
+      span.textContent = "Blocked";
+    } else {
+      span.textContent = "Not started";
+    }
+    return span;
+  }
+  function downloadBlob(blob, filename){
+    if(window.navigator && window.navigator.msSaveOrOpenBlob){
+      window.navigator.msSaveOrOpenBlob(blob, filename);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+  }
+  function isAllowedDataUrl(value){
+    if(typeof value !== "string") return false;
+    const lower = value.toLowerCase();
+    for(let i=0;i<ALLOWED_DATA_URL_PREFIXES.length;i++){
+      if(lower.startsWith(ALLOWED_DATA_URL_PREFIXES[i])) return true;
+    }
+    return false;
+  }
+
+  function proc(id, name, knowledgeArea, instructions, outputs, domainTags){
+    return {
+      id: id,
+      name: name,
+      knowledgeArea: knowledgeArea,
+      instructions: instructions,
+      outputs: outputs,
+      domainTags: domainTags,
+      status: "not_started",
+      owner: "",
+      dueDate: "",
+      notes: "",
+      decisions: "",
+      risks: "",
+      checklist: "",
+      attachments: []
+    };
+  }
+
+  const TEMPLATE = [
+    {
+      id: "initiating",
+      name: "Initiating",
+      summary: "Authorize the project or phase and identify the initial stakeholder landscape.",
+      processes: [
+        proc(
+          "initiating__develop_project_charter",
+          "Develop Project Charter",
+          "Integration",
+          "Formally authorize the project or phase. Capture the purpose, measurable objectives, high-level scope, assumptions, constraints, success criteria, sponsor, and the project manager's authority.",
+          "Charter draft; business case linkage; success criteria; high-level assumptions and constraints; initial milestone and funding view.",
+          "Planning, Stakeholder, Delivery"
+        ),
+        proc(
+          "initiating__identify_stakeholders",
+          "Identify Stakeholders",
+          "Stakeholder",
+          "Identify individuals, groups, and organizations affected by the work. Record their interests, influence, expectations, and preferred engagement methods.",
+          "Stakeholder register; influence and interest analysis; initial engagement approach; escalation paths.",
+          "Stakeholder, Team, Delivery"
+        )
+      ]
+    },
+    {
+      id: "planning",
+      name: "Planning",
+      summary: "Establish the integrated plan, baselines, and management approaches for the work.",
+      processes: [
+        proc("planning__develop_project_management_plan","Develop Project Management Plan","Integration","Combine subsidiary plans into one integrated management plan. Decide how work will be directed, measured, controlled, and changed.","Integrated project management plan; baseline strategy; governance cadence; tailoring decisions.","Planning, Measurement, Development Approach & Life Cycle"),
+        proc("planning__plan_scope_management","Plan Scope Management","Scope","Define how scope will be elicited, documented, validated, and controlled so the team knows how scope decisions will be made.","Scope management approach; scope change rules; validation method; backlog or requirements governance.","Planning, Delivery"),
+        proc("planning__collect_requirements","Collect Requirements","Scope","Elicit, analyze, prioritize, and document stakeholder needs, constraints, interfaces, compliance obligations, and acceptance expectations.","Requirements set; acceptance criteria; traceability basis; assumptions and exclusions.","Stakeholder, Planning, Delivery"),
+        proc("planning__define_scope","Define Scope","Scope","Turn the approved requirements into a clear scope statement that explains included work, exclusions, boundaries, and deliverables.","Scope statement; product and project boundaries; exclusions list; deliverable descriptions.","Planning, Delivery"),
+        proc("planning__create_wbs","Create WBS","Scope","Break deliverables and project work into manageable components so work can be estimated, assigned, tracked, and controlled.","Work breakdown structure; WBS dictionary; control accounts; work package definitions.","Planning, Project Work"),
+        proc("planning__plan_schedule_management","Plan Schedule Management","Schedule","Define how the schedule will be built, maintained, tracked, reported, and re-baselined when necessary.","Schedule management approach; calendar assumptions; reporting cadence; scheduling rules.","Planning, Measurement"),
+        proc("planning__define_activities","Define Activities","Schedule","Identify the specific activities needed to complete each work package or backlog item at the level needed for control.","Activity list; activity attributes; milestone candidates; decomposition notes.","Planning, Project Work"),
+        proc("planning__sequence_activities","Sequence Activities","Schedule","Determine logical relationships among activities, including dependencies, constraints, and opportunities for parallel work.","Network logic; dependency map; lead and lag assumptions; sequencing decisions.","Planning, Project Work"),
+        proc("planning__estimate_activity_durations","Estimate Activity Durations","Schedule","Estimate the work periods needed for each activity using expert input, historical data, capacity, and uncertainty assumptions.","Duration estimates; basis of estimate; uncertainty notes; reserve rationale.","Planning, Measurement, Uncertainty"),
+        proc("planning__develop_schedule","Develop Schedule","Schedule","Build the schedule model, critical path or flow view, milestones, reserve placement, and approved target dates.","Approved schedule baseline; milestone plan; forecast logic; schedule presentation views.","Planning, Measurement, Delivery"),
+        proc("planning__plan_cost_management","Plan Cost Management","Cost","Define how costs will be estimated, budgeted, approved, tracked, forecasted, and reported.","Cost management approach; control thresholds; reporting format; estimating rules.","Planning, Measurement"),
+        proc("planning__estimate_costs","Estimate Costs","Cost","Estimate labor, material, contract, licensing, tool, contingency, and other costs required to deliver the work.","Cost estimates; basis of estimate; estimating assumptions; confidence ranges.","Planning, Measurement, Uncertainty"),
+        proc("planning__determine_budget","Determine Budget","Cost","Aggregate approved cost estimates into an authorized budget and funding profile with reserves and control thresholds.","Cost baseline; funding requirements; reserve allocation; cash flow view.","Planning, Measurement"),
+        proc("planning__plan_quality_management","Plan Quality Management","Quality","Define the quality objectives, standards, review methods, metrics, and prevention activities needed to meet expectations.","Quality management approach; quality criteria; review and test strategy; metrics list.","Planning, Delivery, Measurement"),
+        proc("planning__plan_resource_management","Plan Resource Management","Resource","Determine how people, facilities, equipment, and materials will be acquired, organized, developed, and released.","Resource management approach; roles and responsibilities; staffing strategy; release plan.","Planning, Team, Project Work"),
+        proc("planning__estimate_activity_resources","Estimate Activity Resources","Resource","Estimate the type and quantity of people, skills, tools, equipment, and materials needed for each activity.","Resource requirements; skill profile; resource calendars; estimating assumptions.","Planning, Team, Project Work"),
+        proc("planning__plan_communications_management","Plan Communications Management","Communications","Define what information will be shared, with whom, by whom, in what format, and at what cadence.","Communications plan; audience matrix; meeting cadence; reporting templates.","Stakeholder, Planning, Measurement"),
+        proc("planning__plan_risk_management","Plan Risk Management","Risk","Define the methods, thresholds, roles, and timing for identifying, analyzing, responding to, and monitoring uncertainty.","Risk management approach; scoring rules; response categories; reserve philosophy.","Uncertainty, Planning, Measurement"),
+        proc("planning__identify_risks","Identify Risks","Risk","Identify threats and opportunities that could affect objectives, along with causes, triggers, owners, and possible responses.","Risk register; assumptions under review; trigger list; opportunity list.","Uncertainty, Planning"),
+        proc("planning__perform_qualitative_risk_analysis","Perform Qualitative Risk Analysis","Risk","Prioritize risks using probability, impact, urgency, detectability, and other agreed criteria so attention goes to what matters most.","Prioritized risk list; qualitative assessments; watchlist; analysis notes.","Uncertainty, Measurement"),
+        proc("planning__perform_quantitative_risk_analysis","Perform Quantitative Risk Analysis","Risk","Where needed, analyze overall project uncertainty numerically using ranges, scenarios, or simulation to inform decisions.","Quantitative analysis results; confidence levels; exposure estimates; reserve recommendations.","Uncertainty, Measurement, Planning"),
+        proc("planning__plan_risk_responses","Plan Risk Responses","Risk","Define strategies and actions to avoid, mitigate, transfer, accept, exploit, enhance, or share risk and opportunity.","Risk response plan; fallback actions; contingency triggers; risk action owners.","Uncertainty, Planning, Project Work"),
+        proc("planning__plan_procurement_management","Plan Procurement Management","Procurement","Decide what to buy, when, how, from whom, and under what commercial and legal terms.","Procurement strategy; make-or-buy notes; statement of work outline; sourcing schedule.","Planning, Stakeholder, Project Work"),
+        proc("planning__plan_stakeholder_engagement","Plan Stakeholder Engagement","Stakeholder","Define tailored engagement strategies for each stakeholder or group based on interest, influence, needs, and desired support.","Stakeholder engagement plan; target engagement states; messaging strategy; sponsor actions.","Stakeholder, Team, Planning")
+      ]
+    },
+    {
+      id: "executing",
+      name: "Executing",
+      summary: "Perform the work, manage the team, deliver outputs, and execute engagement and response plans.",
+      processes: [
+        proc("executing__direct_and_manage_project_work","Direct and Manage Project Work","Integration","Lead the planned work, coordinate contributors, use approved resources, and create the project deliverables.","Work performance data; deliverables; issue log updates; implementation records.","Project Work, Delivery, Team"),
+        proc("executing__manage_project_knowledge","Manage Project Knowledge","Integration","Use existing organizational knowledge and capture new lessons, decisions, and know-how while the work is happening.","Lessons learned updates; decision rationale; reusable knowledge artifacts; knowledge sharing actions.","Team, Project Work, Measurement"),
+        proc("executing__manage_quality","Manage Quality","Quality","Audit and improve processes so the team prevents defects and consistently produces work that can meet acceptance criteria.","Process improvement actions; quality assurance findings; audit results; updated working methods.","Delivery, Measurement, Project Work"),
+        proc("executing__acquire_resources","Acquire Resources","Resource","Obtain the people, equipment, materials, environments, and services needed to execute the approved plan.","Assigned resources; onboarding actions; vendor or internal commitments; resource availability updates.","Team, Project Work"),
+        proc("executing__develop_team","Develop Team","Resource","Improve competencies, trust, collaboration, and shared understanding so the team can perform more effectively.","Training actions; team agreements; coaching notes; performance improvement actions.","Team, Leadership, Project Work"),
+        proc("executing__manage_team","Manage Team","Resource","Track performance, resolve conflict, remove impediments, provide feedback, and adjust assignments so the team can deliver.","Performance feedback; issue resolutions; staffing adjustments; recognition actions.","Team, Leadership, Project Work"),
+        proc("executing__manage_communications","Manage Communications","Communications","Create, distribute, store, retrieve, and confirm project information so the right people receive useful information at the right time.","Status communications; meeting records; distribution logs; updated communication artifacts.","Stakeholder, Team, Measurement"),
+        proc("executing__implement_risk_responses","Implement Risk Responses","Risk","Carry out agreed risk response actions, contingency triggers, opportunity actions, and fallback plans as conditions require.","Completed response actions; trigger status; contingency usage; response effectiveness notes.","Uncertainty, Project Work"),
+        proc("executing__conduct_procurements","Conduct Procurements","Procurement","Solicit bids or proposals, evaluate responses, negotiate terms, and award agreements to selected sellers.","Signed agreements; selection records; proposal evaluations; procurement decisions.","Stakeholder, Project Work, Delivery"),
+        proc("executing__manage_stakeholder_engagement","Manage Stakeholder Engagement","Stakeholder","Work with stakeholders to build support, address concerns, manage expectations, and sustain productive relationships.","Engagement actions; issue resolutions; updated stakeholder sentiments; support commitments.","Stakeholder, Team, Delivery")
+      ]
+    },
+    {
+      id: "monitoring_and_controlling",
+      name: "Monitoring & Controlling",
+      summary: "Measure performance, compare against plan, manage change, and keep the work aligned to objectives.",
+      processes: [
+        proc("monitoring_and_controlling__monitor_and_control_project_work","Monitor and Control Project Work","Integration","Track, review, and report overall performance against the plan so corrective and preventive action can be taken promptly.","Performance reports; forecast updates; corrective actions; preventive actions.","Measurement, Planning, Project Work"),
+        proc("monitoring_and_controlling__perform_integrated_change_control","Perform Integrated Change Control","Integration","Review change requests, analyze impacts, decide approvals, and maintain alignment among baselines and plans.","Approved or rejected changes; change log; baseline updates; decision records.","Planning, Measurement, Stakeholder"),
+        proc("monitoring_and_controlling__validate_scope","Validate Scope","Scope","Review completed deliverables with authorized stakeholders to obtain formal acceptance or document needed rework.","Accepted deliverables; rejection reasons; sign-off records; action items.","Delivery, Stakeholder, Measurement"),
+        proc("monitoring_and_controlling__control_scope","Control Scope","Scope","Monitor the status of project and product scope and control changes to the scope baseline or approved backlog.","Scope variance analysis; change requests; updated scope records; trend notes.","Planning, Measurement, Delivery"),
+        proc("monitoring_and_controlling__control_schedule","Control Schedule","Schedule","Track schedule performance, analyze variances, update forecasts, and implement actions to recover or protect dates.","Schedule forecasts; variance analysis; recovery actions; updated calendars and dates.","Measurement, Planning, Project Work"),
+        proc("monitoring_and_controlling__control_costs","Control Costs","Cost","Measure cost performance, analyze variances, update forecasts, and control authorized spending.","Cost forecasts; variance analysis; reserve usage; corrective cost actions.","Measurement, Planning"),
+        proc("monitoring_and_controlling__control_quality","Control Quality","Quality","Inspect deliverables and results to confirm they meet defined quality criteria and acceptance expectations.","Inspection results; defect log; rework requests; acceptance evidence.","Delivery, Measurement"),
+        proc("monitoring_and_controlling__control_resources","Control Resources","Resource","Ensure assigned resources are available, used effectively, protected, and realigned as project needs change.","Resource utilization data; corrective actions; release changes; issue escalation.","Team, Measurement, Project Work"),
+        proc("monitoring_and_controlling__monitor_communications","Monitor Communications","Communications","Evaluate whether communications are timely, clear, useful, and reaching the intended audiences.","Communication effectiveness findings; stakeholder feedback; updated communication actions.","Stakeholder, Measurement"),
+        proc("monitoring_and_controlling__monitor_risks","Monitor Risks","Risk","Track identified risks, new risks, residual risk, response effectiveness, and overall uncertainty exposure over time.","Updated risk register; response effectiveness notes; new risks; reserve consumption data.","Uncertainty, Measurement"),
+        proc("monitoring_and_controlling__control_procurements","Control Procurements","Procurement","Manage contracts, supplier performance, claims, deliverable acceptance, invoices, and procurement changes.","Vendor performance records; contract changes; claims log; acceptance and payment records.","Stakeholder, Measurement, Delivery"),
+        proc("monitoring_and_controlling__monitor_stakeholder_engagement","Monitor Stakeholder Engagement","Stakeholder","Assess current stakeholder attitudes and engagement levels and adjust strategies when support or alignment changes.","Engagement assessments; updated strategies; escalations; sponsor action list.","Stakeholder, Measurement, Team")
+      ]
+    },
+    {
+      id: "closing",
+      name: "Closing",
+      summary: "Formally complete the project or phase, transition ownership, and preserve learning.",
+      processes: [
+        proc("closing__close_project_or_phase","Close Project or Phase","Integration","Confirm that all required work is complete, hand off accepted outputs, close contracts, release resources, and archive the record.","Final acceptance; transition package; closeout report; archived records; lessons learned summary.","Delivery, Team, Measurement, Stakeholder")
+      ]
+    }
+  ];
+
+  const PRINCIPLES = [
+    "Stewardship",
+    "Team",
+    "Stakeholders",
+    "Value",
+    "Systems Thinking",
+    "Leadership",
+    "Tailoring",
+    "Quality",
+    "Complexity",
+    "Risk",
+    "Adaptability and Resilience",
+    "Change"
+  ];
+
+  const PERFORMANCE_DOMAINS = [
+    "Stakeholder",
+    "Team",
+    "Development Approach & Life Cycle",
+    "Planning",
+    "Project Work",
+    "Delivery",
+    "Measurement",
+    "Uncertainty"
+  ];
+
+  function createNewProject(){
+    return {
+      schemaVersion: "1.1",
+      createdAt: nowIso(),
+      updatedAt: nowIso(),
+      meta: {
+        name: "",
+        sponsor: "",
+        manager: "",
+        version: "",
+        objective: ""
+      },
+      groups: clone(TEMPLATE)
+    };
+  }
+
+  let state = createNewProject();
+  let selected = findFirstProcess();
+  let expandedAll = false;
+
+  function findFirstProcess(){
+    return {
+      groupId: state.groups[0].id,
+      processId: state.groups[0].processes[0].id
+    };
+  }
+
+  function touch(){
+    state.updatedAt = nowIso();
+    updateCounter();
+  }
+
+  function getFlatList(){
+    const list = [];
+    for(let i=0;i<state.groups.length;i++){
+      const group = state.groups[i];
+      for(let j=0;j<group.processes.length;j++){
+        list.push({
+          groupId: group.id,
+          processId: group.processes[j].id
+        });
+      }
+    }
+    return list;
+  }
+
+  function getGroup(groupId){
+    for(let i=0;i<state.groups.length;i++){
+      if(state.groups[i].id === groupId) return state.groups[i];
+    }
+    return state.groups[0];
+  }
+
+  function getProcess(groupId, processId){
+    const group = getGroup(groupId);
+    for(let i=0;i<group.processes.length;i++){
+      if(group.processes[i].id === processId) return group.processes[i];
+    }
+    return group.processes[0];
+  }
+
+  function groupProgress(group){
+    let done = 0;
+    for(let i=0;i<group.processes.length;i++){
+      if(group.processes[i].status === "done") done++;
+    }
+    return done + " / " + group.processes.length + " done";
+  }
+
+  function updateCounter(){
+    let total = 0;
+    let done = 0;
+    for(let i=0;i<state.groups.length;i++){
+      total += state.groups[i].processes.length;
+      for(let j=0;j<state.groups[i].processes.length;j++){
+        if(state.groups[i].processes[j].status === "done") done++;
+      }
+    }
+    $("projectCounter").textContent = done + " / " + total + " complete";
+  }
+
+  function matchesSearch(group, process, query){
+    if(!query) return true;
+    const blob = [
+      group.name,
+      group.summary,
+      process.name,
+      process.knowledgeArea,
+      process.instructions,
+      process.outputs,
+      process.domainTags,
+      process.owner,
+      process.notes,
+      process.decisions,
+      process.risks,
+      process.checklist
+    ].join(" ").toLowerCase();
+    return blob.indexOf(query) >= 0;
+  }
+
+  function renderSidebar(){
+    const phaseList = $("phaseList");
+    phaseList.textContent = "";
+    const query = safeText($("searchBox").value).toLowerCase().trim();
+
+    for(let i=0;i<state.groups.length;i++){
+      const group = state.groups[i];
+      const wrapper = document.createElement("div");
+      wrapper.className = "phase" + (selected.groupId === group.id ? " active" : "");
+
+      const h = document.createElement("h3");
+      h.textContent = group.name;
+      wrapper.appendChild(h);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const left = document.createElement("span");
+      left.textContent = group.summary;
+
+      const right = document.createElement("span");
+      right.textContent = groupProgress(group);
+
+      meta.appendChild(left);
+      meta.appendChild(right);
+      wrapper.appendChild(meta);
+
+      const processList = document.createElement("div");
+      processList.className = "process-list";
+      let visibleCount = 0;
+
+      for(let j=0;j<group.processes.length;j++){
+        const process = group.processes[j];
+        if(!matchesSearch(group, process, query)) continue;
+        visibleCount++;
+
+        const item = document.createElement("div");
+        item.className = "process" + (selected.processId === process.id ? " active" : "");
+
+        const title = document.createElement("div");
+        title.className = "process-title";
+        title.textContent = process.name;
+        item.appendChild(title);
+
+        const meta2 = document.createElement("div");
+        meta2.className = "process-meta";
+
+        const ka = document.createElement("span");
+        ka.className = "tiny";
+        ka.textContent = process.knowledgeArea;
+        meta2.appendChild(ka);
+
+        meta2.appendChild(buildStatusBadge(process.status));
+        item.appendChild(meta2);
+
+        item.onclick = function(ev){
+          ev.stopPropagation();
+          selected.groupId = group.id;
+          selected.processId = process.id;
+          render();
+        };
+
+        processList.appendChild(item);
+      }
+
+      if(query && visibleCount === 0){
+        wrapper.style.display = "none";
+      } else {
+        wrapper.style.display = "";
+      }
+
+      if(expandedAll || selected.groupId === group.id || query){
+        wrapper.appendChild(processList);
+      }
+
+      wrapper.onclick = function(){
+        selected.groupId = group.id;
+        selected.processId = group.processes[0].id;
+        render();
+      };
+
+      phaseList.appendChild(wrapper);
+    }
+  }
+
+  function renderAttachments(process){
+    const container = $("attachmentList");
+    container.textContent = "";
+
+    if(!process.attachments.length){
+      const empty = document.createElement("div");
+      empty.className = "small muted";
+      empty.textContent = "No attachments added for this process yet.";
+      container.appendChild(empty);
+      return;
+    }
+
+    for(let i=0;i<process.attachments.length;i++){
+      const att = process.attachments[i];
+      const row = document.createElement("div");
+      row.className = "attach";
+
+      const left = document.createElement("div");
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = att.name;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = (att.type || "application/octet-stream") + " • " + humanBytes(att.size) + " • " + new Date(att.lastModified).toLocaleString();
+
+      left.appendChild(name);
+      left.appendChild(meta);
+
+      const right = document.createElement("div");
+      right.className = "toolbar";
+
+      const btnDownload = document.createElement("button");
+      btnDownload.className = "small ghost";
+      btnDownload.textContent = "Download";
+      btnDownload.onclick = function(){ downloadAttachment(att); };
+
+      const btnRemove = document.createElement("button");
+      btnRemove.className = "small danger";
+      btnRemove.textContent = "Remove";
+      btnRemove.onclick = function(){ removeAttachment(att.id); };
+
+      right.appendChild(btnDownload);
+      right.appendChild(btnRemove);
+
+      row.appendChild(left);
+      row.appendChild(right);
+      container.appendChild(row);
+    }
+  }
+
+  function renderMain(){
+    const group = getGroup(selected.groupId);
+    const process = getProcess(selected.groupId, selected.processId);
+
+    $("processTitle").textContent = process.name;
+    $("processMeta").textContent = group.name + " • " + process.knowledgeArea + " • " + process.attachments.length + " attachment(s)";
+    $("processStatus").value = process.status;
+    $("processOwner").value = process.owner || "";
+    $("processDueDate").value = process.dueDate || "";
+    $("processInstructions").value = process.instructions || "";
+    $("processOutputs").value = process.outputs || "";
+    $("processNotes").value = process.notes || "";
+    $("processDecisions").value = process.decisions || "";
+    $("processRisks").value = process.risks || "";
+    $("processChecklist").value = process.checklist || "";
+
+    const tagBar = $("tagBar");
+    tagBar.textContent = "";
+    addTag(tagBar, group.name);
+    addTag(tagBar, process.knowledgeArea + " Management");
+    const parts = safeText(process.domainTags).split(",");
+    for(let i=0;i<parts.length;i++){
+      const tag = parts[i].trim();
+      if(tag) addTag(tagBar, tag);
+    }
+
+    renderAttachments(process);
+    updateNavButtons();
+  }
+
+  function renderMeta(){
+    $("projectName").value = state.meta.name || "";
+    $("projectSponsor").value = state.meta.sponsor || "";
+    $("projectManager").value = state.meta.manager || "";
+    $("projectVersion").value = state.meta.version || "";
+    $("projectObjective").value = state.meta.objective || "";
+    updateCounter();
+  }
+
+  function findSelectedIndex(flat){
+    for(let i=0;i<flat.length;i++){
+      if(flat[i].groupId === selected.groupId && flat[i].processId === selected.processId) return i;
+    }
+    return -1;
+  }
+
+  function updateNavButtons(){
+    const flat = getFlatList();
+    const idx = findSelectedIndex(flat);
+    $("btnPrev").disabled = idx <= 0;
+    $("btnNext").disabled = idx < 0 || idx >= flat.length - 1;
+  }
+
+  function saveCurrentProcessEdits(){
+    const process = getProcess(selected.groupId, selected.processId);
+    process.status = $("processStatus").value;
+    process.owner = $("processOwner").value;
+    process.dueDate = $("processDueDate").value;
+    process.instructions = $("processInstructions").value;
+    process.outputs = $("processOutputs").value;
+    process.notes = $("processNotes").value;
+    process.decisions = $("processDecisions").value;
+    process.risks = $("processRisks").value;
+    process.checklist = $("processChecklist").value;
+    touch();
+  }
+
+  function saveMetaEdits(){
+    state.meta.name = $("projectName").value;
+    state.meta.sponsor = $("projectSponsor").value;
+    state.meta.manager = $("projectManager").value;
+    state.meta.version = $("projectVersion").value;
+    state.meta.objective = $("projectObjective").value;
+    touch();
+  }
+
+  function render(){
+    renderMeta();
+    renderSidebar();
+    renderMain();
+  }
+
+  function readFileAsDataURL(file, done, fail){
+    if(file.size > MAX_ATTACHMENT_SIZE){
+      alert('Attachment "' + file.name + '" exceeds the ' + humanBytes(MAX_ATTACHMENT_SIZE) + ' limit.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(){ done(String(reader.result || "")); };
+    reader.onerror = function(){ if(fail) fail(reader.error); };
+    reader.readAsDataURL(file);
+  }
+
+  function addAttachments(files){
+    if(!files || !files.length) return;
+    const process = getProcess(selected.groupId, selected.processId);
+    let idx = 0;
+
+    function next(){
+      if(idx >= files.length){
+        $("attachmentInput").value = "";
+        touch();
+        renderMain();
+        renderSidebar();
+        return;
+      }
+
+      const file = files[idx++];
+      readFileAsDataURL(file, function(dataUrl){
+        if(!isAllowedDataUrl(dataUrl)){
+          alert('Attachment "' + file.name + '" was rejected because its data URL type is not allowed.');
+          next();
+          return;
+        }
+        process.attachments.push({
+          id: "att_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          lastModified: file.lastModified || Date.now(),
+          dataUrl: dataUrl
+        });
+        next();
+      }, function(err){
+        alert("Failed to read attachment: " + (err && err.message ? err.message : err));
+        next();
+      });
+    }
+    next();
+  }
+
+  function downloadAttachment(att){
+    if(!att || !isAllowedDataUrl(att.dataUrl)){
+      alert("This attachment cannot be downloaded because its data URL is invalid.");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = att.dataUrl;
+    a.download = att.name || "attachment";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  function removeAttachment(attId){
+    const process = getProcess(selected.groupId, selected.processId);
+    const keep = [];
+    for(let i=0;i<process.attachments.length;i++){
+      if(process.attachments[i].id !== attId) keep.push(process.attachments[i]);
+    }
+    process.attachments = keep;
+    touch();
+    renderMain();
+  }
+
+  function clearAttachments(){
+    const process = getProcess(selected.groupId, selected.processId);
+    process.attachments = [];
+    touch();
+    renderMain();
+  }
+
+  function exportJson(){
+    saveCurrentProcessEdits();
+    saveMetaEdits();
+    const json = JSON.stringify(state, null, 2);
+    downloadBlob(new Blob([json], {type:"application/json"}), safeFilename((state.meta.name || "pmbok-project") + ".json"));
+  }
+
+  function isValidImportedAttachment(att){
+    return !!(
+      att &&
+      typeof att === "object" &&
+      typeof att.id === "string" &&
+      typeof att.name === "string" &&
+      typeof att.type === "string" &&
+      typeof att.size === "number" &&
+      typeof att.lastModified === "number" &&
+      typeof att.dataUrl === "string" &&
+      att.size >= 0 &&
+      att.size <= MAX_ATTACHMENT_SIZE &&
+      isAllowedDataUrl(att.dataUrl)
+    );
+  }
+
+  function normalizeImportedProcess(groupId, processId, src){
+    const fallback = getTemplateProcess(groupId, processId);
+    const out = clone(fallback);
+
+    if(src && typeof src === "object"){
+      if(typeof src.status === "string" && ["not_started","in_progress","done","blocked"].indexOf(src.status) >= 0){
+        out.status = src.status;
+      }
+      if(typeof src.owner === "string") out.owner = src.owner;
+      if(typeof src.dueDate === "string") out.dueDate = src.dueDate;
+      if(typeof src.instructions === "string") out.instructions = src.instructions;
+      if(typeof src.outputs === "string") out.outputs = src.outputs;
+      if(typeof src.notes === "string") out.notes = src.notes;
+      if(typeof src.decisions === "string") out.decisions = src.decisions;
+      if(typeof src.risks === "string") out.risks = src.risks;
+      if(typeof src.checklist === "string") out.checklist = src.checklist;
+      if(Array.isArray(src.attachments)){
+        const cleaned = [];
+        for(let i=0;i<src.attachments.length;i++){
+          if(isValidImportedAttachment(src.attachments[i])) cleaned.push(src.attachments[i]);
+        }
+        out.attachments = cleaned;
+      }
+    }
+
+    return out;
+  }
+
+  function getTemplateGroup(groupId){
+    for(let i=0;i<TEMPLATE.length;i++){
+      if(TEMPLATE[i].id === groupId) return TEMPLATE[i];
+    }
+    return TEMPLATE[0];
+  }
+
+  function getTemplateProcess(groupId, processId){
+    const group = getTemplateGroup(groupId);
+    for(let i=0;i<group.processes.length;i++){
+      if(group.processes[i].id === processId) return group.processes[i];
+    }
+    return group.processes[0];
+  }
+
+  function isValidProjectShape(obj){
+    if(!obj || typeof obj !== "object") return false;
+    if(!obj.meta || typeof obj.meta !== "object") return false;
+    if(!Array.isArray(obj.groups) || obj.groups.length !== TEMPLATE.length) return false;
+
+    const expectedGroupIds = TEMPLATE.map(g => g.id).join("|");
+    const importedGroupIds = obj.groups.map(g => g && g.id).join("|");
+    if(expectedGroupIds !== importedGroupIds) return false;
+
+    for(let i=0;i<obj.groups.length;i++){
+      const g = obj.groups[i];
+      const tmplGroup = TEMPLATE[i];
+      if(!g || typeof g !== "object") return false;
+      if(!Array.isArray(g.processes) || g.processes.length !== tmplGroup.processes.length) return false;
+
+      for(let j=0;j<g.processes.length;j++){
+        if(!g.processes[j] || g.processes[j].id !== tmplGroup.processes[j].id) return false;
+      }
+    }
+    return true;
+  }
+
+  function coerceImportedProject(obj){
+    const clean = createNewProject();
+
+    if(obj.meta && typeof obj.meta === "object"){
+      if(typeof obj.meta.name === "string") clean.meta.name = obj.meta.name;
+      if(typeof obj.meta.sponsor === "string") clean.meta.sponsor = obj.meta.sponsor;
+      if(typeof obj.meta.manager === "string") clean.meta.manager = obj.meta.manager;
+      if(typeof obj.meta.version === "string") clean.meta.version = obj.meta.version;
+      if(typeof obj.meta.objective === "string") clean.meta.objective = obj.meta.objective;
+    }
+
+    if(typeof obj.createdAt === "string") clean.createdAt = obj.createdAt;
+    if(typeof obj.updatedAt === "string") clean.updatedAt = obj.updatedAt;
+    if(typeof obj.schemaVersion === "string") clean.schemaVersion = obj.schemaVersion;
+
+    for(let i=0;i<clean.groups.length;i++){
+      const cleanGroup = clean.groups[i];
+      const importedGroup = obj.groups[i];
+      for(let j=0;j<cleanGroup.processes.length;j++){
+        cleanGroup.processes[j] = normalizeImportedProcess(cleanGroup.id, cleanGroup.processes[j].id, importedGroup.processes[j]);
+      }
+    }
+
+    return clean;
+  }
+
+  function importJsonFile(file){
+    const reader = new FileReader();
+    reader.onload = function(){
+      try{
+        const obj = JSON.parse(String(reader.result || "{}"));
+        if(!isValidProjectShape(obj)) throw new Error("Not a valid PMBOK project export.");
+
+        state = coerceImportedProject(obj);
+        selected = {
+          groupId: state.groups[0].id,
+          processId: state.groups[0].processes[0].id
+        };
+        render();
+      } catch (err){
+        alert("Import failed: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function navigate(delta){
+    saveCurrentProcessEdits();
+    const flat = getFlatList();
+    const idx = findSelectedIndex(flat);
+    const target = idx + delta;
+    if(target < 0 || target >= flat.length) return;
+    selected.groupId = flat[target].groupId;
+    selected.processId = flat[target].processId;
+    render();
+  }
+
+  function buildReference(){
+    const table = $("referenceTable");
+    table.textContent = "";
+
+    const trHead = document.createElement("tr");
+    const head1 = document.createElement("th");
+    const head2 = document.createElement("th");
+    const head3 = document.createElement("th");
+    head1.textContent = "Process Group";
+    head2.textContent = "Count";
+    head3.textContent = "Included Processes";
+    trHead.appendChild(head1);
+    trHead.appendChild(head2);
+    trHead.appendChild(head3);
+    table.appendChild(trHead);
+
+    for(let i=0;i<state.groups.length;i++){
+      const g = state.groups[i];
+      const tr = document.createElement("tr");
+
+      const td1 = document.createElement("td");
+      td1.textContent = g.name;
+
+      const td2 = document.createElement("td");
+      td2.textContent = String(g.processes.length);
+
+      const td3 = document.createElement("td");
+      td3.textContent = g.processes.map(function(p){ return p.name; }).join("; ");
+
+      tr.appendChild(td1);
+      tr.appendChild(td2);
+      tr.appendChild(td3);
+      table.appendChild(tr);
+    }
+
+    const pb = $("principlesBar");
+    pb.textContent = "";
+    for(let p=0;p<PRINCIPLES.length;p++) addTag(pb, PRINCIPLES[p]);
+
+    const db = $("domainBar");
+    db.textContent = "";
+    for(let d=0;d<PERFORMANCE_DOMAINS.length;d++) addTag(db, PERFORMANCE_DOMAINS[d]);
+  }
+
+  function openReference(){
+    buildReference();
+    $("referenceModal").style.display = "flex";
+  }
+
+  function closeReference(){
+    $("referenceModal").style.display = "none";
+  }
+
+  function makePdfBlob(title, lines){
+    const maxChars = 95;
+    const pageWidth = 612;
+    const pageHeight = 792;
+    const marginLeft = 42;
+    const marginTop = 760;
+    const lineHeight = 14;
+    const pages = [];
+    let current = [];
+    let y = marginTop;
+
+    function addLine(text, fontSize){
+      if(y < 50){
+        pages.push(current);
+        current = [];
+        y = marginTop;
+      }
+      current.push({
+        x: marginLeft,
+        y: y,
+        size: fontSize || 10,
+        text: text
+      });
+      y -= lineHeight;
+    }
+
+    function wrap(text){
+      const clean = safeText(text).split("\n");
+      const out = [];
+      for(let i=0;i<clean.length;i++){
+        const paragraph = clean[i];
+        if(paragraph === ""){
+          out.push("");
+          continue;
+        }
+        const words = paragraph.split(/\s+/);
+        let line = "";
+        for(let j=0;j<words.length;j++){
+          const next = line ? line + " " + words[j] : words[j];
+          if(next.length > maxChars){
+            if(line) out.push(line);
+            if(words[j].length > maxChars){
+              let w = words[j];
+              while(w.length > maxChars){
+                out.push(w.slice(0, maxChars));
+                w = w.slice(maxChars);
+              }
+              line = w;
+            } else {
+              line = words[j];
+            }
+          } else {
+            line = next;
+          }
+        }
+        if(line) out.push(line);
+      }
+      return out;
+    }
+
+    addLine(title, 14);
+    addLine("Generated: " + new Date().toLocaleString(), 10);
+    addLine("Project: " + (state.meta.name || "-"), 10);
+    addLine("Sponsor: " + (state.meta.sponsor || "-") + "    Manager: " + (state.meta.manager || "-") + "    Version: " + (state.meta.version || "-"), 10);
+    addLine("", 10);
+
+    for(let i=0;i<lines.length;i++){
+      const entry = lines[i];
+      addLine(entry.heading, 12);
+      const wrapped = wrap(entry.text);
+      for(let j=0;j<wrapped.length;j++){
+        addLine(wrapped[j], 10);
+      }
+      addLine("", 10);
+    }
+
+    if(current.length) pages.push(current);
+
+    const catalogId = 1;
+    const pagesId = 2;
+    const fontId = 3;
+    const objects = [];
+    objects[catalogId] = "<< /Type /Catalog /Pages " + pagesId + " 0 R >>";
+    objects[fontId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+
+    const kids = [];
+    let nextId = 4;
+
+    for(let p=0;p<pages.length;p++){
+      const contentId = nextId++;
+      const pageId = nextId++;
+      kids.push(pageId + " 0 R");
+
+      let stream = "BT\n";
+      for(let l=0;l<pages[p].length;l++){
+        const item = pages[p][l];
+        stream += "/F1 " + item.size + " Tf\n";
+        stream += "1 0 0 1 " + item.x + " " + item.y + " Tm\n";
+        stream += "(" + sanitizePdfText(item.text) + ") Tj\n";
+      }
+      stream += "ET";
+
+      objects[contentId] = "<< /Length " + stream.length + " >>\nstream\n" + stream + "\nendstream";
+      objects[pageId] = "<< /Type /Page /Parent " + pagesId + " 0 R /MediaBox [0 0 " + pageWidth + " " + pageHeight + "] /Resources << /Font << /F1 " + fontId + " 0 R >> >> /Contents " + contentId + " 0 R >>";
+    }
+
+    objects[pagesId] = "<< /Type /Pages /Count " + pages.length + " /Kids [" + kids.join(" ") + "] >>";
+
+    let pdf = "%PDF-1.4\n";
+    const offsets = [0];
+
+    for(let id=1; id<objects.length; id++){
+      offsets[id] = pdf.length;
+      pdf += id + " 0 obj\n" + objects[id] + "\nendobj\n";
+    }
+
+    const xrefStart = pdf.length;
+    pdf += "xref\n0 " + objects.length + "\n";
+    pdf += "0000000000 65535 f \n";
+    for(let x=1; x<objects.length; x++){
+      pdf += pad10(offsets[x]) + " 00000 n \n";
+    }
+    pdf += "trailer\n<< /Size " + objects.length + " /Root " + catalogId + " 0 R >>\nstartxref\n" + xrefStart + "\n%%EOF";
+
+    return new Blob([pdf], {type:"application/pdf"});
+  }
+
+  function processLines(group, process){
+    const att = [];
+    for(let a=0;a<process.attachments.length;a++) att.push(process.attachments[a].name);
+    return [
+      {heading:"Process", text: process.name + " (" + group.name + " / " + process.knowledgeArea + ")"},
+      {heading:"Status", text: "Status: " + labelForStatus(process.status) + " | Owner: " + (process.owner || "-") + " | Target Date: " + (process.dueDate || "-")},
+      {heading:"Instructions", text: process.instructions || "-"},
+      {heading:"Typical Outputs / Evidence", text: process.outputs || "-"},
+      {heading:"Notes", text: process.notes || "-"},
+      {heading:"Decisions / Approvals", text: process.decisions || "-"},
+      {heading:"Risks / Issues", text: process.risks || "-"},
+      {heading:"Checklist / Sub-Tasks", text: process.checklist || "-"},
+      {heading:"Attachments", text: att.length ? att.join("; ") : "No attachments"}
+    ];
+  }
+
+  function exportCurrentProcessPdf(){
+    saveCurrentProcessEdits();
+    saveMetaEdits();
+    const group = getGroup(selected.groupId);
+    const process = getProcess(selected.groupId, selected.processId);
+    const lines = processLines(group, process);
+    const blob = makePdfBlob(process.name, lines);
+    downloadBlob(blob, safeFilename((state.meta.name || "project") + " - " + process.name + ".pdf"));
+  }
+
+  function exportGroupPdf(groupId){
+    saveCurrentProcessEdits();
+    saveMetaEdits();
+    const group = getGroup(groupId);
+    const lines = [];
+    lines.push({
+      heading: "Group Summary",
+      text: group.summary + " | Progress: " + groupProgress(group)
+    });
+
+    for(let i=0;i<group.processes.length;i++){
+      const process = group.processes[i];
+      const arr = processLines(group, process);
+      for(let j=0;j<arr.length;j++){
+        lines.push({
+          heading: (j === 0 ? "[" + (i+1) + "] " : "") + arr[j].heading,
+          text: arr[j].text
+        });
+      }
+    }
+
+    const blob = makePdfBlob(group.name + " Process Group", lines);
+    downloadBlob(blob, safeFilename((state.meta.name || "project") + " - " + group.name + ".pdf"));
+  }
+
+  function exportAllGroupPdfs(){
+    saveCurrentProcessEdits();
+    saveMetaEdits();
+    let idx = 0;
+    function next(){
+      if(idx >= state.groups.length) return;
+      exportGroupPdf(state.groups[idx].id);
+      idx++;
+      setTimeout(next, 450);
+    }
+    next();
+  }
+
+  function wireMeta(){
+    $("projectName").oninput = saveMetaEdits;
+    $("projectSponsor").oninput = saveMetaEdits;
+    $("projectManager").oninput = saveMetaEdits;
+    $("projectVersion").oninput = saveMetaEdits;
+    $("projectObjective").oninput = saveMetaEdits;
+    $("searchBox").oninput = renderSidebar;
+  }
+
+  function wireProcess(){
+    $("processStatus").onchange = function(){
+      saveCurrentProcessEdits();
+      renderSidebar();
+      renderMain();
+    };
+    $("processOwner").oninput = saveCurrentProcessEdits;
+    $("processDueDate").onchange = saveCurrentProcessEdits;
+    $("processInstructions").oninput = saveCurrentProcessEdits;
+    $("processOutputs").oninput = saveCurrentProcessEdits;
+    $("processNotes").oninput = saveCurrentProcessEdits;
+    $("processDecisions").oninput = saveCurrentProcessEdits;
+    $("processRisks").oninput = saveCurrentProcessEdits;
+    $("processChecklist").oninput = saveCurrentProcessEdits;
+  }
+
+  function wireButtons(){
+    $("btnNew").onclick = function(){
+      state = createNewProject();
+      selected = findFirstProcess();
+      render();
+    };
+    $("btnImport").onclick = function(){ $("importInput").click(); };
+    $("importInput").onchange = function(ev){
+      if(ev.target.files && ev.target.files[0]) importJsonFile(ev.target.files[0]);
+      ev.target.value = "";
+    };
+    $("btnExport").onclick = exportJson;
+    $("btnPrev").onclick = function(){ navigate(-1); };
+    $("btnNext").onclick = function(){ navigate(1); };
+    $("attachmentInput").onchange = function(ev){
+      addAttachments(ev.target.files ? Array.prototype.slice.call(ev.target.files) : []);
+    };
+    $("btnClearAttachments").onclick = clearAttachments;
+    $("btnPdfProcess").onclick = exportCurrentProcessPdf;
+    $("btnPdfGroup").onclick = function(){ exportGroupPdf(selected.groupId); };
+    $("btnPdfAll").onclick = exportAllGroupPdfs;
+    $("btnReference").onclick = openReference;
+    $("btnCloseReference").onclick = closeReference;
+    $("referenceModal").onclick = function(ev){
+      if(ev.target === $("referenceModal")) closeReference();
+    };
+    $("btnExpandAll").onclick = function(){
+      expandedAll = !expandedAll;
+      $("btnExpandAll").textContent = expandedAll ? "Collapse All" : "Expand All";
+      renderSidebar();
+    };
+  }
+
+  function init(){
+    wireMeta();
+    wireProcess();
+    wireButtons();
+    render();
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
+
