@@ -1,0 +1,209 @@
+{
+  "title": "NIST SP 800-171 Revision 3 - Master Assessment (17 Families)",
+  "sections": [
+    {
+      "title": "3.1 Access Control (AC)",
+      "items": [
+        { "id": "3.1.1", "text": "Limit system access to authorized users, processes acting on behalf of authorized users, and authorized devices." },
+        { "id": "3.1.2", "text": "Limit system access to the types of transactions and functions that authorized users are permitted to execute." },
+        { "id": "3.1.3", "text": "Control the flow of CUI in accordance with approved authorizations." },
+        { "id": "3.1.4", "text": "Separate the duties of individuals to reduce the risk of malevolent activity without collusion." },
+        { "id": "3.1.5", "text": "Employ the principle of least privilege, including for specific security functions and privileged accounts." },
+        { "id": "3.1.6", "text": "Use non-privileged accounts or roles when accessing non-security functions." },
+        { "id": "3.1.7", "text": "Prevent non-privileged users from executing privileged functions and audit the execution of such functions." },
+        { "id": "3.1.8", "text": "Limit unsuccessful logon attempts." },
+        { "id": "3.1.9", "text": "Provide privacy and security notices consistent with applicable CUI rules." },
+        { "id": "3.1.10", "text": "Use session lock with pattern-hiding displays to prevent access after a period of inactivity." },
+        { "id": "3.1.11", "text": "Terminate a network session after a defined period of inactivity." },
+        { "id": "3.1.12", "text": "Monitor and control remote access sessions." },
+        { "id": "3.1.13", "text": "Employ cryptographic mechanisms to protect the confidentiality of remote access sessions." },
+        { "id": "3.1.14", "text": "Route remote access through managed access control points." },
+        { "id": "3.1.15", "text": "Authorize remote execution of privileged commands and remote access to security-relevant information." },
+        { "id": "3.1.16", "text": "Authorize wireless access prior to allowing such connections." },
+        { "id": "3.1.17", "text": "Protect wireless access using authentication and encryption." },
+        { "id": "3.1.18", "text": "Control the connection of mobile devices." },
+        { "id": "3.1.19", "text": "Encrypt CUI on mobile devices and mobile computing platforms." },
+        { "id": "3.1.20", "text": "Verify and control/limit connections to and use of external systems." },
+        { "id": "3.1.21", "text": "Limit the use of organizational portable storage devices on external systems." },
+        { "id": "3.1.22", "text": "Control the posting or processing of CUI on publicly accessible systems." }
+      ]
+    },
+    {
+      "title": "3.2 Awareness and Training (AT)",
+      "items": [
+        { "id": "3.2.1", "text": "Ensure managers, systems administrators, and users are made aware of security risks and policies." },
+        { "id": "3.2.2", "text": "Ensure personnel are trained to carry out their assigned information security-related duties." },
+        { "id": "3.2.3", "text": "Provide awareness training on recognizing and reporting indicators of insider threat." }
+      ]
+    },
+    {
+      "title": "3.3 Audit and Accountability (AU)",
+      "items": [
+        { "id": "3.3.1", "text": "Create and retain system audit logs and records to the extent needed to enable monitoring and investigation." },
+        { "id": "3.3.2", "text": "Ensure that the actions of individual system users can be uniquely traced to those users." },
+        { "id": "3.3.3", "text": "Review and update logged events." },
+        { "id": "3.3.4", "text": "Alert in the event of an audit logging process failure." },
+        { "id": "3.3.5", "text": "Correlate audit record review, analysis, and reporting processes for investigation and response." },
+        { "id": "3.3.6", "text": "Provide a system-wide time source that is used to generate time stamps for audit records." },
+        { "id": "3.3.7", "text": "Protect audit information and audit tools from unauthorized access, modification, and deletion." },
+        { "id": "3.3.8", "text": "Limit management of audit logging functionality to a subset of privileged users." },
+        { "id": "3.3.9", "text": "Report failures in the audit logging process to designated personnel." }
+      ]
+    },
+    {
+      "title": "3.4 Configuration Management (CM)",
+      "items": [
+        { "id": "3.4.1", "text": "Establish and maintain baseline configurations and inventories of system components." },
+        { "id": "3.4.2", "text": "Establish, implement, and manage security configuration settings for IT products." },
+        { "id": "3.4.3", "text": "Track, review, approve, and log changes to systems." },
+        { "id": "3.4.4", "text": "Analyze the security impact of changes prior to implementation." },
+        { "id": "3.4.5", "text": "Define, document, and enforce physical and logical access restrictions associated with changes." },
+        { "id": "3.4.6", "text": "Configure systems to provide only essential capabilities." },
+        { "id": "3.4.7", "text": "Restrict, disable, or prevent the use of nonessential programs, functions, ports, protocols, and services." },
+        { "id": "3.4.8", "text": "Apply deny-by-exception (blocklisting) or permit-by-exception (allowlisting) for software." },
+        { "id": "3.4.9", "text": "Control and monitor user-installed software." }
+      ]
+    },
+    {
+      "title": "3.5 Identification and Authentication (IA)",
+      "items": [
+        { "id": "3.5.1", "text": "Identify and authenticate system users, processes acting on behalf of users, and devices." },
+        { "id": "3.5.2", "text": "Authenticate identities as a prerequisite to allowing access." },
+        { "id": "3.5.3", "text": "Use multifactor authentication for local and network access to privileged and non-privileged accounts." },
+        { "id": "3.5.4", "text": "Employ unique identifiers for each user." },
+        { "id": "3.5.5", "text": "Prevent reuse of identifiers for a defined period." },
+        { "id": "3.5.6", "text": "Disable identifiers after a defined period of inactivity." },
+        { "id": "3.5.7", "text": "Enforce a minimum password complexity and change of characters for new passwords." },
+        { "id": "3.5.8", "text": "Prohibit password reuse for a defined number of generations." },
+        { "id": "3.5.9", "text": "Allow temporary password use but require an immediate change to a permanent password." },
+        { "id": "3.5.10", "text": "Store and transmit only cryptographically protected passwords." },
+        { "id": "3.5.11", "text": "Obscure feedback of authentication information during the logon process." }
+      ]
+    },
+    {
+      "title": "3.6 Incident Response (IR)",
+      "items": [
+        { "id": "3.6.1", "text": "Establish an operational incident-handling capability (preparation, detection, analysis, containment, recovery)." },
+        { "id": "3.6.2", "text": "Track, document, and report incidents to designated officials and authorities." },
+        { "id": "3.6.3", "text": "Test the incident response capability." }
+      ]
+    },
+    {
+      "title": "3.7 Maintenance (MA)",
+      "items": [
+        { "id": "3.7.1", "text": "Perform, document, and schedule system maintenance." },
+        { "id": "3.7.2", "text": "Provide controls on the tools, techniques, and personnel used to conduct system maintenance." },
+        { "id": "3.7.3", "text": "Sanitize equipment of all CUI before removal for off-site maintenance." },
+        { "id": "3.7.4", "text": "Check media containing diagnostic/test programs for malicious code before use." },
+        { "id": "3.7.5", "text": "Require MFA to establish nonlocal maintenance sessions and terminate sessions when complete." },
+        { "id": "3.7.6", "text": "Supervise the maintenance activities of personnel without required access authorizations." }
+      ]
+    },
+    {
+      "title": "3.8 Media Protection (MP)",
+      "items": [
+        { "id": "3.8.1", "text": "Protect (identify, physically control, and securely store) system media containing CUI." },
+        { "id": "3.8.2", "text": "Limit access to CUI on system media to authorized users." },
+        { "id": "3.8.3", "text": "Sanitize or destroy system media containing CUI before disposal or release for reuse." },
+        { "id": "3.8.4", "text": "Mark media with necessary CUI markings and distribution limitations." },
+        { "id": "3.8.5", "text": "Control and maintain accountability for CUI media during transport outside controlled areas." },
+        { "id": "3.8.6", "text": "Implement cryptographic mechanisms to protect CUI on digital media during transport." },
+        { "id": "3.8.7", "text": "Control the use of removable media on organizational systems." },
+        { "id": "3.8.8", "text": "Prohibit the use of portable storage devices that have no identifiable owner." },
+        { "id": "3.8.9", "text": "Protect the confidentiality of backup CUI at storage locations." }
+      ]
+    },
+    {
+      "title": "3.9 Personnel Security (PS)",
+      "items": [
+        { "id": "3.9.1", "text": "Screen individuals prior to authorizing access to systems containing CUI." },
+        { "id": "3.9.2", "text": "Ensure systems containing CUI are protected during and after personnel actions like terminations/transfers." }
+      ]
+    },
+    {
+      "title": "3.10 Physical Protection (PE)",
+      "items": [
+        { "id": "3.10.1", "text": "Limit physical access to organizational systems and equipment to authorized individuals." },
+        { "id": "3.10.2", "text": "Protect the physical plant and support infrastructure for organizational systems." },
+        { "id": "3.10.3", "text": "Escort visitors and monitor visitor activity." },
+        { "id": "3.10.4", "text": "Maintain audit logs of physical access." },
+        { "id": "3.10.5", "text": "Control and manage physical access devices (keys, badges, cards)." },
+        { "id": "3.10.6", "text": "Enforce physical access authorizations at entry and exit points." }
+      ]
+    },
+    {
+      "title": "3.11 Risk Assessment (RA)",
+      "items": [
+        { "id": "3.11.1", "text": "Periodically assess the risk to organizational operations, assets, and individuals." },
+        { "id": "3.11.2", "text": "Scan for system vulnerabilities periodically and when new vulnerabilities are identified." },
+        { "id": "3.11.3", "text": "Remediate vulnerabilities in accordance with risk assessments." }
+      ]
+    },
+    {
+      "title": "3.12 Security Assessment (CA)",
+      "items": [
+        { "id": "3.12.1", "text": "Periodically assess the security controls in systems to determine effectiveness." },
+        { "id": "3.12.2", "text": "Develop and implement plans of action (POA&M) to correct deficiencies and reduce vulnerabilities." },
+        { "id": "3.12.3", "text": "Monitor security controls on an ongoing basis." },
+        { "id": "3.12.4", "text": "Develop, document, and periodically update system security plans (SSP)." }
+      ]
+    },
+    {
+      "title": "3.13 System and Communications Protection (SC)",
+      "items": [
+        { "id": "3.13.1", "text": "Monitor, control, and protect communications at external and key internal system boundaries." },
+        { "id": "3.13.2", "text": "Employ architectural designs, software development techniques, and engineering principles that promote security." },
+        { "id": "3.13.3", "text": "Separate user functionality from system management functionality." },
+        { "id": "3.13.4", "text": "Prevent unauthorized/unintended information transfer via shared system resources." },
+        { "id": "3.13.5", "text": "Separate publicly accessible system components from internal networks." },
+        { "id": "3.13.6", "text": "Deny network communications traffic by default and allow by exception." },
+        { "id": "3.13.7", "text": "Prevent remote devices from simultaneous non-remote and external network communication (Split Tunneling)." },
+        { "id": "3.13.8", "text": "Implement cryptographic mechanisms to protect the confidentiality and integrity of CUI during transmission." },
+        { "id": "3.13.9", "text": "Terminate a communications session at the end of the session or after a period of inactivity." },
+        { "id": "3.13.10", "text": "Establish and manage cryptographic keys for cryptography employed in the system." },
+        { "id": "3.13.11", "text": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI." },
+        { "id": "3.13.12", "text": "Prohibit remote activation of collaborative computing devices and provide an explicit indication of use." },
+        { "id": "3.13.13", "text": "Control and monitor the use of mobile code." },
+        { "id": "3.13.14", "text": "Control and monitor the use of VoIP technologies." },
+        { "id": "3.13.15", "text": "Protect the authenticity of communications sessions." },
+        { "id": "3.13.16", "text": "Protect the confidentiality of CUI at rest." }
+      ]
+    },
+    {
+      "title": "3.14 System and Information Integrity (SI)",
+      "items": [
+        { "id": "3.14.1", "text": "Identify, report, and remediate system flaws in a timely manner." },
+        { "id": "3.14.2", "text": "Provide protection from malicious code at system entry and exit points." },
+        { "id": "3.14.3", "text": "Monitor the system to detect indicators of potential attacks and unauthorized access." },
+        { "id": "3.14.4", "text": "Detect unauthorized changes to software, firmware, and information." },
+        { "id": "3.14.5", "text": "Employ spam protection mechanisms at system entry and exit points." },
+        { "id": "3.14.6", "text": "Receive, analyze, and respond to security alerts, advisories, and directives." },
+        { "id": "3.14.7", "text": "Verify the integrity of the system." }
+      ]
+    },
+    {
+      "title": "3.15 Planning (PL)",
+      "items": [
+        { "id": "3.15.1", "text": "Develop, document, and disseminate security planning policies and procedures." },
+        { "id": "3.15.2", "text": "Maintain a System Security Plan (SSP) that defines boundaries and safeguards." },
+        { "id": "3.15.3", "text": "Establish and acknowledge Rules of Behavior prior to granting system access." }
+      ]
+    },
+    {
+      "title": "3.16 System and Services Acquisition (SA)",
+      "items": [
+        { "id": "3.16.1", "text": "Integrate security requirements and engineering principles into the SDLC." },
+        { "id": "3.16.2", "text": "Identify and replace unsupported system components (End-of-Life)." },
+        { "id": "3.16.3", "text": "Ensure and monitor external service providers' compliance with security requirements." }
+      ]
+    },
+    {
+      "title": "3.17 Supply Chain Risk Management (SR)",
+      "items": [
+        { "id": "3.17.1", "text": "Develop and document a Supply Chain Risk Management (SCRM) plan." },
+        { "id": "3.17.2", "text": "Use acquisition strategies and procurement methods to protect against supply chain risks." },
+        { "id": "3.17.3", "text": "Identify and address supply chain deficiencies and limit disruption harm." }
+      ]
+    }
+  ]
+}

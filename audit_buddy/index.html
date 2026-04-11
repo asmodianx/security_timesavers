@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Buddy | Offline Security Framework</title>
+    <style>
+        /* VANILLA CSS - UI THEME */
+        :root {
+            --primary: #1e293b;
+            --accent: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg: #f8fafc;
+            --border: #e2e8f0;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 20px; line-height: 1.5; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 8px; shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); overflow: hidden; }
+        
+        /* HEADER & CONTROLS */
+        header { background: var(--primary); color: white; padding: 2rem; }
+        .controls { display: flex; gap: 10px; margin-top: 1.5rem; flex-wrap: wrap; }
+        button { cursor: pointer; padding: 8px 16px; border-radius: 4px; border: none; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
+        .btn-blue { background: var(--accent); color: white; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-red { background: var(--danger); color: white; }
+        .hidden { display: none; }
+
+        /* FORM STYLING */
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 1.5rem; border-bottom: 1px solid var(--border); }
+        .input-group label { display: block; font-size: 12px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 5px; }
+        input[type="text"], textarea, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
+
+        /* AUDIT ITEMS */
+        #questions-area { padding: 1.5rem; }
+        .section-header { color: var(--accent); border-bottom: 2px solid #dbeafe; margin: 2rem 0 1rem; padding-bottom: 5px; font-size: 1.25rem; }
+        .question-card { background: #fff; border: 1px solid var(--border); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; page-break-inside: avoid; }
+        .q-top { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 10px; }
+        .q-text { font-weight: 500; margin: 0; }
+        .status-select { width: auto; font-weight: bold; border: 2px solid var(--border); }
+        
+        /* EVIDENCE & ATTACHMENTS */
+        .evidence-preview { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .evidence-preview img { width: 100px; height: 100px; object-fit: cover; border: 1px solid var(--border); border-radius: 4px; }
+        .file-tag { font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); }
+
+        /* PRINT STYLES */
+        @media print {
+            body { background: white; padding: 0; }
+            .container { border: none; max-width: 100%; }
+            .no-print { display: none !important; }
+            .question-card { border: 1px solid #eee; margin-bottom: 20px; }
+            textarea { border: none; height: auto; font-style: italic; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header class="no-print">
+        <h1 style="margin:0">Audit Buddy</h1>
+        <p style="margin:5px 0 0; opacity: 0.8; font-size: 14px;">Offline Security Assessment Tool (For Testing Purposes Only - check templates for completeness before use)</p>
+        
+        <div class="controls">
+            <button class="btn-blue" onclick="document.getElementById('fileIn').click()">Import Template / Progress</button>
+            <button class="btn-green" onclick="auditBuddy.exportJSON()">Export JSON</button>
+            <button class="btn-red" onclick="window.print()">Export PDF (Print)</button>
+            <input type="file" id="fileIn" class="hidden" accept=".json" onchange="auditBuddy.handleImport(event)">
+		<div>
+			Examples:<a style="color:white;" href="./nist800171r3.json">NIST 800.171r3</a>
+			<a style="color:white;" href="./pcidss401.json">PCI DSS v4.01</a>
+			<a style="color:white;" href="./hipaa_internal_checklist.json">HIPAA Checklist</a>
+		</div>
+        </div>
+    </header>
+
+    <div class="meta-grid">
+        <div class="input-group">
+            <label>Audit Type / Title</label>
+            <input type="text" id="auditTitle" placeholder="e.g. NIST 800-171 Rev 2">
+        </div>
+        <div class="input-group">
+            <label>Auditor / Organization</label>
+            <input type="text" id="auditorName" placeholder="Enter details...">
+        </div>
+    </div>
+
+    <div id="questions-area">
+        <div style="text-align:center; padding: 3rem; color: #94a3b8;">
+            <p>Ready to start. Load a JSON template file.</p>
+            <!-- <button class="btn-blue" onclick="auditBuddy.loadNistDefault()" style="background:#64748b">Load NIST 800-171 Template</button> -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const auditBuddy = {
+        state: {
+            metadata: {},
+            responses: {}
+        },
+
+        // Data Storage
+        save(qId, field, value) {
+            if (!this.state.responses[qId]) this.state.responses[qId] = { evidence: [] };
+            this.state.responses[qId][field] = value;
+        },
+
+        // Load Built-in Data
+        loadNistDefault() {
+            const nist = {
+                title: "NIST SP 800-171 Assessment",
+                sections: [
+                    {
+                        title: "3.1 Access Control",
+                        items: [
+                            { id: "3.1.1", text: "Limit system access to authorized users." },
+                            { id: "3.1.2", text: "Limit system access to the types of transactions/functions permitted." },
+                            { id: "3.1.3", text: "Control the flow of CUI in accordance with approved authorizations." }
+                        ]
+                    },
+                    {
+                        title: "3.2 Awareness and Training",
+                        items: [
+                            { id: "3.2.1", text: "Ensure managers and users are aware of security risks." },
+                            { id: "3.2.2", text: "Ensure personnel are trained to carry out their security roles." }
+                        ]
+                    }
+                ]
+            };
+            this.renderForm(nist);
+        },
+
+        // Render HTML
+        renderForm(data) {
+            document.getElementById('auditTitle').value = data.title || "";
+            const area = document.getElementById('questions-area');
+            area.innerHTML = "";
+
+            data.sections.forEach(sec => {
+                const secEl = document.createElement('div');
+                secEl.innerHTML = `<h2 class="section-header">${sec.title}</h2>`;
+                
+                sec.items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = "question-card";
+                    const saved = this.state.responses[item.id] || {};
+                    
+                    card.innerHTML = `
+                        <div class="q-top">
+                            <p class="q-text"><strong>${item.id}</strong> ${item.text}</p>
+                            <select class="status-select" onchange="auditBuddy.save('${item.id}', 'status', this.value)">
+                                <option ${saved.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                <option ${saved.status === 'Compliant' ? 'selected' : ''}>Compliant</option>
+                                <option ${saved.status === 'Non-Compliant' ? 'selected' : ''}>Non-Compliant</option>
+                                <option ${saved.status === 'N/A' ? 'selected' : ''}>N/A</option>
+                            </select>
+                        </div>
+                        <textarea placeholder="Findings and evidence notes..." oninput="auditBuddy.save('${item.id}', 'notes', this.value)">${saved.notes || ''}</textarea>
+                        <div class="no-print" style="margin-top:10px">
+                            <input type="file" multiple onchange="auditBuddy.attachFile(event, '${item.id}')" style="font-size:11px">
+                        </div>
+                        <div id="prev-${item.id}" class="evidence-preview"></div>
+                    `;
+                    secEl.appendChild(card);
+                });
+                area.appendChild(secEl);
+            });
+        },
+
+        // File handling (Base64 for Offline Portability)
+        attachFile(event, qId) {
+            const files = event.target.files;
+            const preview = document.getElementById(`prev-${qId}`);
+            if (!this.state.responses[qId]) this.state.responses[qId] = { evidence: [] };
+
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fileObj = { name: file.name, type: file.type, data: e.target.result };
+                    this.state.responses[qId].evidence.push(fileObj);
+                    
+                    if (file.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        preview.appendChild(img);
+                    } else {
+                        const span = document.createElement('span');
+                        span.className = 'file-tag';
+                        span.innerText = file.name;
+                        preview.appendChild(span);
+                    }
+                };
+                reader.readAsDataURL(file[0]);
+            });
+        },
+
+        // Export/Import
+        exportJSON() {
+            this.state.metadata.title = document.getElementById('auditTitle').value;
+            this.state.metadata.auditor = document.getElementById('auditorName').value;
+            this.state.metadata.timestamp = new Date().toISOString();
+
+            const blob = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audit-export-${new Date().getTime()}.json`;
+            a.click();
+        },
+
+        handleImport(event) {
+            const file = event.target.files;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imported = JSON.parse(e.target.result);
+                // If it's a progress file, restore state
+                if (imported.responses) {
+                    this.state = imported;
+                    document.getElementById('auditorName').value = imported.metadata.auditor || "";
+                    // Re-render requires a template; usually the progress file should include template data
+                    // For this demo, we re-load default or let user load template
+                }
+                this.renderForm(imported.template || imported); 
+            };
+            reader.readAsText(file[0]);
+        }
+    };
+</script>
+
+</body>
+</html>

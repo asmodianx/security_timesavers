@@ -1,0 +1,60 @@
+{
+  "title": "HIPAA Compliance Internal Audit Checklist - 2026",
+  "sections": [
+    {
+      "title": "1. Privacy Rule: Patient Rights & Data Governance",
+      "items": [
+        { "id": "HIPAA-PR-01", "text": "Is the Notice of Privacy Practices (NPP) current, prominently displayed, and provided to all patients at the first point of service?" },
+        { "id": "HIPAA-PR-02", "text": "Is there a documented process to provide patients access to their PHI within 30 days of a request?" },
+        { "id": "HIPAA-PR-03", "text": "Are Business Associate Agreements (BAAs) on file and reviewed annually for all third-party vendors with PHI access?" },
+        { "id": "HIPAA-PR-04", "text": "Is the 'Minimum Necessary' standard applied to all internal uses and external disclosures of PHI?" },
+        { "id": "HIPAA-PR-05", "text": "Are valid, written authorizations obtained and filed for all non-routine uses of PHI?" },
+        { "id": "HIPAA-PR-06", "text": "Is an 'Accounting of Disclosures' log maintained for non-routine sharing (e.g., law enforcement or judicial requests)?" },
+        { "id": "HIPAA-PR-07", "text": "Is there an operational workflow for handling and documenting patient requests to amend their health records?" },
+        { "id": "HIPAA-PR-08", "text": "Can the system honor patient requests to restrict PHI disclosure to health plans for services paid for entirely out-of-pocket?" },
+        { "id": "HIPAA-PR-09", "text": "Are de-identification procedures (Safe Harbor or Expert Determination) verified before PHI is used for research or analytics?" }
+      ]
+    },
+    {
+      "title": "2. Security Rule: Administrative Safeguards",
+      "items": [
+        { "id": "HIPAA-AS-01", "text": "Has a comprehensive, system-wide Security Risk Analysis (SRA) been conducted or updated within the last 12 months?" },
+        { "id": "HIPAA-AS-02", "text": "Is a formal Risk Management Plan active, with specific timelines for remediating vulnerabilities identified in the SRA?" },
+        { "id": "HIPAA-AS-03", "text": "Are security awareness training records (including attendance and curriculum) maintained for all workforce members?" },
+        { "id": "HIPAA-AS-04", "text": "Is there a documented and tested Contingency Plan addressing data backup, disaster recovery, and emergency mode operations?" },
+        { "id": "HIPAA-AS-05", "text": "Is a formal 'Evaluation' (§ 164.308(a)(8)) performed after major environmental or operational changes to verify continued compliance?" },
+        { "id": "HIPAA-AS-06", "text": "Is a sanction policy documented and consistently applied for workforce members who violate security policies?" }
+      ]
+    },
+    {
+      "title": "3. Security Rule: Physical Safeguards",
+      "items": [
+        { "id": "HIPAA-PS-01", "text": "Is physical access to facilities containing ePHI (server rooms, data centers) restricted to authorized personnel and recorded in an access log?" },
+        { "id": "HIPAA-PS-02", "text": "Are workstations that access ePHI physically positioned or shielded to prevent unauthorized viewing by the public or other staff?" },
+        { "id": "HIPAA-PS-03", "text": "Does the hardware inventory track the physical location, movement, and current owner of all portable devices containing ePHI?" },
+        { "id": "HIPAA-PS-04", "text": "Is there a documented process for the secure 'purging' or physical destruction of electronic media containing ePHI before disposal or reuse?" },
+        { "id": "HIPAA-PS-05", "text": "Are maintenance records kept for physical security components like locks, cameras, and badge readers?" }
+      ]
+    },
+    {
+      "title": "4. Security Rule: Technical Safeguards",
+      "items": [
+        { "id": "HIPAA-TS-01", "text": "Is unique user identification enforced for all system access, and is Multi-Factor Authentication (MFA) required for remote access?" },
+        { "id": "HIPAA-TS-02", "text": "Are audit logs generated, timestamped, and reviewed regularly for all systems and applications processing ePHI?" },
+        { "id": "HIPAA-TS-03", "text": "Are technical mechanisms (e.g., hashing or checksums) used to ensure ePHI has not been altered or destroyed in an unauthorized manner?" },
+        { "id": "HIPAA-TS-04", "text": "Is encryption enforced for ePHI both at rest (on servers and mobile devices) and in transit (via TLS 1.2+ or equivalent)?" },
+        { "id": "HIPAA-TS-05", "text": "Are systems configured with automatic session locks or logoffs after a defined period of user inactivity?" }
+      ]
+    },
+    {
+      "title": "5. Breach Notification Rule",
+      "items": [
+        { "id": "HIPAA-BN-01", "text": "Is a formal '4-factor' risk assessment performed and documented for every security incident to determine if it constitutes a reportable breach?" },
+        { "id": "HIPAA-BN-02", "text": "Are breach notification templates on file and verified to contain the five legally required elements per § 164.404(c)?" },
+        { "id": "HIPAA-BN-03", "text": "Is there a defined workflow for notifying prominent media outlets if a breach affects more than 500 residents of a single jurisdiction?" },
+        { "id": "HIPAA-BN-04", "text": "Are all individual notifications sent without unreasonable delay and within the 60-day legal window?" },
+        { "id": "HIPAA-BN-05", "text": "Is there a centralized incident log tracking all potential compromises, including those determined not to be breaches?" }
+      ]
+    }
+  ]
+}

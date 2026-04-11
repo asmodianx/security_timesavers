@@ -1,0 +1,184 @@
+{
+  "title": "PCI DSS v4.0.1 Master Assessment (Complete 12 Requirements)",
+  "sections": [
+    {
+      "title": "Requirement 1: Install and Maintain Network Security Controls",
+      "items": [
+        { "id": "1.1.1", "text": "Security policies and operational procedures for Requirement 1 are documented, kept up to date, in use, and known to all affected parties." },
+        { "id": "1.1.2", "text": "Roles and responsibilities for Requirement 1 are documented, assigned, and understood." },
+        { "id": "1.2.1", "text": "Configuration standards for NSC rulesets are defined, implemented, and maintained." },
+        { "id": "1.2.2", "text": "Changes to network connections and NSC configurations are managed via change control." },
+        { "id": "1.2.3", "text": "Accurate network diagrams showing connections between the CDE and other networks are maintained." },
+        { "id": "1.2.4", "text": "Accurate data-flow diagrams showing account data flows are maintained and updated." },
+        { "id": "1.2.5", "text": "All allowed services, protocols, and ports are identified, approved, and have a defined business need." },
+        { "id": "1.2.6", "text": "Security features are implemented for insecure protocols such that risk is mitigated." },
+        { "id": "1.2.7", "text": "NSC configurations are reviewed at least once every six months." },
+        { "id": "1.2.8", "text": "NSC configuration files are secured from unauthorized access and kept consistent with active configurations." },
+        { "id": "1.3.1", "text": "Inbound traffic to the CDE is restricted to necessary traffic; all other traffic is denied." },
+        { "id": "1.3.2", "text": "Outbound traffic from the CDE is restricted to necessary traffic; all other traffic is denied." },
+        { "id": "1.3.3", "text": "NSCs are installed between all wireless networks and the CDE." },
+        { "id": "1.4.1", "text": "NSCs are implemented between trusted and untrusted networks." },
+        { "id": "1.4.2", "text": "Inbound traffic from untrusted networks is restricted to authorized components or stateful responses." },
+        { "id": "1.4.3", "text": "Anti-spoofing measures are implemented to block forged source IP addresses." },
+        { "id": "1.4.4", "text": "System components storing cardholder data are not directly accessible from untrusted networks." },
+        { "id": "1.4.5", "text": "Internal IP address and routing information disclosure is limited to authorized parties." },
+        { "id": "1.5.1", "text": "Security controls are implemented on devices connecting to both untrusted networks and the CDE." }
+      ]
+    },
+    {
+      "title": "Requirement 2: Apply Secure Configurations to All System Components",
+      "items": [
+        { "id": "2.1.1", "text": "Security policies and procedures for Requirement 2 are documented and known." },
+        { "id": "2.1.2", "text": "Roles and responsibilities for Requirement 2 are documented and assigned." },
+        { "id": "2.2.1", "text": "Configuration standards are developed and maintained based on industry hardening standards." },
+        { "id": "2.2.2", "text": "Vendor default accounts are managed (changed if used, removed/disabled if not)." },
+        { "id": "2.2.3", "text": "Primary functions with differing security levels are isolated or secured to the highest level." },
+        { "id": "2.2.4", "text": "Only necessary services and functions are enabled; unnecessary ones are disabled." },
+        { "id": "2.2.5", "text": "Insecure services have documented business justifications and mitigation controls." },
+        { "id": "2.2.6", "text": "System security parameters are configured to prevent misuse." },
+        { "id": "2.2.7", "text": "All non-console administrative access is encrypted using strong cryptography." },
+        { "id": "2.3.1", "text": "Wireless vendor defaults are changed at installation." },
+        { "id": "2.3.2", "text": "Wireless encryption keys are changed upon personnel changes or suspected compromise." }
+      ]
+    },
+    {
+      "title": "Requirement 3: Protect Stored Account Data",
+      "items": [
+        { "id": "3.1.1", "text": "Requirement 3 policies and procedures are documented and known." },
+        { "id": "3.2.1", "text": "Data storage is minimized through retention and disposal policies; old data is verified as deleted quarterly." },
+        { "id": "3.3.1", "text": "Sensitive Authentication Data (SAD) is not stored after authorization, even if encrypted." },
+        { "id": "3.3.2", "text": "SAD stored electronically prior to authorization is encrypted." },
+        { "id": "3.4.1", "text": "PAN is masked when displayed; maximum display is BIN and last four digits." },
+        { "id": "3.4.2", "text": "Remote access technical controls prevent unauthorized copy/relocation of PAN." },
+        { "id": "3.5.1", "text": "PAN is rendered unreadable wherever stored via hashing, truncation, tokens, or strong cryptography." },
+        { "id": "3.5.1.1", "text": "Hashes used for PAN are keyed cryptographic hashes." },
+        { "id": "3.6.1", "text": "Cryptographic keys are protected against disclosure and misuse." },
+        { "id": "3.6.1.2", "text": "Secret and private keys are encrypted, stored in SCDs, or kept as key shares." },
+        { "id": "3.7.1", "text": "Key management procedures include generation, distribution, and secure storage of strong keys." },
+        { "id": "3.7.4", "text": "Keys are changed when cryptoperiods are reached or integrity is compromised." },
+        { "id": "3.7.6", "text": "Manual cleartext key management uses split knowledge and dual control." }
+      ]
+    },
+    {
+      "title": "Requirement 4: Protect Cardholder Data with Strong Cryptography During Transmission",
+      "items": [
+        { "id": "4.1.1", "text": "Requirement 4 policies and procedures are documented and known." },
+        { "id": "4.2.1", "text": "Strong cryptography and secure protocols are used for PAN transmission; invalid/expired certificates are blocked." },
+        { "id": "4.2.1.1", "text": "An inventory of trusted keys and certificates used for PAN transmission is maintained." },
+        { "id": "4.2.2", "text": "PAN is encrypted whenever sent via end-user messaging technologies." }
+      ]
+    },
+    {
+      "title": "Requirement 5: Protect All Systems and Networks from Malicious Software",
+      "items": [
+        { "id": "5.1.1", "text": "Requirement 5 policies and procedures are documented and known." },
+        { "id": "5.2.1", "text": "Anti-malware is deployed on all system components unless documented as unaffected." },
+        { "id": "5.2.3", "text": "Periodic evaluations ensure documented 'unaffected' components remain safe." },
+        { "id": "5.3.1", "text": "Anti-malware signatures and detection rules are kept up to date." },
+        { "id": "5.3.3", "text": "Anti-malware is actively running and cannot be disabled by users without authorization." },
+        { "id": "5.3.5", "text": "Anti-malware automatically alerts personnel when malware is detected." },
+        { "id": "5.4.1", "text": "Automated mechanisms detect and protect users against phishing attacks." }
+      ]
+    },
+    {
+      "title": "Requirement 6: Develop and Maintain Secure Systems and Software",
+      "items": [
+        { "id": "6.1.1", "text": "Requirement 6 policies and procedures are documented and known." },
+        { "id": "6.2.2", "text": "Software developers are trained annually in secure coding and job-specific security." },
+        { "id": "6.2.3", "text": "Custom code is reviewed prior to production release by independent parties or automated tools." },
+        { "id": "6.2.4", "text": "Techniques are used to prevent common attacks like injection, XSS, and CSRF." },
+        { "id": "6.3.1", "text": "Vulnerabilities are identified and managed via risk ranking." },
+        { "id": "6.3.2", "text": "Inventory of custom and third-party software components is maintained." },
+        { "id": "6.3.3", "text": "Critical security patches are installed within one month; others are installed based on risk." },
+        { "id": "6.4.2", "text": "Automated technical solutions (e.g., WAF) protect public-facing web applications." },
+        { "id": "6.4.3", "text": "Payment page scripts are authorized, integrity-checked, and inventoried." },
+        { "id": "6.5.1", "text": "Production changes follow established procedures including security impact analysis." },
+        { "id": "6.5.3", "text": "Pre-production and production environments are strictly separated." },
+        { "id": "6.5.5", "text": "Live PANs are not used in pre-production environments." }
+      ]
+    },
+    {
+      "title": "Requirement 7: Restrict Access to System Components and Cardholder Data",
+      "items": [
+        { "id": "7.1.1", "text": "Requirement 7 policies and procedures are documented and known." },
+        { "id": "7.2.1", "text": "Access is granted based on job function and least privilege." },
+        { "id": "7.2.4", "text": "User accounts and access privileges are reviewed at least every six months." },
+        { "id": "7.2.5", "text": "Application and system accounts are managed via least privilege." },
+        { "id": "7.2.6", "text": "Access to CHD repositories is restricted to responsible administrators." },
+        { "id": "7.3.3", "text": "Access control systems are set to 'deny all' by default." }
+      ]
+    },
+    {
+      "title": "Requirement 8: Identify Users and Authenticate Access",
+      "items": [
+        { "id": "8.1.1", "text": "Requirement 8 policies and procedures are documented and known." },
+        { "id": "8.2.1", "text": "Users are assigned unique IDs before access is allowed." },
+        { "id": "8.2.5", "text": "Access for terminated users is immediately revoked." },
+        { "id": "8.2.6", "text": "Inactive accounts are disabled/removed within 90 days." },
+        { "id": "8.2.8", "text": "Idle sessions exceeding 15 minutes require re-authentication." },
+        { "id": "8.3.4", "text": "Lockout occurs after max 10 failed attempts; duration is min 30 minutes." },
+        { "id": "8.3.6", "text": "Passwords meet complexity: min 12 characters, numeric and alphabetic." },
+        { "id": "8.3.7", "text": "New passwords cannot match the last four used." },
+        { "id": "8.3.9", "text": "Single-factor passwords change every 90 days or use dynamic posture analysis." },
+        { "id": "8.4.2", "text": "MFA is implemented for all non-console access to the CDE." },
+        { "id": "8.4.3", "text": "MFA is implemented for all remote access that could impact the CDE." },
+        { "id": "8.5.1", "text": "MFA systems are configured to prevent replay and bypass." },
+        { "id": "8.6.2", "text": "Passwords for interactive system accounts are not hard coded." }
+      ]
+    },
+    {
+      "title": "Requirement 9: Restrict Physical Access to Cardholder Data",
+      "items": [
+        { "id": "9.1.1", "text": "Requirement 9 policies and procedures are documented and known." },
+        { "id": "9.2.1.1", "text": "Facility entry/exit is monitored via video/physical controls; logs kept for 3 months." },
+        { "id": "9.3.4", "text": "Visitor logs record activity and are retained for three months." },
+        { "id": "9.4.1.2", "text": "Security of offline media backup locations is reviewed annually." },
+        { "id": "9.4.5.1", "text": "Inventories of electronic media with CHD are conducted annually." },
+        { "id": "9.4.6", "text": "Hard-copy materials with CHD are destroyed (e.g., cross-cut shredded) when no longer needed." },
+        { "id": "9.5.1", "text": "POI devices are protected from tampering via lists, inspections, and training." }
+      ]
+    },
+    {
+      "title": "Requirement 10: Log and Monitor All Access to System Components",
+      "items": [
+        { "id": "10.1.1", "text": "Requirement 10 policies and procedures are documented and known." },
+        { "id": "10.2.1", "text": "Audit logs are active for all system components and CHD." },
+        { "id": "10.2.1.2", "text": "Logs capture all administrative actions and interactive use of system accounts." },
+        { "id": "10.3.3", "text": "Logs are promptly backed up to secure, central log servers." },
+        { "id": "10.4.1.1", "text": "Automated mechanisms perform daily audit log reviews." },
+        { "id": "10.5.1", "text": "Logs are retained for 12 months; last 3 months are immediately available." },
+        { "id": "10.6.1", "text": "System clocks are synchronized via time-synchronization technology." },
+        { "id": "10.7.2", "text": "Failures of critical security controls are detected and alerted promptly." }
+      ]
+    },
+    {
+      "title": "Requirement 11: Test Security of Systems and Networks Regularly",
+      "items": [
+        { "id": "11.1.1", "text": "Requirement 11 policies and procedures are documented and known." },
+        { "id": "11.2.1", "text": "Wireless access points are identified and monitored quarterly." },
+        { "id": "11.3.1.2", "text": "Internal vulnerability scans are performed via authenticated scanning." },
+        { "id": "11.3.2", "text": "External vulnerability scans are performed quarterly by an ASV." },
+        { "id": "11.4.1", "text": "Penetration testing methodology is defined and implemented." },
+        { "id": "11.4.2", "text": "Internal and external penetration tests are performed annually." },
+        { "id": "11.4.5", "text": "Segmentation controls are penetration tested annually." },
+        { "id": "11.5.2", "text": "Change-detection (FIM) alerts on unauthorized modification of critical files." },
+        { "id": "11.6.1", "text": "Tamper-detection alerts on unauthorized changes to payment pages." }
+      ]
+    },
+    {
+      "title": "Requirement 12: Support Information Security with Organizational Policies",
+      "items": [
+        { "id": "12.1.1", "text": "An overall information security policy is established and disseminated." },
+        { "id": "12.3.1", "text": "Targeted risk analysis is performed annually for flexible frequency requirements." },
+        { "id": "12.3.3", "text": "Cipher suites and protocols are reviewed annually against industry trends." },
+        { "id": "12.5.2", "text": "PCI DSS scope is documented and confirmed annually." },
+        { "id": "12.6.2", "text": "Security awareness training is provided upon hire and annually." },
+        { "id": "12.8.1", "text": "A list of all third-party service providers (TPSPs) is maintained." },
+        { "id": "12.8.4", "text": "TPSP compliance status is monitored annually." },
+        { "id": "12.10.1", "text": "An incident response plan is established and ready for activation." },
+        { "id": "12.10.2", "text": "Incident response plan is tested at least annually." },
+        { "id": "12.10.7", "text": "Procedures are in place to respond if PAN is found where not expected." }
+      ]
+    }
+  ]
+}
