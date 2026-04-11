@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataMap Sculptor | Vanilla Compliance Utility</title>
+    <style>
+        :root {
+            --bg: #f4f7f6;
+            --panel: #ffffff;
+            --primary: #003366; /* KU Blue-ish */
+            --secondary: #666;
+            --accent: #d4a017;
+            --border: #ddd;
+            --text: #333;
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .container { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        .card { background: var(--panel); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+        
+        h2, h3 { margin-top: 0; color: var(--primary); }
+        label { display: block; font-weight: bold; margin: 10px 0 5px; font-size: 0.9em; }
+        input, select, textarea { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; }
+        
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 4px; background: var(--primary); color: white; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: var(--secondary); }
+        button.danger { background: #b22222; }
+
+        .tag-pill { display: inline-block; padding: 2px 8px; background: #eee; border-radius: 12px; font-size: 0.8em; margin: 2px; border: 1px solid #ccc; }
+        .data-item { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
+        .data-item:last-child { border-bottom: none; }
+        
+        .toolbar { margin-bottom: 15px; display: flex; gap: 10px; }
+        .file-list { font-size: 0.85em; color: #555; margin-top: 5px; }
+        .hidden { display: none; }
+
+        #importInput { display: none; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>DataMap Sculptor</h1>
+    <div class="toolbar">
+        <button onclick="exportData()">Export Data Map (JSON)</button>
+        <button class="secondary" onclick="document.getElementById('importInput').click()">Import JSON</button>
+        <input type="file" id="importInput" accept=".json" onchange="importData(event)">
+    </div>
+</header>
+
+<div class="container">
+    <aside>
+        <div class="card">
+            <h3>Schema Manager</h3>
+            <p style="font-size: 0.8em; color: #666;">Define your industry-specific tags and standards here.</p>
+            
+            <label>Add Data Type/Tag (e.g. PII, CUI)</label>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="newTag" placeholder="Tag Name">
+                <button onclick="addSchemaItem('tags', 'newTag')">+</button>
+            </div>
+            <div id="tagsList" style="margin-top:10px;"></div>
+
+            <hr>
+
+            <label>Add Compliance Standard</label>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="newStandard" placeholder="e.g. NIST 800-171">
+                <button onclick="addSchemaItem('standards', 'newStandard')">+</button>
+            </div>
+            <div id="standardsList" style="margin-top:10px;"></div>
+        </div>
+    </aside>
+
+    <main>
+        <div class="card">
+            <h3>Add New Data Record</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <label>Data Element Name</label>
+                    <input type="text" id="itemName" placeholder="e.g. Student SSNs">
+                    
+                    <label>Storage Location</label>
+                    <input type="text" id="itemLocation" placeholder="e.g. AWS S3, Physical Safe">
+                    
+                    <label>Data Type / Tags</label>
+                    <div id="itemTagsCheckboxes"></div>
+                </div>
+                <div>
+                    <label>Compliance Standards</label>
+                    <div id="itemStandardsCheckboxes"></div>
+
+                    <label>Description / Notes</label>
+                    <textarea id="itemDescription" rows="3"></textarea>
+
+                    <label>Attachments</label>
+                    <input type="file" id="itemFile" multiple>
+                </div>
+            </div>
+            <div style="margin-top: 15px; text-align: right;">
+                <button onclick="saveItem()">Add to Map</button>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <h3>Current Data Map</h3>
+            <div id="mapContainer">
+                <p style="color:#999; font-style: italic;">No records yet. Start by defining tags and adding items.</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // CORE DATA STATE
+    let dataMap = {
+        config: {
+            tags: ["PII", "PHI", "CUI", "Public"],
+            standards: ["NIST 800-171", "GDPR", "FERPA", "HIPAA"]
+        },
+        items: []
+    };
+
+    // INITIALIZATION
+    window.onload = () => {
+        renderSchema();
+        renderMap();
+    };
+
+    // SCHEMA MANAGEMENT
+    function addSchemaItem(category, inputId) {
+        const val = document.getElementById(inputId).value.trim();
+        if (val && !dataMap.config[category].includes(val)) {
+            dataMap.config[category].push(val);
+            document.getElementById(inputId).value = '';
+            renderSchema();
+        }
+    }
+
+    function removeSchemaItem(category, index) {
+        dataMap.config[category].splice(index, 1);
+        renderSchema();
+    }
+
+    function renderSchema() {
+        const tList = document.getElementById('tagsList');
+        const sList = document.getElementById('standardsList');
+        const tChecks = document.getElementById('itemTagsCheckboxes');
+        const sChecks = document.getElementById('itemStandardsCheckboxes');
+
+        // Clear
+        tList.innerHTML = sList.innerHTML = tChecks.innerHTML = sChecks.innerHTML = '';
+
+        dataMap.config.tags.forEach((t, i) => {
+            tList.innerHTML += `<span class="tag-pill">${t} <span style="cursor:pointer;color:red" onclick="removeSchemaItem('tags', ${i})">×</span></span>`;
+            tChecks.innerHTML += `<label style="font-weight:normal; display:inline-block; margin-right:10px;"><input type="checkbox" name="itemTag" value="${t}"> ${t}</label>`;
+        });
+
+        dataMap.config.standards.forEach((s, i) => {
+            sList.innerHTML += `<span class="tag-pill">${s} <span style="cursor:pointer;color:red" onclick="removeSchemaItem('standards', ${i})">×</span></span>`;
+            sChecks.innerHTML += `<label style="font-weight:normal; display:inline-block; margin-right:10px;"><input type="checkbox" name="itemStandard" value="${s}"> ${s}</label>`;
+        });
+    }
+
+    // DATA ITEM MANAGEMENT
+    async function saveItem() {
+        const name = document.getElementById('itemName').value;
+        if (!name) return alert("Item Name is required.");
+
+        const tags = Array.from(document.querySelectorAll('input[name="itemTag"]:checked')).map(cb => cb.value);
+        const standards = Array.from(document.querySelectorAll('input[name="itemStandard"]:checked')).map(cb => cb.value);
+        const filesInput = document.getElementById('itemFile');
+        
+        // Handle File Conversion
+        const attachments = [];
+        for (let file of filesInput.files) {
+            const base64 = await toBase64(file);
+            attachments.push({ name: file.name, type: file.type, data: base64 });
+        }
+
+        const newItem = {
+            id: Date.now(),
+            name,
+            location: document.getElementById('itemLocation').value,
+            description: document.getElementById('itemDescription').value,
+            tags,
+            standards,
+            attachments
+        };
+
+        dataMap.items.push(newItem);
+        resetForm();
+        renderMap();
+    }
+
+    function deleteItem(id) {
+        dataMap.items = dataMap.items.filter(i => i.id !== id);
+        renderMap();
+    }
+
+    function resetForm() {
+        document.getElementById('itemName').value = '';
+        document.getElementById('itemLocation').value = '';
+        document.getElementById('itemDescription').value = '';
+        document.getElementById('itemFile').value = '';
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+
+    function renderMap() {
+        const container = document.getElementById('mapContainer');
+        if (dataMap.items.length === 0) {
+            container.innerHTML = '<p style="color:#999; font-style: italic;">No records yet.</p>';
+            return;
+        }
+
+        container.innerHTML = dataMap.items.map(item => `
+            <div class="data-item">
+                <button class="danger" style="float:right; padding: 2px 8px;" onclick="deleteItem(${item.id})">Delete</button>
+                <strong style="font-size: 1.1em;">${item.name}</strong> 
+                <span style="color:#666; font-size: 0.9em;"> | Location: ${item.location || 'N/A'}</span>
+                <div style="margin: 5px 0;">
+                    ${item.tags.map(t => `<span class="tag-pill" style="background:#e3f2fd">${t}</span>`).join('')}
+                    ${item.standards.map(s => `<span class="tag-pill" style="background:#fff3e0; border-color:#ffe0b2">${s}</span>`).join('')}
+                </div>
+                <p style="font-size: 0.9em; margin: 5px 0;">${item.description}</p>
+                <div class="file-list">
+                    ${item.attachments.length > 0 ? '📎 Attachments: ' + item.attachments.map(f => `<a href="${f.data}" download="${f.name}">${f.name}</a>`).join(', ') : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // FILE HELPER
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    // EXPORT & IMPORT
+    function exportData() {
+        const dataStr = JSON.stringify(dataMap, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `DataMap_Export_${new Date().toISOString().split('T')}.json`;
+        link.click();
+    }
+
+    function importData(event) {
+        const file = event.target.files;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.config && imported.items) {
+                    dataMap = imported;
+                    renderSchema();
+                    renderMap();
+                    alert("Data Map Imported Successfully.");
+                }
+            } catch (err) {
+                alert("Error parsing JSON file.");
+            }
+        };
+        reader.readAsText(file[0]);
+    }
+</script>
+
+</body>
+</html>
