@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Buddy</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --bg: #fdfcfe;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            margin: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .step { display: none; }
+        .step.active { display: block; }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; color: var(--primary); letter-spacing: -0.025em; }
+        h2 { margin-top: 0; color: var(--text); font-size: 1.25rem; }
+        p { color: #64748b; font-size: 0.95rem; }
+
+        .progress-container {
+            height: 6px;
+            background: #f1f5f9;
+            margin-bottom: 2.5rem;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 20%;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        textarea, input {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #f1f5f9;
+            border-radius: 12px;
+            margin-top: 12px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        textarea { min-height: 140px; resize: vertical; }
+
+        .btn-group {
+            margin-top: 2.5rem;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-next { background: var(--primary); color: white; }
+        .btn-prev { background: #f1f5f9; color: #64748b; }
+        .btn-download { background: var(--text); color: white; width: 100%; margin-top: 15px;}
+
+        .preview-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            white-space: pre-wrap;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 0.9rem;
+            border: 1px solid var(--border);
+            color: #334155;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #eef2ff;
+            color: var(--primary);
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Prompt Buddy ✨</h1>
+    </header>
+
+    <div class="progress-container"><div class="progress-fill" id="progress"></div></div>
+
+    <div class="step active" id="step1">
+        <span class="badge">Persona</span>
+        <h2>Who is your buddy today?</h2>
+        <p>Give the AI a specific role or expertise. This sets the tone and knowledge level.</p>
+        <input type="text" id="role" placeholder="e.g. Senior UX Designer, Fitness Coach, Legal Assistant...">
+        <div class="btn-group">
+            <button class="btn-next" onclick="nextStep(2)">Continue</button>
+        </div>
+    </div>
+
+    <div class="step" id="step2">
+        <span class="badge">Context</span>
+        <h2>Fill me in on the background</h2>
+        <p>What’s happening? Providing context helps the AI understand <em>why</em> you are asking.</p>
+        <textarea id="context" placeholder="e.g. I'm building a mobile app for seniors to track their hydration. I need to make sure the interface is accessible..."></textarea>
+        <div class="btn-group">
+            <button class="btn-prev" onclick="nextStep(1)">Back</button>
+            <button class="btn-next" onclick="nextStep(3)">Continue</button>
+        </div>
+    </div>
+
+    <div class="step" id="step3">
+        <span class="badge">Objective</span>
+        <h2>What's the main mission?</h2>
+        <p>Describe the specific task. Use strong verbs like "Create," "Analyze," "Rewrite," or "Debug."</p>
+        <textarea id="task" placeholder="e.g. Write a list of 5 UI/UX principles specifically for high-contrast accessibility in mobile apps."></textarea>
+        <div class="btn-group">
+            <button class="btn-prev" onclick="nextStep(2)">Back</button>
+            <button class="btn-next" onclick="nextStep(4)">Continue</button>
+        </div>
+    </div>
+
+    <div class="step" id="step4">
+        <span class="badge">Rules</span>
+        <h2>Any ground rules?</h2>
+        <p>Add constraints like word counts, things to avoid, or a specific tone (e.g. "Don't use emojis").</p>
+        <textarea id="constraints" placeholder="e.g. Use simple language. Avoid industry jargon. Keep the total response under 200 words."></textarea>
+        <div class="btn-group">
+            <button class="btn-prev" onclick="nextStep(3)">Back</button>
+            <button class="btn-next" onclick="nextStep(5)">Continue</button>
+        </div>
+    </div>
+
+    <div class="step" id="step5">
+        <span class="badge">Structure</span>
+        <h2>How should it look?</h2>
+        <p>Do you want a table, a list, a code block, or a professional email draft?</p>
+        <input type="text" id="format" placeholder="e.g. A Markdown table, Bulleted list, Python script...">
+        <div class="btn-group">
+            <button class="btn-prev" onclick="nextStep(4)">Back</button>
+            <button class="btn-next" onclick="generatePreview()">Finish Prompt</button>
+        </div>
+    </div>
+
+    <div class="step" id="stepFinal">
+        <span class="badge">Result</span>
+        <h2>Your Prompt is Ready!</h2>
+        <p>Copy this into your AI of choice or save it for later.</p>
+        <div class="preview-box" id="preview"></div>
+        <button class="btn-download" onclick="downloadMarkdown()">Download .md File</button>
+        <div class="btn-group">
+            <button class="btn-prev" onclick="nextStep(5)">Edit</button>
+            <button class="btn-prev" onclick="location.reload()">Start New</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function nextStep(stepNumber) {
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        
+        const currentStepId = stepNumber === 'Final' ? 'stepFinal' : 'step' + stepNumber;
+        document.getElementById(currentStepId).classList.add('active');
+
+        const progress = (stepNumber / 5) * 100;
+        document.getElementById('progress').style.width = stepNumber === 'Final' ? '100%' : progress + '%';
+    }
+
+    function generatePreview() {
+        const role = document.getElementById('role').value.trim();
+        const context = document.getElementById('context').value.trim();
+        const task = document.getElementById('task').value.trim();
+        const constraints = document.getElementById('constraints').value.trim();
+        const format = document.getElementById('format').value.trim();
+
+        const finalPrompt = `### ROLE
+${role || 'Helpful AI Assistant'}
+
+### CONTEXT
+${context || 'Not specified'}
+
+### TASK
+${task || 'Not specified'}
+
+### CONSTRAINTS
+${constraints || 'None'}
+
+### OUTPUT FORMAT
+${format || 'Standard text'}`;
+
+        document.getElementById('preview').innerText = finalPrompt;
+        nextStep('Final');
+    }
+
+    function downloadMarkdown() {
+        const content = document.getElementById('preview').innerText;
+        const blob = new Blob([content], { type: 'text/markdown' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const timestamp = new Date().getTime();
+        
+        a.setAttribute('href', url);
+        a.setAttribute('download', `prompt-buddy-${timestamp}.md`);
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+
+</body>
+</html>
