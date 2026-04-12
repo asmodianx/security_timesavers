@@ -1,5 +1,5 @@
 /**
- * SOC in a Box - Shell Logic
+ * SOC in a Box - Shell
  */
 const Desktop = {
     activeZIndex: 100,
@@ -17,17 +17,17 @@ const Desktop = {
     startClock() {
         const update = () => {
             const now = new Date();
-            const localTimeEl = document.getElementById('clock-local-time');
-            const localDateEl = document.getElementById('clock-local-date');
-            if (localTimeEl) localTimeEl.textContent = now.toLocaleTimeString([], { hour12: false });
-            if (localDateEl) localDateEl.textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+            const lTime = document.getElementById('clock-local-time');
+            const lDate = document.getElementById('clock-local-date');
+            if (lTime) lTime.textContent = now.toLocaleTimeString([], { hour12: false });
+            if (lDate) lDate.textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
             
-            const utcTimeEl = document.getElementById('clock-utc-time');
-            if (utcTimeEl) {
+            const uTime = document.getElementById('clock-utc-time');
+            if (uTime) {
                 const h = String(now.getUTCHours()).padStart(2, '0');
                 const m = String(now.getUTCMinutes()).padStart(2, '0');
                 const s = String(now.getUTCSeconds()).padStart(2, '0');
-                utcTimeEl.textContent = `${h}:${m}:${s}`;
+                uTime.textContent = `${h}:${m}:${s}`;
             }
         };
         setInterval(update, 1000);
@@ -109,12 +109,15 @@ const Desktop = {
         } else {
             const ifr = document.createElement('iframe');
             ifr.src = app.url;
-            ifr.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-downloads allow-popups allow-modals');
+            // SECURITY: allow-popups-to-escape-sandbox added to fix exports in STIX/FEMA tools
+            ifr.setAttribute('sandbox', 'allow-scripts allow-forms allow-same-origin allow-downloads allow-popups allow-modals allow-popups-to-escape-sandbox');
+            ifr.setAttribute('title', app.title);
             contentArea.appendChild(ifr);
         }
 
         const resizer = document.createElement('div');
         resizer.className = 'resizer';
+
         win.append(titleBar, contentArea, resizer);
         document.getElementById('desktop').appendChild(win);
         
@@ -125,32 +128,23 @@ const Desktop = {
         win.addEventListener('mousedown', () => this.bringToFront(win));
     },
 
-    // Build the Triage Notepad with Formatting Buttons
     buildNotepad(container) {
         const wrap = document.createElement('div');
         wrap.className = 'notepad-container';
-
         const toolbar = document.createElement('div');
         toolbar.className = 'notepad-toolbar';
-
         const editor = document.createElement('textarea');
         editor.className = 'internal-notepad';
         editor.placeholder = "Incident triage notes...";
 
-        // Formatting Helpers
         const applyFormat = (prefix, suffix = "") => {
             const start = editor.selectionStart;
             const end = editor.selectionEnd;
             const text = editor.value;
-            const before = text.substring(0, start);
-            const selected = text.substring(start, end);
-            const after = text.substring(end);
-
-            editor.value = before + prefix + selected + suffix + after;
+            editor.value = text.substring(0, start) + prefix + text.substring(start, end) + suffix + text.substring(end);
             editor.focus();
-            // Maintain selection or set cursor inside tags
             const newPos = start + prefix.length;
-            editor.setSelectionRange(newPos, newPos + selected.length);
+            editor.setSelectionRange(newPos, newPos + (end - start));
         };
 
         const applyLineFormat = (prefix) => {
@@ -158,28 +152,21 @@ const Desktop = {
             const text = editor.value;
             const lastNewLine = text.lastIndexOf("\n", start - 1);
             const lineStart = lastNewLine + 1;
-            
-            const before = text.substring(0, lineStart);
-            const after = text.substring(lineStart);
-            
-            editor.value = before + prefix + after;
+            editor.value = text.substring(0, lineStart) + prefix + text.substring(lineStart);
             editor.focus();
             editor.setSelectionRange(start + prefix.length, start + prefix.length);
         };
 
-        // Create Toolbar Buttons
         const buttons = [
             { label: "B", title: "Bold", action: () => applyFormat("**", "**") },
             { label: "I", title: "Italic", action: () => applyFormat("*", "*") },
-            { label: "H1", title: "Heading 1", action: () => applyLineFormat("# ") },
-            { label: "H2", title: "Heading 2", action: () => applyLineFormat("## ") },
+            { label: "H1", title: "H1", action: () => applyLineFormat("# ") },
+            { label: "H2", title: "H2", action: () => applyLineFormat("## ") },
             { type: "separator" },
             { label: "• List", title: "Bullet List", action: () => applyLineFormat("* ") },
             { label: "1. List", title: "Numbered List", action: () => applyLineFormat("1. ") },
-            { label: "Check", title: "Task List", action: () => applyLineFormat("- [ ] ") },
-            { type: "separator" },
             { label: "Code", title: "Code Block", action: () => applyFormat("```\n", "\n```") },
-            { label: "Save File", title: "Download Notes", class: "save-btn", action: () => {
+            { label: "Save File", title: "Download", class: "save-btn", action: () => {
                 const blob = new Blob([editor.value], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -193,15 +180,12 @@ const Desktop = {
         buttons.forEach(btn => {
             if (btn.type === "separator") {
                 const sep = document.createElement('div');
-                sep.className = 'separator';
-                toolbar.appendChild(sep);
+                sep.className = 'separator'; toolbar.appendChild(sep);
             } else {
                 const b = document.createElement('button');
-                b.textContent = btn.label;
+                b.textContent = btn.label; b.title = btn.title;
                 if (btn.class) b.className = btn.class;
-                b.title = btn.title;
-                b.onclick = btn.action;
-                toolbar.appendChild(b);
+                b.onclick = btn.action; toolbar.appendChild(b);
             }
         });
 
@@ -252,11 +236,11 @@ const Desktop = {
         titleBar.onmousedown = (e) => {
             if (winEl.classList.contains('maximized') || e.target.closest('.window-controls')) return;
             winEl.classList.add('dragging');
-            let startX = e.clientX, startY = e.clientY;
-            let startTop = winEl.offsetTop, startLeft = winEl.offsetLeft;
+            let sX = e.clientX, sY = e.clientY;
+            let sT = winEl.offsetTop, sL = winEl.offsetLeft;
             const move = (e) => {
-                winEl.style.top = (startTop + (e.clientY - startY)) + "px";
-                winEl.style.left = (startLeft + (e.clientX - startX)) + "px";
+                winEl.style.top = (sT + (e.clientY - sY)) + "px";
+                winEl.style.left = (sL + (e.clientX - sX)) + "px";
             };
             const stop = () => { 
                 winEl.classList.remove('dragging');
@@ -273,11 +257,11 @@ const Desktop = {
         resizer.onmousedown = (e) => {
             e.stopPropagation(); e.preventDefault();
             winEl.classList.add('resizing');
-            let startW = winEl.offsetWidth, startH = winEl.offsetHeight;
-            let startX = e.clientX, startY = e.clientY;
+            let sW = winEl.offsetWidth, sH = winEl.offsetHeight;
+            let sX = e.clientX, sY = e.clientY;
             const move = (e) => {
-                const w = startW + (e.clientX - startX);
-                const h = startH + (e.clientY - startY);
+                const w = sW + (e.clientX - sX);
+                const h = sH + (e.clientY - sY); // Variable Fix: sY used here
                 if (w > 350) winEl.style.width = w + 'px';
                 if (h > 250) winEl.style.height = h + 'px';
             };
