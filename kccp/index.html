@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kill Chain Defense‑in‑Depth Correlation Planner</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f5f5f5;
+}
+section {
+  background: #fff;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+}
+label {
+  display: block;
+  margin-top: 6px;
+}
+input, textarea, select, button {
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px;
+  box-sizing: border-box;
+}
+select[multiple] { height: 160px; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 6px;
+  vertical-align: top;
+}
+.actions button {
+  width: auto;
+  margin-right: 4px;
+}
+svg {
+  background: #fafafa;
+  border: 1px solid #ccc;
+}
+pre {
+  background: #111;
+  color: #0f0;
+  padding: 10px;
+}
+@media print {
+  button, input[type=file] { display: none !important; }
+  body { background: #fff; }
+}
+@media print {
+
+  /* Ensure the swimlane fits the printable page width */
+  #swimlane {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  /* Avoid clipping from sections */
+  section {
+    overflow: visible !important;
+  }
+
+}
+</style>
+</head>
+
+<body>
+
+<h1>Kill Chain Defense‑in‑Depth Correlation Planner</h1>
+<p><em>Offline, vendor‑agnostic, ECS‑normalized</em></p>
+
+<section>
+<h2>Add / Edit Control</h2>
+
+<input type="hidden" id="editIndex">
+
+<label>Kill Chain Phases</label>
+<select id="phases" multiple>
+  <option>Reconnaissance</option>
+  <option>Delivery</option>
+  <option>Installation</option>
+  <option>Privilege Escalation</option>
+  <option>Lateral Movement</option>
+  <option>Actions on Objective</option>
+  <option>Exfiltration</option>
+</select>
+
+<label>Control Name</label>
+<input id="name">
+
+<label>Zone / Layer</label>
+<input id="zone">
+
+<label>Manual Normalized Fields</label>
+<textarea id="manualFields" placeholder="vendor.custom.field"></textarea>
+
+<label>Elastic Common Schema Fields (ALL)</label>
+<select id="ecsSelect" multiple></select>
+
+<label>Field Confidence</label>
+<select id="confidence">
+  <option>Primary</option>
+  <option>Secondary</option>
+  <option>Tertiary</option>
+</select>
+
+<button onclick="saveControl()">Save Control</button>
+<button onclick="resetForm()">Clear</button>
+</section>
+
+<section>
+<h2>Defined Controls</h2>
+<table>
+<thead>
+<tr>
+  <th>Phases</th>
+  <th>Control</th>
+  <th>Zone</th>
+  <th>Fields</th>
+  <th>Confidence</th>
+  <th>Actions</th>
+</tr>
+</thead>
+<tbody id="controlsTable"></tbody>
+</table>
+</section>
+
+<section>
+<h2>Correlation Swimlane (Minimal Global Keys)</h2>
+<svg id="swimlane" width="100%" height="340"></svg>
+</section>
+
+<section>
+<h2>Scenario Management</h2>
+<button onclick="exportJSON()">Export JSON</button>
+<input type="file" accept=".json" onchange="importJSON(this.files[0])">
+<button onclick="exportPDF()">Export PDF</button>
+</section>
+
+<script>
+/* ======================================================
+   EXPLICIT ELEMENT BINDINGS (CRITICAL FIX)
+   ====================================================== */
+const nameEl        = document.getElementById("name");
+const zoneEl        = document.getElementById("zone");
+const manualEl      = document.getElementById("manualFields");
+const ecsSelectEl   = document.getElementById("ecsSelect");
+const phasesEl      = document.getElementById("phases");
+const confidenceEl  = document.getElementById("confidence");
+const editIndexEl   = document.getElementById("editIndex");
+const controlsTable = document.getElementById("controlsTable");
+const swimlaneEl    = document.getElementById("swimlane");
+
+/* ======================================================
+   ECS v8.x FIELD CATALOG (FIELD NAMES ONLY)
+   ====================================================== */
+const ECS_FIELDS = [
+  "agent.id","agent.name","agent.type","agent.version","ecs.version",
+  "event.action","event.category","event.code","event.dataset",
+  "event.id","event.kind","event.outcome","event.provider",
+  "source.ip","source.port","source.bytes","source.packets",
+  "destination.ip","destination.port","destination.bytes","destination.packets",
+  "network.protocol","network.transport","network.bytes","network.packets",
+  "host.id","host.name","host.ip","host.hostname","host.domain",
+  "host.os.name","host.os.version","host.os.family",
+  "user.id","user.name","user.domain","user.email",
+  "process.pid","process.name","process.executable",
+  "process.hash.sha256","process.args","process.command_line",
+  "file.name","file.path","file.extension","file.hash.sha256",
+  "registry.key","registry.path",
+  "session.id","authentication.type",
+  "url.full","url.domain","url.path",
+  "dns.question.name","dns.answers.data",
+  "email.from","email.to","email.subject",
+  "cloud.provider","cloud.region","cloud.account.id",
+  "container.id","container.name",
+  "observer.name","observer.type","observer.ip"
+];
+
+/* Minimal global pivot keys for swimlane */
+const CORRELATION_KEYS = {
+  "Source Network": ["source.ip"],
+  "Destination Network": ["destination.ip"],
+  "Host": ["host.name","host.ip"],
+  "Identity": ["user.name","user.id"],
+  "Session": ["session.id"]
+};
+
+const PHASES = [
+  "Reconnaissance","Delivery","Installation",
+  "Privilege Escalation","Lateral Movement",
+  "Actions on Objective","Exfiltration"
+];
+
+const controls = [];
+
+/* Populate ECS selector */
+(function initECS() {
+  ECS_FIELDS.forEach(f => {
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = f;
+    ecsSelectEl.appendChild(opt);
+  });
+})();
+
+/* ======================================================
+   SAVE CONTROL (FIXED)
+   ====================================================== */
+function saveControl() {
+  const phases = Array.from(phasesEl.selectedOptions).map(o => o.value);
+  const manual = manualEl.value.split(",").map(v => v.trim()).filter(Boolean);
+  const ecs    = Array.from(ecsSelectEl.selectedOptions).map(o => o.value);
+  const fields = [...new Set([...manual, ...ecs])];
+  const name   = nameEl.value.trim();
+
+  if (!name || phases.length === 0 || fields.length === 0) {
+    alert("Control name, phases, and at least one field are required.");
+    return;
+  }
+
+  const control = {
+    phases,
+    name,
+    zone: zoneEl.value.trim(),
+    fields,
+    confidence: confidenceEl.value
+  };
+
+  const idx = editIndexEl.value;
+  if (idx === "") controls.push(control);
+  else controls[idx] = control;
+
+  resetForm();
+  renderControls();
+  renderSwimlane();
+}
+
+/* ======================================================
+   CRUD
+   ====================================================== */
+function renderControls() {
+  controlsTable.innerHTML = "";
+  controls.forEach((c, i) => {
+    controlsTable.innerHTML += `
+      <tr>
+        <td>${c.phases.join(", ")}</td>
+        <td>${c.name}</td>
+        <td>${c.zone || "-"}</td>
+        <td>${c.fields.join(", ")}</td>
+        <td>${c.confidence}</td>
+        <td class="actions">
+          <button onclick="editControl(${i})">Edit</button>
+          <button onclick="deleteControl(${i})">Delete</button>
+        </td>
+      </tr>`;
+  });
+}
+
+function editControl(i) {
+  const c = controls[i];
+  editIndexEl.value = i;
+  nameEl.value = c.name;
+  zoneEl.value = c.zone;
+  confidenceEl.value = c.confidence;
+  manualEl.value = c.fields.filter(f => !ECS_FIELDS.includes(f)).join(", ");
+
+  Array.from(phasesEl.options).forEach(o => o.selected = c.phases.includes(o.value));
+  Array.from(ecsSelectEl.options).forEach(o => o.selected = c.fields.includes(o.value));
+}
+
+function deleteControl(i) {
+  controls.splice(i, 1);
+  renderControls();
+  renderSwimlane();
+}
+
+function resetForm() {
+  editIndexEl.value = "";
+  nameEl.value = "";
+  zoneEl.value = "";
+  manualEl.value = "";
+  confidenceEl.value = "Primary";
+  Array.from(phasesEl.options).forEach(o => o.selected = false);
+  Array.from(ecsSelectEl.options).forEach(o => o.selected = false);
+}
+
+/* ======================================================
+   SWIMLANE
+   ====================================================== */
+function renderSwimlane() {
+  swimlaneEl.innerHTML = "";
+  const w = swimlaneEl.clientWidth / PHASES.length;
+
+  PHASES.forEach((phase, i) => {
+    swimlaneEl.innerHTML += `
+      <rect x="${i*w}" y="0" width="${w}" height="30" fill="#eee"></rect>
+      <text x="${i*w+6}" y="20">${phase}</text>
+    `;
+    let y = 40;
+
+    Object.keys(CORRELATION_KEYS).forEach(key => {
+      const matches = controls.filter(c =>
+        c.phases.includes(phase) &&
+        c.fields.some(f => CORRELATION_KEYS[key].includes(f))
+      );
+      if (matches.length) {
+        swimlaneEl.innerHTML += `<text x="${i*w+8}" y="${y}" font-size="10">${key}</text>`;
+        y += 12;
+        matches.forEach(c => {
+          swimlaneEl.innerHTML += `
+            <rect x="${i*w+10}" y="${y}" width="${w-20}" height="14" fill="#cce"></rect>
+            <text x="${i*w+12}" y="${y+11}" font-size="9">${c.name}</text>
+          `;
+          y += 16;
+        });
+        y += 6;
+      }
+    });
+  });
+}
+
+/* ======================================================
+   JSON / PDF
+   ====================================================== */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify({ controls }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "killchain-scenario.json";
+  a.click();
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    controls.length = 0;
+    JSON.parse(reader.result).controls.forEach(c => controls.push(c));
+    renderControls();
+    renderSwimlane();
+  };
+  reader.readAsText(file);
+}
+
+function exportPDF() {
+  window.print();
+}
+</script>
+
+</body>
+</html>
