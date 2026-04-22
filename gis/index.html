@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyst GIS Portal | Standalone</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app-container">
+        <div id="sidebar">
+            <header>
+                <h2>Object Inventory</h2>
+                <p>Security Analyst Field Tool</p>
+            </header>
+            
+            <div id="table-container">
+                <table id="object-table">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="controls">
+                <button class="primary-btn" onclick="exportGeoJSON()">Export GeoJSON</button>
+                <button class="primary-btn" onclick="exportCSV()">Export CSV Table</button>
+                <input type="file" id="importFile" style="display:none" onchange="importGeoJSON(event)">
+                <button class="secondary-btn" onclick="document.getElementById('importFile').click()">Import GeoJSON</button>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@geoman-io/leaflet-geoman-free@latest/dist/leaflet-geoman.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.browser.print@1.0.6/dist/leaflet.browser.print.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
