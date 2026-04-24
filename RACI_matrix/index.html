@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RACI & Stakeholder Registry</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background: #f4f7f6; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #eee; font-size: 0.85em; }
+        input, textarea, select { width: 100%; box-sizing: border-box; padding: 5px; border: 1px solid #ccc; }
+        .controls { margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .framework-selector { background: #eef; padding: 10px; border-radius: 4px; border: 1px solid #bcc; }
+        button { padding: 8px 12px; cursor: pointer; border-radius: 4px; border: none; background: #0056b3; color: white; }
+        button:hover { background: #004494; }
+        .btn-del { background: #cb2431; }
+        @media print { .no-print { display: none; } body { background: white; } .container { box-shadow: none; border: none; } }
+    </style>
+</head>
+<body>
+
+    <h2>Project Assignment & Stakeholder Management</h2>
+
+    <div class="controls no-print">
+        <div class="framework-selector">
+            <label><strong>Framework:</strong></label>
+            <select id="frameworkSelect" onchange="changeFramework(this.value)" style="width: auto; margin-left: 5px;">
+                <option value="RACI">RACI (Resp, Acc, Cons, Inf)</option>
+                <option value="MOCHA">MOCHA (Mgr, Own, Cons, Help, Appr)</option>
+                <option value="DID">DID (Dir, Impl, Decid)</option>
+                <option value="DARCI">DARCI (Decid, Acc, Resp, Cons, Inf)</option>
+            </select>
+        </div>
+        <button onclick="addStakeholder()">+ Add Stakeholder</button>
+        <button onclick="addTask()">+ Add Task</button>
+        <button onclick="exportJSON()">Export JSON</button>
+        <button onclick="document.getElementById('fileInput').click()">Import JSON</button>
+        <button onclick="window.print()">Export PDF</button>
+        <input type="file" id="fileInput" style="display:none" onchange="importJSON(event)">
+    </div>
+
+    <div class="container">
+        <h3 id="matrixTitle">RACI Matrix</h3>
+        <table id="raciTable">
+            <thead><tr id="raciHeader"></tr></thead>
+            <tbody id="raciBody"></tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h3>Stakeholder Directory</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name/Role</th>
+                    <th>Contact</th>
+                    <th>Description</th>
+                    <th>Notes</th>
+                    <th class="no-print">Action</th>
+                </tr>
+            </thead>
+            <tbody id="stkBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Framework Definitions
+        const frameworks = {
+            RACI:  { name: "RACI", roles: ["R", "A", "C", "I"], labels: ["Responsible", "Accountable", "Consulted", "Informed"] },
+            MOCHA: { name: "MOCHA", roles: ["M", "O", "C", "H", "A"], labels: ["Manager", "Owner", "Consulted", "Helper", "Approver"] },
+            DID:   { name: "DID", roles: ["D", "I", "Dec"], labels: ["Director", "Implementer", "Decider"] },
+            DARCI: { name: "DARCI", roles: ["D", "A", "R", "C", "I"], labels: ["Decider", "Accountable", "Responsible", "Consulted", "Informed"] }
+        };
+
+        // Central Data State
+        let state = {
+            activeFramework: "RACI",
+            stakeholders: [{ name: "Stakeholder 1", contact: "", desc: "", notes: "" }],
+            tasks: [{ name: "Project Start", roles: [""] }]
+        };
+
+        // Initialize
+        window.onload = () => render();
+
+        function render() {
+            document.getElementById('frameworkSelect').value = state.activeFramework;
+            document.getElementById('matrixTitle').innerText = `${state.activeFramework} Matrix`;
+            renderStakeholders();
+            renderRaci();
+        }
+
+        function renderStakeholders() {
+            const tbody = document.getElementById('stkBody');
+            tbody.innerHTML = '';
+            state.stakeholders.forEach((s, idx) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><input type="text" value="${s.name}" onchange="updateStk(${idx}, 'name', this.value)"></td>
+                    <td><input type="text" value="${s.contact}" onchange="updateStk(${idx}, 'contact', this.value)"></td>
+                    <td><textarea onchange="updateStk(${idx}, 'desc', this.value)">${s.desc}</textarea></td>
+                    <td><textarea onchange="updateStk(${idx}, 'notes', this.value)">${s.notes}</textarea></td>
+                    <td class="no-print"><button class="btn-del" onclick="deleteStk(${idx})">X</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderRaci() {
+            const thead = document.getElementById('raciHeader');
+            const tbody = document.getElementById('raciBody');
+            const currentFw = frameworks[state.activeFramework];
+            
+            // Header
+            let headHtml = '<th>Tasks</th>';
+            state.stakeholders.forEach(s => {
+                headHtml += `<th>${s.name || '---'}</th>`;
+            });
+            headHtml += '<th class="no-print">Action</th>';
+            thead.innerHTML = headHtml;
+
+            // Body
+            tbody.innerHTML = '';
+            state.tasks.forEach((t, tIdx) => {
+                const tr = document.createElement('tr');
+                let rowHtml = `<td><input type="text" value="${t.name}" onchange="updateTaskName(${tIdx}, this.value)"></td>`;
+                
+                state.stakeholders.forEach((_, sIdx) => {
+                    const val = t.roles[sIdx] || "";
+                    
+                    let optionsHtml = '<option value=""></option>';
+                    currentFw.roles.forEach((role, rIdx) => {
+                        const selected = val === role ? 'selected' : '';
+                        optionsHtml += `<option value="${role}" ${selected}>${role} (${currentFw.labels[rIdx]})</option>`;
+                    });
+
+                    rowHtml += `<td>
+                        <select onchange="updateRole(${tIdx}, ${sIdx}, this.value)">
+                            ${optionsHtml}
+                        </select>
+                    </td>`;
+                });
+                rowHtml += `<td class="no-print"><button class="btn-del" onclick="deleteTask(${tIdx})">X</button></td>`;
+                tr.innerHTML = rowHtml;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // State Mutation Logic
+        function changeFramework(val) {
+            state.activeFramework = val;
+            render();
+        }
+
+        function updateStk(idx, field, val) {
+            state.stakeholders[idx][field] = val;
+            if (field === 'name') renderRaci();
+        }
+
+        function updateTaskName(idx, val) {
+            state.tasks[idx].name = val;
+        }
+
+        function updateRole(tIdx, sIdx, val) {
+            state.tasks[tIdx].roles[sIdx] = val;
+        }
+
+        function addStakeholder() {
+            state.stakeholders.push({ name: "New Person", contact: "", desc: "", notes: "" });
+            state.tasks.forEach(t => t.roles.push(""));
+            render();
+        }
+
+        function addTask() {
+            state.tasks.push({ name: "New Task", roles: new Array(state.stakeholders.length).fill("") });
+            render();
+        }
+
+        function deleteStk(idx) {
+            state.stakeholders.splice(idx, 1);
+            state.tasks.forEach(t => t.roles.splice(idx, 1));
+            render();
+        }
+
+        function deleteTask(idx) {
+            state.tasks.splice(idx, 1);
+            render();
+        }
+
+        // Persistence
+        function exportJSON() {
+            const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `project_${state.activeFramework}.json`;
+            a.click();
+        }
+
+        function importJSON(event) {
+            const file = event.target.files;
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    state = JSON.parse(e.target.result);
+                    // Ensure activeFramework exists in imported data
+                    if(!state.activeFramework) state.activeFramework = "RACI";
+                    render();
+                } catch(err) {
+                    alert("Error parsing JSON file.");
+                }
+            };
+            reader.readAsText(file[0]);
+        }
+    </script>
+</body>
+</html>
