@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTI Intelligence Requirements Architect</title>
+    <style>
+        :root {
+            --primary: #1e293b;
+            --secondary: #334155;
+            --accent: #3b82f6;
+            --passive: #94a3b8;
+            --low: #22c55e;
+            --medium: #f59e0b;
+            --high: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
+        aside {
+            width: 260px;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 0;
+            flex-shrink: 0;
+        }
+
+        .brand { padding: 0 1.5rem 2rem 1.5rem; border-bottom: 1px solid var(--secondary); margin-bottom: 1rem; }
+        .brand h1 { font-size: 1.1rem; font-weight: 700; color: #f1f5f9; text-transform: uppercase; letter-spacing: 1px; }
+
+        nav button {
+            background: none; border: none; color: #94a3b8; padding: 0.8rem 1.5rem;
+            text-align: left; width: 100%; cursor: pointer; font-size: 0.85rem;
+            transition: all 0.2s; border-left: 4px solid transparent;
+        }
+
+        nav button:hover { background-color: var(--secondary); color: white; }
+        nav button.active { background-color: var(--secondary); color: white; border-left-color: var(--accent); font-weight: 600; }
+
+        /* Main Workspace */
+        main { flex-grow: 1; padding: 2rem; overflow-y: auto; }
+        .view { display: none; max-width: 1100px; margin: 0 auto; }
+        .view.active { display: block; }
+
+        .card {
+            background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+            padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        h2 { margin-bottom: 1.2rem; font-size: 1.3rem; border-bottom: 2px solid var(--bg); padding-bottom: 0.5rem; color: var(--primary); }
+
+        .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .field { display: flex; flex-direction: column; }
+        .field.full { grid-column: span 2; }
+        
+        label { font-size: 0.75rem; font-weight: 700; margin-bottom: 0.3rem; color: var(--text-muted); text-transform: uppercase; }
+        
+        input, select, textarea { padding: 0.6rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.9rem; outline: none; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+
+        textarea { min-height: 80px; resize: vertical; }
+
+        .btn-row { margin-top: 1.2rem; display: flex; gap: 0.8rem; }
+        .btn { padding: 0.6rem 1.2rem; border-radius: 4px; border: none; font-weight: 600; cursor: pointer; font-size: 0.85rem; }
+        .btn-primary { background-color: var(--accent); color: white; }
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-danger { background-color: var(--high); color: white; }
+
+        /* Requirements List */
+        .req-list { margin-top: 1.5rem; }
+        .req-item {
+            background: white; border: 1px solid var(--border); padding: 1rem;
+            border-radius: 6px; margin-bottom: 0.6rem; display: flex;
+            justify-content: space-between; align-items: center;
+        }
+
+        .priority-badge { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; }
+        .pb-Passive { background: #f1f5f9; color: #475569; }
+        .pb-Low { background: #dcfce7; color: #166534; }
+        .pb-Medium { background: #fef3c7; color: #92400e; }
+        .pb-High { background: #fee2e2; color: #991b1b; }
+
+        .top-bar {
+            background: white; padding: 0.8rem 2rem; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: flex-end; gap: 10px;
+        }
+
+        /* PDF/Print Style */
+        #print-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
+            .print-section { margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 15px; page-break-inside: avoid; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <aside class="no-print">
+        <div class="brand"><h1>CTI Architect</h1></div>
+        <nav id="sidebar-nav">
+            <button onclick="showView('dashboard')" id="btn-dashboard">Dashboard</button>
+            <button onclick="showView('gir')" id="btn-gir">1. GIR (General)</button>
+            <button onclick="showView('fcr')" id="btn-fcr">2. FCR (Focused)</button>
+            <button onclick="showView('ier')" id="btn-ier">3. IER (Extraction)</button>
+            <button onclick="showView('dir')" id="btn-dir">4. DIR (Data)</button>
+            <button onclick="showView('pir')" id="btn-pir">5. PIR (Prioritized)</button>
+            <button onclick="showView('sir')" id="btn-sir">6. SIR (Specific)</button>
+        </nav>
+    </aside>
+
+    <div style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="top-bar no-print">
+            <input type="file" id="importFile" style="display:none" onchange="handleImport(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import JSON</button>
+            <button class="btn btn-secondary" onclick="exportData()">Export JSON</button>
+            <button class="btn btn-primary" onclick="generatePDF()">Export PDF</button>
+        </div>
+
+        <main>
+            <section id="dashboard" class="view">
+                <div class="card">
+                    <h2>Maturity Overview</h2>
+                    <div class="form-grid">
+                        <div class="card" style="margin:0; text-align:center; background:#f1f5f9;">
+                            <h3 id="count-gir">0</h3><label>GIRs</label>
+                        </div>
+                        <div class="card" style="margin:0; text-align:center; background:#f1f5f9;">
+                            <h3 id="count-fcr">0</h3><label>FCRs</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="gir" class="view">
+                <div class="card">
+                    <h2>General Intelligence Requirement (GIR)</h2>
+                    <div class="form-grid">
+                        <div class="field"><label>Identifier</label><input type="text" id="gir-id" placeholder="GIR-001"></div>
+                        <div class="field"><label>Priority</label><select id="gir-priority"><option>Passive</option><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+                        <div class="field full"><label>Intelligence Requirement</label><input type="text" id="gir-req"></div>
+                        <div class="field full"><label>Description</label><textarea id="gir-desc"></textarea></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-primary" onclick="saveData('girs', 'gir')">Save GIR</button></div>
+                </div>
+                <div id="list-girs" class="req-list"></div>
+            </section>
+
+            <section id="fcr" class="view">
+                <div class="card">
+                    <h2>Focused Collection Requirement (FCR)</h2>
+                    <div class="form-grid">
+                        <div class="field"><label>Identifier</label><input type="text" id="fcr-id" placeholder="FCR-001"></div>
+                        <div class="field"><label>Parent GIR</label><select id="fcr-link" class="gir-dl"></select></div>
+                        <div class="field"><label>Priority</label><select id="fcr-priority"><option>Passive</option><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+                        <div class="field"><label>Collection Type</label><select id="fcr-coll"><option>Internal</option><option>External</option></select></div>
+                        <div class="field"><label>Requesting Team</label><input type="text" id="fcr-team"></div>
+                        <div class="field"><label>Scope</label><input type="text" id="fcr-scope"></div>
+                        <div class="field"><label>Data Type</label><input type="text" id="fcr-dtype"></div>
+                        <div class="field"><label>Output</label><input type="text" id="fcr-output"></div>
+                        <div class="field full"><label>Requirement</label><input type="text" id="fcr-req"></div>
+                        <div class="field full"><label>Description</label><textarea id="fcr-desc"></textarea></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-primary" onclick="saveData('fcrs', 'fcr')">Save FCR</button></div>
+                </div>
+                <div id="list-fcrs" class="req-list"></div>
+            </section>
+
+            <section id="ier" class="view">
+                <div class="card">
+                    <h2>Information Extraction Requirement (IER)</h2>
+                    <div class="form-grid">
+                        <div class="field"><label>Identifier</label><input type="text" id="ier-id"></div>
+                        <div class="field"><label>Parent GIR</label><select id="ier-link" class="gir-dl"></select></div>
+                        <div class="field"><label>Priority</label><select id="ier-priority"><option>Passive</option><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+                        <div class="field"><label>Scope</label><input type="text" id="ier-scope"></div>
+                        <div class="field"><label>Data Dependency</label><input type="text" id="ier-dep"></div>
+                        <div class="field"><label>Data Type</label><input type="text" id="ier-dtype"></div>
+                        <div class="field full"><label>Requirement</label><input type="text" id="ier-req"></div>
+                        <div class="field full"><label>Description</label><textarea id="ier-desc"></textarea></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-primary" onclick="saveData('iers', 'ier')">Save IER</button></div>
+                </div>
+                <div id="list-iers" class="req-list"></div>
+            </section>
+
+            <section id="dir" class="view">
+                <div class="card">
+                    <h2>Data Intelligence Requirement (DIR)</h2>
+                    <div class="form-grid">
+                        <div class="field"><label>Identifier</label><input type="text" id="dir-id"></div>
+                        <div class="field"><label>Parent GIR</label><select id="dir-linkgir" class="gir-dl"></select></div>
+                        <div class="field"><label>Parent FCR</label><select id="dir-linkfcr" class="fcr-dl"></select></div>
+                        <div class="field"><label>Priority</label><select id="dir-priority"><option>Passive</option><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+                        <div class="field"><label>Data Requirement</label><input type="text" id="dir-datareq"></div>
+                        <div class="field"><label>Data Type</label><input type="text" id="dir-dtype"></div>
+                        <div class="field full"><label>Requirement</label><input type="text" id="dir-req"></div>
+                        <div class="field full"><label>Description</label><textarea id="dir-desc"></textarea></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-primary" onclick="saveData('dirs', 'dir')">Save DIR</button></div>
+                </div>
+                <div id="list-dirs" class="req-list"></div>
+            </section>
+
+            <section id="pir" class="view">
+                <div class="card">
+                    <h2>Prioritized Intelligence Requirement (PIR)</h2>
+                    <div class="form-grid">
+                        <div class="field"><label>Identifier</label><input type="text" id="pir-id"></div>
+                        <div class="field"><label>Priority</label><select id="pir-priority"><option>Passive</option><option>Low</option><option>Medium</option><option selected>High</option></select></div>
+                        <div class="field full"><label>Critical Decision Question</label><input type="text" id="pir-req"></div>
+                        <div class="field full"><label>Description</label><textarea id="pir-desc"></textarea></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-primary" onclick="saveData('pirs', 'pir')">Save PIR</button></div>
+                </div>
+                <div id="list-pirs" class="req-list"></div>
+            </section>
+
+            <section id="sir" class="view">
+                <div class="card">
+                    <h2>Specific Intelligence Requirement (SIR)</h2>
+                    <div class="form-grid">
+                        <div class="field"><label>Identifier</label><input type="text" id="sir-id"></div>
+                        <div class="field"><label>Priority</label><select id="sir-priority"><option>Passive</option><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+                        <div class="field full"><label>Technical Hunting Question</label><input type="text" id="sir-req"></div>
+                        <div class="field full"><label>Description</label><textarea id="sir-desc"></textarea></div>
+                    </div>
+                    <div class="btn-row"><button class="btn btn-primary" onclick="saveData('sirs', 'sir')">Save SIR</button></div>
+                </div>
+                <div id="list-sirs" class="req-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="print-area"></div>
+
+    <script>
+        let store = { girs: [], fcrs: [], iers: [], dirs: [], pirs: [], sirs: [] };
+
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            document.getElementById('btn-' + viewId).classList.add('active');
+            sync();
+        }
+
+        // Standardized Syncing Logic
+        function sync() {
+            // Update Stats
+            document.getElementById('count-gir').innerText = store.girs.length;
+            document.getElementById('count-fcr').innerText = store.fcrs.length;
+
+            // Refresh Dropdowns
+            const gDls = document.querySelectorAll('.gir-dl');
+            const fDls = document.querySelectorAll('.fcr-dl');
+
+            gDls.forEach(dl => {
+                const currentVal = dl.value;
+                dl.innerHTML = '<option value="">-- Select Parent GIR --</option>';
+                store.girs.forEach(g => {
+                    const label = g.req ? (g.req.length > 25 ? g.req.substring(0, 25) + '...' : g.req) : 'No Req';
+                    dl.innerHTML += `<option value="${g.id}">${g.id}: ${label}</option>`;
+                });
+                dl.value = currentVal;
+            });
+
+            fDls.forEach(dl => {
+                const currentVal = dl.value;
+                dl.innerHTML = '<option value="">-- Select Parent FCR --</option>';
+                store.fcrs.forEach(f => {
+                    const label = f.req ? (f.req.length > 25 ? f.req.substring(0, 25) + '...' : f.req) : 'No Req';
+                    dl.innerHTML += `<option value="${f.id}">${f.id}: ${label}</option>`;
+                });
+                dl.value = currentVal;
+            });
+
+            // Update All Lists
+            ['girs', 'fcrs', 'iers', 'dirs', 'pirs', 'sirs'].forEach(type => {
+                const container = document.getElementById('list-' + type);
+                if (!container) return;
+                container.innerHTML = '';
+                store[type].forEach((item, idx) => {
+                    const div = document.createElement('div');
+                    div.className = 'req-item';
+                    div.innerHTML = `
+                        <div>
+                            <strong>[${item.id}]</strong> <span class="priority-badge pb-${item.priority}">${item.priority}</span><br>
+                            <small>${item.req || '<em>(No Requirement Text)</em>'}</small>
+                        </div>
+                        <button class="btn btn-danger" onclick="removeData('${type}', ${idx})" style="padding:4px 8px; font-size:10px;">Delete</button>
+                    `;
+                    container.appendChild(div);
+                });
+            });
+        }
+
+        // Bulletproof Save Logic
+        function saveData(storeKey, prefix) {
+            const idField = document.getElementById(prefix + '-id');
+            if (!idField || !idField.value) { alert("Identifier is required"); return; }
+
+            // Explicitly capture values by looking specifically inside the active section
+            const section = document.getElementById(prefix);
+            const inputs = section.querySelectorAll('input, select, textarea');
+            
+            let item = {};
+            inputs.forEach(el => {
+                // Map "gir-req" to "req", "fcr-priority" to "priority", etc.
+                const key = el.id.replace(prefix + '-', '');
+                item[key] = el.value;
+            });
+
+            store[storeKey].push(item);
+            
+            // Clear text fields but keep select defaults
+            inputs.forEach(el => {
+                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.value = '';
+            });
+
+            sync();
+        }
+
+        function removeData(key, idx) {
+            store[key].splice(idx, 1);
+            sync();
+        }
+
+        function exportData() {
+            const blob = new Blob([JSON.stringify(store, null, 2)], {type: "application/json"});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `CTI_Export_${new Date().toISOString().split('T')}.json`;
+            a.click();
+        }
+
+        function handleImport(e) {
+            const file = e.target.files;
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    store = { ...store, ...data };
+                    sync();
+                    alert("Import successful");
+                } catch(err) { alert("Invalid JSON format"); }
+            };
+            reader.readAsText(file[0]);
+        }
+
+        function generatePDF() {
+            const area = document.getElementById('print-area');
+            let h = `<h1>Intelligence Requirements Master Report</h1><p>Generated: ${new Date().toLocaleString()}</p><hr>`;
+            
+            const map = [
+                {k:'girs', l:'1. General Requirements (GIR)'},
+                {k:'fcrs', l:'2. Focused Collection (FCR)'},
+                {k:'iers', l:'3. Extraction Requirements (IER)'},
+                {k:'dirs', l:'4. Data Requirements (DIR)'},
+                {k:'pirs', l:'5. Prioritized Requirements (PIR)'},
+                {k:'sirs', l:'6. Specific Requirements (SIR)'}
+            ];
+
+            map.forEach(sec => {
+                h += `<div class="print-section"><h2>${sec.l}</h2>`;
+                if(store[sec.k].length === 0) h += "<p>None defined.</p>";
+                store[sec.k].forEach(i => {
+                    h += `<div style="margin-bottom:12px;">
+                            <strong>${i.id} [Priority: ${i.priority}]</strong>: ${i.req || 'N/A'}<br>
+                            <small style="color:#444">${i.desc || ''}</small>
+                          </div>`;
+                });
+                h += `</div>`;
+            });
+            area.innerHTML = h;
+            window.print();
+        }
+
+        // Initialize Dashboard on load
+        window.onload = () => showView('dashboard');
+    </script>
+</body>
+</html>

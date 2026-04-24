@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Selector - Global Recalculate</title>
+    <style>
+        :root { --border: #cbd5e1; --header-bg: #1e293b; --input-bg: #fffbeb; --accent: #2563eb; }
+        body { font-family: 'Courier New', Courier, monospace; background: #f1f5f9; padding: 20px; color: #0f172a; }
+        .wrapper { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border: 2px solid #94a3b8; overflow-x: auto; }
+        
+        .controls { margin-bottom: 25px; display: flex; gap: 12px; align-items: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; }
+        button { padding: 10px 18px; cursor: pointer; font-family: inherit; font-weight: bold; border-radius: 6px; border: 1px solid #334155; transition: all 0.2s; }
+        
+        .btn-calc { background: var(--accent); color: white; border: none; flex-grow: 0; }
+        .btn-calc:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-add { background: #16a34a; color: white; border: none; }
+        .btn-rem { background: #dc2626; color: white; border: none; }
+        
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; min-width: 700px; }
+        th, td { border: 1px solid var(--border); padding: 8px 12px; text-align: right; }
+        th { background: #e2e8f0; font-size: 13px; }
+        .label-cell { text-align: left; font-weight: bold; background: #f8fafc; width: 240px; position: sticky; left: 0; z-index: 10; }
+        
+        .section-break { background: var(--header-bg) !important; color: white; text-align: left; font-weight: bold; padding: 8px 12px; }
+        
+        input { width: 100%; border: 1px solid transparent; background: var(--input-bg); font-family: inherit; font-size: 14px; text-align: right; font-weight: bold; border-radius: 3px; }
+        input:focus { border-color: var(--accent); outline: none; background: white; box-shadow: inset 0 0 0 1px var(--accent); }
+        
+        .hl { font-weight: bold; color: var(--accent); }
+        .neg { color: #dc2626; }
+        .summary-row { background: #f1f5f9; }
+        .flash { animation: flash-animation 0.5s ease-in-out; }
+        
+        @keyframes flash-animation {
+            0% { background-color: #dbeafe; }
+            100% { background-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+    <h2 style="margin-top:0; border-bottom: 2px solid #1e293b; padding-bottom: 10px;">PROJECT SELECTION WORKBENCH</h2>
+    
+    <div class="controls">
+        <button class="btn-calc" onclick="runAll()">🔄 RECALCULATE ALL COLUMNS</button>
+        <span style="border-left: 1px solid #cbd5e1; height: 30px; margin: 0 10px;"></span>
+        <button class="btn-add" onclick="addColumn()">[+] Add Project</button>
+        <button class="btn-rem" onclick="removeColumn()">[-] Remove Last</button>
+    </div>
+
+    <table id="calcTable">
+        <thead>
+            <tr id="headerRow">
+                <th class="label-cell">PROJECT PARAMETERS</th>
+                </tr>
+        </thead>
+        <tbody id="inputBody">
+            <tr data-type="cost"><td class="label-cell">Initial Investment (Cost)</td></tr>
+            <tr data-type="flow"><td class="label-cell">Annual Cash Flow ($)</td></tr>
+            <tr data-type="life"><td class="label-cell">Duration (Years)</td></tr>
+            <tr data-type="rate"><td class="label-cell">Discount Rate (%)</td></tr>
+        </tbody>
+        
+        <tbody>
+            <tr><td colspan="100" class="section-break">YEARLY PRESENT VALUE (PV) DECAY</td></tr>
+        </tbody>
+        <tbody id="calcBody">
+            </tbody>
+        
+        <tbody>
+            <tr class="summary-row" id="rowTotalPV"><td class="label-cell">Total PV of Inflows</td></tr>
+            <tr><td colspan="100" class="section-break">PORTFOLIO SELECTION METRICS</td></tr>
+            <tr id="rowNPVM"><td class="label-cell">NPVM (Net Present Money)</td></tr>
+            <tr id="rowPI"><td class="label-cell">Profitability Index (PI)</td></tr>
+            <tr id="rowEUAW"><td class="label-cell">EUAW (Annualized Worth)</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    let projectCount = 0;
+
+    function initYearRows() {
+        const calcBody = document.getElementById('calcBody');
+        for (let y = 1; y <= 10; y++) {
+            const row = document.createElement('tr');
+            row.setAttribute('data-year', y);
+            row.innerHTML = `<td class="label-cell">Year ${y} PV</td>`;
+            calcBody.appendChild(row);
+        }
+    }
+
+    function addColumn() {
+        projectCount++;
+        const label = String.fromCharCode(64 + projectCount);
+        
+        const th = document.createElement('th');
+        th.id = `head-${projectCount}`;
+        th.innerText = `Project ${label}`;
+        document.getElementById('headerRow').appendChild(th);
+
+        addCell('inputBody', 'cost', 10000);
+        addCell('inputBody', 'flow', 4200);
+        addCell('inputBody', 'life', 3);
+        addCell('inputBody', 'rate', 10);
+
+        for (let y = 1; y <= 10; y++) {
+            const row = document.querySelector(`tr[data-year="${y}"]`);
+            const td = document.createElement('td');
+            td.id = `p${projectCount}-y${y}`;
+            td.innerText = "0.00";
+            row.appendChild(td);
+        }
+
+        addMetricCell('rowTotalPV', `p${projectCount}-tpv`);
+        addMetricCell('rowNPVM', `p${projectCount}-npvm`, true);
+        addMetricCell('rowPI', `p${projectCount}-pi`);
+        addMetricCell('rowEUAW', `p${projectCount}-euaw`, true);
+
+        runAll();
+    }
+
+    function addCell(bodyId, type, defaultVal) {
+        const row = document.querySelector(`#${bodyId} tr[data-type="${type}"]`);
+        const td = document.createElement('td');
+        td.innerHTML = `<input type="number" class="p${projectCount}-${type}" value="${defaultVal}" oninput="runAll()">`;
+        row.appendChild(td);
+    }
+
+    function addMetricCell(rowId, cellId, isHighlight = false) {
+        const row = document.getElementById(rowId);
+        const td = document.createElement('td');
+        td.id = cellId;
+        td.className = isHighlight ? "hl" : "";
+        td.innerText = "0.00";
+        row.appendChild(td);
+    }
+
+    function removeColumn() {
+        if (projectCount <= 1) return;
+        const current = projectCount;
+        document.getElementById(`head-${current}`).remove();
+        document.getElementById(`p${current}-tpv`).remove();
+        document.getElementById(`p${current}-npvm`).remove();
+        document.getElementById(`p${current}-pi`).remove();
+        document.getElementById(`p${current}-euaw`).remove();
+
+        document.querySelectorAll(`tr[data-type]`).forEach(row => row.lastChild.remove());
+        for (let y = 1; y <= 10; y++) {
+            document.getElementById(`p${current}-y${y}`).remove();
+        }
+        projectCount--;
+        runAll();
+    }
+
+    // Explicit Recalculate Logic
+    function runAll() {
+        for (let p = 1; p <= projectCount; p++) {
+            const cost = parseFloat(document.querySelector(`.p${p}-cost`).value) || 0;
+            const flow = parseFloat(document.querySelector(`.p${p}-flow`).value) || 0;
+            const life = parseFloat(document.querySelector(`.p${p}-life`).value) || 0;
+            const rate = (parseFloat(document.querySelector(`.p${p}-rate`).value) || 0) / 100;
+
+            let totalPV = 0;
+            for (let t = 1; t <= 10; t++) {
+                const cell = document.getElementById(`p${p}-y${t}`);
+                if (t <= life) {
+                    const pv = flow / Math.pow(1 + rate, t);
+                    cell.innerText = pv.toFixed(6);
+                    cell.style.opacity = "1";
+                    totalPV += pv;
+                } else {
+                    cell.innerText = "0.000000";
+                    cell.style.opacity = "0.3";
+                }
+            }
+
+            const npvm = totalPV - cost;
+            const pi = cost > 0 ? (totalPV / cost) : 0;
+            
+            let euaw = 0;
+            if (life > 0) {
+                // Equivalent Uniform Annual Worth Formula
+                const crf = rate > 0 ? (rate * Math.pow(1 + rate, life)) / (Math.pow(1 + rate, life) - 1) : (1 / life);
+                euaw = npvm * crf;
+            }
+
+            document.getElementById(`p${p}-tpv`).innerText = totalPV.toFixed(5);
+            
+            const npvmCell = document.getElementById(`p${p}-npvm`);
+            npvmCell.innerText = npvm.toFixed(7);
+            npvmCell.className = npvm < 0 ? "hl neg flash" : "hl flash";
+
+            document.getElementById(`p${p}-pi`).innerText = pi.toFixed(4);
+            
+            const euawCell = document.getElementById(`p${p}-euaw`);
+            euawCell.innerText = euaw.toFixed(2);
+            euawCell.className = euaw < 0 ? "hl neg flash" : "hl flash";
+
+            // Remove flash class after animation to allow re-triggering
+            setTimeout(() => {
+                npvmCell.classList.remove('flash');
+                euawCell.classList.remove('flash');
+            }, 500);
+        }
+    }
+
+    initYearRows();
+    addColumn(); // Adds Project A
+    addColumn(); // Adds Project B
+</script>
+
+</body>
+</html>
