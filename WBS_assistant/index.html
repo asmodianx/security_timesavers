@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WBS Architect - Editable</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #27ae60;
+            --bg: #fdfdfd;
+            --border: #dcdde1;
+            --secondary: #7f8c8d;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--primary); margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 40px; border: 1px solid var(--border); border-radius: 4px; }
+        
+        .no-print { display: block; }
+        .hidden { display: none; }
+
+        h2 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; }
+        .step-card { background: #f9f9f9; padding: 20px; border: 1px solid #eee; margin-bottom: 20px; border-radius: 4px; }
+        
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid var(--border); border-radius: 3px; font-size: 1rem; box-sizing: border-box; }
+        button { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 3px; cursor: pointer; font-weight: bold; margin-top: 10px; margin-right: 5px; }
+        button:hover { background: #34495e; }
+        .btn-alt { background: var(--accent); }
+        .btn-file { background: var(--secondary); }
+        .btn-back { background: #e74c3c; }
+
+        /* WBS Visual Tree */
+        .wbs-wrapper { overflow-x: auto; padding: 40px 0; text-align: center; }
+        .tree ul { padding-top: 20px; position: relative; transition: all 0.5s; display: flex; justify-content: center; }
+        .tree li { float: left; text-align: center; list-style-type: none; position: relative; padding: 20px 5px 0 5px; }
+        .tree li::before, .tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 1px solid #ccc; width: 50%; height: 20px; }
+        .tree li::after { right: auto; left: 50%; border-left: 1px solid #ccc; }
+        .tree li:only-child::after, .tree li:only-child::before { display: none; }
+        .tree li:only-child { padding-top: 0; }
+        .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+        .tree li:last-child::before { border-right: 1px solid #ccc; border-radius: 0 5px 0 0; }
+        .tree li:first-child::after { border-radius: 5px 0 0 0; }
+        .tree ul ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 1px solid #ccc; width: 0; height: 20px; }
+
+        .node { border: 1px solid #ccc; padding: 10px 15px; border-radius: 5px; display: inline-block; background: #fff; min-width: 120px; }
+        .node .code { font-size: 0.8em; color: #7f8c8d; display: block; }
+        .node .label { font-weight: bold; font-size: 0.9em; }
+
+        @media print {
+            .no-print, button, .step-card, hr { display: none !important; }
+            .container { border: none; width: 100%; padding: 0; }
+            .wbs-wrapper { overflow: visible; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="no-print">
+        <h2>WBS Project Utility</h2>
+        
+        <div id="setup-tools" style="margin-bottom: 20px;">
+            <button class="btn-file" onclick="document.getElementById('fileInput').click()">Import Project (.json)</button>
+            <input type="file" id="fileInput" class="hidden" accept=".json" onchange="importProject(event)">
+        </div>
+
+        <div id="step1" class="step-card">
+            <h3>Step 1: Project Identity</h3>
+            <input type="text" id="projName" placeholder="Project Name">
+            <textarea id="projDesc" placeholder="Project Scope / Description"></textarea>
+            <button onclick="saveStep1()">Next: Phases</button>
+        </div>
+
+        <div id="step2" class="step-card hidden">
+            <h3>Step 2: High-Level Phases</h3>
+            <div id="phaseList"></div>
+            <button class="btn-file" onclick="addPhaseField('')">+ Add Phase</button>
+            <hr>
+            <button class="btn-file" onclick="navigate(1)">Back</button>
+            <button onclick="saveStep2()">Next: Work Packages</button>
+        </div>
+
+        <div id="step3" class="step-card hidden">
+            <h3>Step 3: Decomposition</h3>
+            <div id="packageList"></div>
+            <button class="btn-file" onclick="navigate(2)">Back</button>
+            <button class="btn-alt" onclick="saveStep3()">Generate WBS</button>
+        </div>
+    </div>
+
+    <div id="finalOutput" class="hidden">
+        <h2 id="outTitle"></h2>
+        <p id="outDesc"></p>
+        
+        <div class="wbs-wrapper">
+            <div id="visualTree" class="tree"></div>
+        </div>
+
+        <div id="dictionaryArea">
+            <h3>WBS Dictionary</h3>
+            <div id="dictContent"></div>
+        </div>
+
+        <div class="no-print" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+            <button class="btn-back" onclick="editProject()">Edit Fields</button>
+            <button class="btn-alt" onclick="window.print()">Export to PDF</button>
+            <button class="btn-file" onclick="exportProject()">Save JSON</button>
+            <button onclick="location.reload()">New Project</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let projectData = {
+        name: "",
+        description: "",
+        phases: [] // Array of { name: "", tasks: [] }
+    };
+
+    // Navigation logic
+    function navigate(step) {
+        document.querySelectorAll('.step-card').forEach(s => s.classList.add('hidden'));
+        document.getElementById('finalOutput').classList.add('hidden');
+        document.querySelector('.no-print').classList.remove('hidden');
+        
+        const target = document.getElementById(`step${step}`);
+        if (target) target.classList.remove('hidden');
+
+        if (step === 1) {
+            document.getElementById('projName').value = projectData.name;
+            document.getElementById('projDesc').value = projectData.description;
+        }
+        if (step === 2) renderPhaseInputs();
+        if (step === 3) renderPackageForms();
+    }
+
+    // Step 1 Save
+    function saveStep1() {
+        projectData.name = document.getElementById('projName').value;
+        projectData.description = document.getElementById('projDesc').value;
+        navigate(2);
+    }
+
+    // Step 2 Management
+    function renderPhaseInputs() {
+        const list = document.getElementById('phaseList');
+        list.innerHTML = '';
+        if (projectData.phases.length === 0) {
+            addPhaseField('');
+        } else {
+            projectData.phases.forEach(p => addPhaseField(p.name));
+        }
+    }
+
+    function addPhaseField(val) {
+        const input = document.createElement('input');
+        input.className = 'phase-in';
+        input.placeholder = 'Phase Name (e.g. Design)';
+        input.value = val;
+        document.getElementById('phaseList').appendChild(input);
+    }
+
+    function saveStep2() {
+        const inputs = document.querySelectorAll('.phase-in');
+        const newPhases = [];
+        inputs.forEach((input, idx) => {
+            if (input.value.trim()) {
+                // Preserve tasks if phase name matches old data
+                const existing = projectData.phases[idx];
+                newPhases.push({
+                    name: input.value.trim(),
+                    tasks: existing ? existing.tasks : []
+                });
+            }
+        });
+        projectData.phases = newPhases;
+        navigate(3);
+    }
+
+    // Step 3 Management
+    function renderPackageForms() {
+        const container = document.getElementById('packageList');
+        container.innerHTML = '';
+        projectData.phases.forEach((phase, idx) => {
+            const group = document.createElement('div');
+            const taskText = phase.tasks.join('\n');
+            group.innerHTML = `<h4>${idx + 1}.0 ${phase.name}</h4>
+                               <textarea id="pkgs-${idx}" placeholder="Work packages (one per line)">${taskText}</textarea>`;
+            container.appendChild(group);
+        });
+    }
+
+    function saveStep3() {
+        projectData.phases.forEach((phase, idx) => {
+            const el = document.getElementById(`pkgs-${idx}`);
+            if (el) {
+                phase.tasks = el.value.split('\n').map(l => l.trim()).filter(l => l !== "");
+            }
+        });
+        showFinal();
+    }
+
+    function editProject() {
+        navigate(1);
+    }
+
+    function showFinal() {
+        document.querySelector('.no-print').classList.add('hidden');
+        document.getElementById('finalOutput').classList.remove('hidden');
+        renderVisuals();
+    }
+
+    function renderVisuals() {
+        document.getElementById('outTitle').innerText = projectData.name || "Project WBS";
+        document.getElementById('outDesc').innerText = projectData.description;
+
+        // Visual Tree
+        let treeHtml = `<ul><li><div class="node"><span class="label">${projectData.name || 'Project'}</span></div><ul>`;
+        projectData.phases.forEach((p, pIdx) => {
+            const pCode = pIdx + 1;
+            treeHtml += `<li><div class="node"><span class="code">${pCode}.0</span><span class="label">${p.name}</span></div>`;
+            if(p.tasks.length > 0) {
+                treeHtml += `<ul>`;
+                p.tasks.forEach((t, tIdx) => {
+                    treeHtml += `<li><div class="node"><span class="code">${pCode}.${tIdx + 1}</span><span class="label">${t}</span></div></li>`;
+                });
+                treeHtml += `</ul>`;
+            }
+            treeHtml += `</li>`;
+        });
+        treeHtml += `</ul></li></ul>`;
+        document.getElementById('visualTree').innerHTML = treeHtml;
+
+        // Dictionary
+        let dictHtml = "";
+        projectData.phases.forEach((p, pIdx) => {
+            dictHtml += `<h4>${pIdx+1}.0 ${p.name}</h4><ul>`;
+            p.tasks.forEach((t, tIdx) => {
+                dictHtml += `<li><strong>${pIdx+1}.${tIdx+1} ${t}:</strong> Primary deliverable for this work package.</li>`;
+            });
+            dictHtml += `</ul>`;
+        });
+        document.getElementById('dictContent').innerHTML = dictHtml;
+    }
+
+    // File Operations
+    function exportProject() {
+        const fileName = (projectData.name || "wbs_project").replace(/\s+/g, '_').toLowerCase();
+        const blob = new Blob([JSON.stringify(projectData, null, 4)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fileName}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importProject(event) {
+        const file = event.target.files; // Standard index handling
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                projectData = JSON.parse(e.target.result);
+                showFinal();
+            } catch (err) {
+                alert("Invalid JSON format.");
+            }
+        };
+        reader.readAsText(file[0]);
+    }
+</script>
+
+</body>
+</html>

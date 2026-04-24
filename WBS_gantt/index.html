@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gantt Chart Architect</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --critical: #e74c3c; --border: #ddd; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
+        
+        .no-print { margin-bottom: 20px; padding: 15px; background: #f1f2f6; border-radius: 4px; }
+        .hidden { display: none; }
+        
+        /* Gantt Layout */
+        .gantt-grid { display: grid; grid-template-columns: 250px 1fr; border: 1px solid var(--border); overflow-x: auto; }
+        
+        /* Left Column: Task Labels */
+        .tasks-column { border-right: 2px solid var(--border); background: #fff; position: sticky; left: 0; z-index: 10; }
+        .task-row-label { height: 40px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 10px; font-size: 13px; white-space: nowrap; overflow: hidden; }
+        .header-label { height: 50px; background: var(--primary); color: white; font-weight: bold; }
+
+        /* Right Column: Timeline */
+        .timeline-column { position: relative; min-width: 800px; background-image: linear-gradient(to right, #eee 1px, transparent 1px); background-size: 40px 100%; }
+        .timeline-header { height: 50px; background: #ecf0f1; border-bottom: 2px solid var(--border); display: flex; position: relative; }
+        .day-mark { width: 40px; flex-shrink: 0; text-align: center; font-size: 10px; padding-top: 15px; border-right: 1px solid #ddd; }
+
+        /* Bars */
+        .task-bar-row { height: 40px; border-bottom: 1px solid var(--border); position: relative; }
+        .bar { position: absolute; height: 24px; top: 8px; border-radius: 4px; background: var(--accent); color: white; font-size: 10px; line-height: 24px; padding-left: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap; }
+        .bar.critical { background: var(--critical); }
+
+        input[type="date"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        button:hover { opacity: 0.9; }
+
+        @media print {
+            .no-print, button { display: none !important; }
+            .container { border: none; width: 100%; box-shadow: none; }
+            .gantt-grid { overflow: visible; display: block; }
+            .tasks-column { width: 200px; float: left; }
+            .timeline-column { width: calc(100% - 200px); float: left; border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="no-print">
+        <h2>Gantt Chart Visualizer</h2>
+        <p>Import sequenced JSON data and select a start date to generate the timeline.</p>
+        
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <button onclick="document.getElementById('fileInput').click()">Import Sequenced JSON</button>
+            <input type="file" id="fileInput" class="hidden" accept=".json" onchange="importData(event)">
+            
+            <label>Project Start Date: </label>
+            <input type="date" id="startDate" onchange="renderGantt()">
+        </div>
+    </div>
+
+    <div id="ganttContainer" class="hidden">
+        <h3 id="projTitle">Project Timeline</h3>
+        <div class="gantt-grid">
+            <div class="tasks-column">
+                <div class="task-row-label header-label">WBS ID & Task</div>
+                <div id="taskLabels"></div>
+            </div>
+            
+            <div class="timeline-column" id="timelineScroll">
+                <div id="timelineHeader" class="timeline-header"></div>
+                <div id="barsArea"></div>
+            </div>
+        </div>
+
+        <div class="no-print" style="margin-top:20px;">
+            <button onclick="window.print()">Export to PDF</button>
+            <button onclick="location.reload()" style="background:#7f8c8d">Reset</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let projectTasks = [];
+    const DAY_WIDTH = 40; // pixels per day
+
+    function importData(event) {
+        const file = event.target.files;
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                projectTasks = JSON.parse(e.target.result);
+                // Set default date to today if none selected
+                if (!document.getElementById('startDate').value) {
+                    document.getElementById('startDate').valueAsDate = new Date();
+                }
+                renderGantt();
+            } catch (err) {
+                alert("Error parsing JSON. Ensure this is a valid Sequencer file.");
+            }
+        };
+        reader.readAsText(file[0]);
+    }
+
+    function renderGantt() {
+        if (projectTasks.length === 0) return;
+
+        document.getElementById('ganttContainer').classList.remove('hidden');
+        const labelsContainer = document.getElementById('taskLabels');
+        const headerContainer = document.getElementById('timelineHeader');
+        const barsContainer = document.getElementById('barsArea');
+        const startDate = new Date(document.getElementById('startDate').value);
+
+        // Reset
+        labelsContainer.innerHTML = '';
+        headerContainer.innerHTML = '';
+        barsContainer.innerHTML = '';
+
+        const maxDay = Math.max(...projectTasks.map(t => t.ef));
+        
+        // 1. Render Timeline Header (Days/Dates)
+        for (let i = 0; i <= maxDay + 2; i++) {
+            const dayMark = document.createElement('div');
+            dayMark.className = 'day-mark';
+            
+            const current = new Date(startDate);
+            current.setDate(startDate.getDate() + i);
+            const dateStr = `${current.getMonth() + 1}/${current.getDate()}`;
+            
+            dayMark.innerHTML = `Day ${i}<br>${dateStr}`;
+            headerContainer.appendChild(dayMark);
+        }
+
+        // 2. Render Rows
+        projectTasks.forEach(task => {
+            // Label
+            const label = document.createElement('div');
+            label.className = 'task-row-label';
+            label.innerHTML = `<strong>${task.id}</strong>: ${task.name}`;
+            labelsContainer.appendChild(label);
+
+            // Bar Row
+            const row = document.createElement('div');
+            row.className = 'task-bar-row';
+            
+            const bar = document.createElement('div');
+            bar.className = `bar ${task.float === 0 ? 'critical' : ''}`;
+            bar.style.left = `${task.es * DAY_WIDTH}px`;
+            bar.style.width = `${task.duration * DAY_WIDTH}px`;
+            bar.innerText = task.duration > 0 ? `${task.duration}d` : '';
+            
+            row.appendChild(bar);
+            barsContainer.appendChild(row);
+        });
+
+        // Set width of timeline background
+        const totalWidth = (maxDay + 3) * DAY_WIDTH;
+        document.getElementById('timelineScroll').style.minWidth = `${totalWidth}px`;
+    }
+</script>
+
+</body>
+</html>
