@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kill Chain Defense‑in‑Depth Correlation Planner</title>
+
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; color: #333; }
+section { background: #fff; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+h2 { margin-top: 0; color: #444; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+label { display: block; margin-top: 12px; font-weight: bold; font-size: 0.9em; }
+input, textarea, select, button { width: 100%; margin-top: 4px; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+textarea { height: 60px; font-family: monospace; }
+select[multiple] { height: 140px; }
+button { cursor: pointer; font-weight: bold; transition: opacity 0.2s; border: 1px solid #ccc; background: #f8f9fa; }
+button:hover { opacity: 0.9; background: #e9ecef; }
+
+table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: top; }
+th { background: #f8f9fa; font-size: 0.85em; text-transform: uppercase; color: #666; }
+
+/* Swimlane Styling */
+.swimlane-container { 
+  width: 100%; 
+  overflow-x: auto; 
+  background: #fff; 
+  border: 1px solid #ccc; 
+  border-radius: 4px;
+  margin-top: 10px;
+}
+svg { display: block; shape-rendering: crispEdges; }
+
+/* UI helpers */
+.flex-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+.flex-row button, .flex-row input { width: auto; flex: 1; }
+
+@media print {
+  .no-print, button, input[type=file] { display: none !important; }
+  .swimlane-container { overflow: visible; border: none; }
+  section { box-shadow: none; border: 1px solid #eee; }
+  body { background: #fff; margin: 0; }
+}
+</style>
+</head>
+
+<body>
+
+<h1>Kill Chain Defense‑in‑Depth Correlation Planner</h1>
+
+<section class="no-print">
+  <h2>Framework Selection</h2>
+  <label>Active Kill Chain Model</label>
+  <select id="modelSelect" onchange="updateModel()">
+    <option value="original">Original (Bryant-based)</option>
+    <option value="lockheed">Lockheed Martin Cyber Kill Chain</option>
+    <option value="unified">Unified Kill Chain (v3)</option>
+  </select>
+</section>
+
+<section>
+  <h2>Add / Edit Control</h2>
+  <input type="hidden" id="editIndex">
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div>
+      <label>Phases (Multi-select)</label>
+      <select id="phases" multiple></select>
+      
+      <label>Control Name</label>
+      <input id="name" placeholder="e.g. CrowdStrike Falcon">
+      
+      <label>Confidence Level</label>
+      <select id="confidence">
+        <option>Primary</option>
+        <option>Secondary</option>
+        <option>Tertiary</option>
+      </select>
+    </div>
+    
+    <div>
+      <label>ECS Normalized Fields (Multi-select)</label>
+      <select id="ecsSelect" multiple></select>
+      
+      <label>Custom Fields (Comma separated)</label>
+      <textarea id="manualFields" placeholder="vendor.custom_field, security.log.id"></textarea>
+      
+      <label>Zone / Deployment Layer</label>
+      <input id="zone" placeholder="e.g. DMZ, Internal, Cloud">
+    </div>
+  </div>
+
+  <div class="flex-row">
+    <button onclick="saveControl()" style="background: #28a745; color: white; border: none;">Save Control</button>
+    <button onclick="resetForm()" style="background: #6c757d; color: white; border: none;">Clear Form</button>
+  </div>
+</section>
+
+<section>
+  <h2>Defined Security Controls</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 20%;">Phases</th>
+        <th>Control Name</th>
+        <th>Zone</th>
+        <th>Fields</th>
+        <th>Confidence</th>
+        <th class="no-print">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="controlsTable"></tbody>
+  </table>
+</section>
+
+<section>
+  <h2>Defensive Swimlane</h2>
+  <div class="swimlane-container">
+    <svg id="swimlane"></svg>
+  </div>
+</section>
+
+<section class="no-print">
+  <h2>Data Management</h2>
+  <div class="flex-row">
+    <button onclick="exportJSON()" title="Download current configuration as a JSON file">Export JSON</button>
+    
+    <div style="flex: 2; border: 1px dashed #ccc; padding: 5px; border-radius: 4px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 0.8em; font-weight: bold;">Import:</span>
+        <input type="file" id="fileInput" accept=".json" onchange="importJSON(this.files)">
+    </div>
+
+    <button onclick="exportPDF()" style="background: #007bff; color: white; border: none;">Export PDF</button>
+  </div>
+</section>
+
+<script>
+/* ======================================================
+   CONFIGURATIONS & MODELS
+   ====================================================== */
+const MODELS = {
+  original: ["Reconnaissance", "Delivery", "Installation", "Privilege Escalation", "Lateral Movement", "Actions on Objective", "Exfiltration"],
+  lockheed: ["Reconnaissance", "Weaponization", "Delivery", "Exploitation", "Installation", "Command and Control", "Actions on Objective"],
+  unified: ["Reconnaissance", "Weaponization", "Delivery", "Exploitation", "Persistence", "Defense Evasion", "Command and Control", "Pivoting", "Discovery", "Privilege Escalation", "Execution", "Credential Access", "Lateral Movement", "Access", "Collection", "Exfiltration", "Target Manipulation", "Objectives"]
+};
+
+const CORRELATION_KEYS = {
+  "Source Network": ["source.ip", "source.port", "source.nat.ip"],
+  "Destination Network": ["destination.ip", "destination.port"],
+  "Endpoint/Host": ["host.name", "host.ip", "host.id", "host.hostname"],
+  "Identity": ["user.name", "user.id", "user.email", "user.domain"],
+  "Session/Flow": ["session.id", "network.community_id", "trace.id"],
+  "Other / General": [] 
+};
+
+const ECS_FIELDS = [
+  "agent.id","event.action","event.category","event.outcome",
+  "source.ip","source.port","destination.ip","destination.port",
+  "host.name","host.ip","user.name","user.id","process.name","process.executable",
+  "process.args","process.pid","file.path","file.name","session.id","network.protocol"
+];
+
+let currentPhases = [];
+let controls = [];
+
+// DOM Element Bindings
+const nameEl = document.getElementById("name");
+const zoneEl = document.getElementById("zone");
+const manualEl = document.getElementById("manualFields");
+const ecsSelectEl = document.getElementById("ecsSelect");
+const phasesEl = document.getElementById("phases");
+const confidenceEl = document.getElementById("confidence");
+const editIndexEl = document.getElementById("editIndex");
+const controlsTable = document.getElementById("controlsTable");
+const swimlaneEl = document.getElementById("swimlane");
+const modelSelectEl = document.getElementById("modelSelect");
+
+/* ======================================================
+   CORE LOGIC
+   ====================================================== */
+function init() {
+  ECS_FIELDS.sort().forEach(f => {
+    let opt = new Option(f, f);
+    ecsSelectEl.add(opt);
+  });
+  updateModel();
+}
+
+function updateModel() {
+  currentPhases = MODELS[modelSelectEl.value];
+  phasesEl.innerHTML = "";
+  currentPhases.forEach(p => phasesEl.add(new Option(p, p)));
+  renderSwimlane();
+}
+
+function saveControl() {
+  const selectedPhases = Array.from(phasesEl.selectedOptions).map(o => o.value);
+  const manual = manualEl.value.split(",").map(v => v.trim()).filter(Boolean);
+  const ecs = Array.from(ecsSelectEl.selectedOptions).map(o => o.value);
+  const fields = [...new Set([...manual, ...ecs])];
+  
+  if (!nameEl.value || selectedPhases.length === 0 || fields.length === 0) {
+    alert("Required: Control Name, at least one Phase, and at least one Field.");
+    return;
+  }
+
+  const control = { 
+    phases: selectedPhases, 
+    name: nameEl.value, 
+    zone: zoneEl.value, 
+    fields, 
+    confidence: confidenceEl.value 
+  };
+  
+  const idx = editIndexEl.value;
+  if (idx === "") controls.push(control);
+  else controls[idx] = control;
+
+  resetForm();
+  renderControls();
+  renderSwimlane();
+}
+
+function renderControls() {
+  controlsTable.innerHTML = controls.map((c, i) => `
+    <tr>
+      <td><small>${c.phases.join(", ")}</small></td>
+      <td><strong>${c.name}</strong></td>
+      <td>${c.zone || '-'}</td>
+      <td><small>${c.fields.join(", ")}</small></td>
+      <td>${c.confidence}</td>
+      <td class="no-print">
+        <button onclick="editControl(${i})" style="padding:2px 6px;">Edit</button>
+        <button onclick="deleteControl(${i})" style="padding:2px 6px; color:red;">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+function renderSwimlane() {
+  swimlaneEl.innerHTML = "";
+  const colWidth = 200;
+  const headerHeight = 45;
+  let maxContentHeight = 300;
+
+  swimlaneEl.setAttribute("width", currentPhases.length * colWidth);
+
+  currentPhases.forEach((phase, i) => {
+    const x = i * colWidth;
+    
+    // Phase Header
+    const headerRect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    headerRect.setAttribute("x", x); headerRect.setAttribute("y", 0);
+    headerRect.setAttribute("width", colWidth - 5); headerRect.setAttribute("height", headerHeight);
+    headerRect.setAttribute("fill", "#2c3e50");
+    swimlaneEl.appendChild(headerRect);
+
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("x", x + (colWidth / 2)); text.setAttribute("y", 28);
+    text.setAttribute("fill", "white"); text.setAttribute("font-size", "11");
+    text.setAttribute("text-anchor", "middle"); text.setAttribute("font-weight", "bold");
+    text.textContent = phase.toUpperCase();
+    swimlaneEl.appendChild(text);
+
+    let y = headerHeight + 20;
+    
+    Object.keys(CORRELATION_KEYS).forEach(key => {
+      const matches = controls.filter(c => {
+        if (!c.phases.includes(phase)) return false;
+        const pivotList = CORRELATION_KEYS[key];
+        const hasPivotField = c.fields.some(f => pivotList.includes(f));
+        
+        if (key === "Other / General") {
+            const matchesSpecificPivot = Object.values(CORRELATION_KEYS).some(list => list.length > 0 && c.fields.some(f => list.includes(f)));
+            return !matchesSpecificPivot;
+        }
+        return hasPivotField;
+      });
+
+      if (matches.length) {
+        // Group Label
+        const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        label.setAttribute("x", x + 10); label.setAttribute("y", y);
+        label.setAttribute("font-size", "9"); label.setAttribute("font-weight", "bold");
+        label.setAttribute("fill", "#7f8c8d");
+        label.textContent = key;
+        swimlaneEl.appendChild(label);
+        
+        y += 14;
+
+        matches.forEach(c => {
+          const color = c.confidence === "Primary" ? "#d4edda" : (c.confidence === "Secondary" ? "#fff3cd" : "#f8d7da");
+          const stroke = c.confidence === "Primary" ? "#28a745" : (c.confidence === "Secondary" ? "#ffc107" : "#dc3545");
+          
+          const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+          rect.setAttribute("x", x + 5); rect.setAttribute("y", y);
+          rect.setAttribute("width", colWidth - 20); rect.setAttribute("height", 24);
+          rect.setAttribute("rx", "4"); rect.setAttribute("fill", color); rect.setAttribute("stroke", stroke);
+          swimlaneEl.appendChild(rect);
+
+          const cName = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          cName.setAttribute("x", x + 12); cName.setAttribute("y", y + 16);
+          cName.setAttribute("font-size", "10");
+          cName.textContent = c.name.length > 25 ? c.name.substring(0, 22) + "..." : c.name;
+          swimlaneEl.appendChild(cName);
+
+          y += 30;
+        });
+        y += 12;
+      }
+    });
+    if (y > maxContentHeight) maxContentHeight = y;
+  });
+
+  swimlaneEl.setAttribute("height", maxContentHeight + 50);
+}
+
+function editControl(i) {
+    const c = controls[i];
+    editIndexEl.value = i;
+    nameEl.value = c.name;
+    zoneEl.value = c.zone;
+    confidenceEl.value = c.confidence;
+    manualEl.value = c.fields.filter(f => !ECS_FIELDS.includes(f)).join(", ");
+    Array.from(phasesEl.options).forEach(o => o.selected = c.phases.includes(o.value));
+    Array.from(ecsSelectEl.options).forEach(o => o.selected = c.fields.includes(o.value));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteControl(i) { 
+    if(confirm("Confirm deletion?")) {
+        controls.splice(i, 1); 
+        renderControls(); 
+        renderSwimlane(); 
+    }
+}
+
+function resetForm() {
+  editIndexEl.value = ""; nameEl.value = ""; zoneEl.value = ""; manualEl.value = "";
+  confidenceEl.value = "Primary";
+  Array.from(phasesEl.options).forEach(o => o.selected = false);
+  Array.from(ecsSelectEl.options).forEach(o => o.selected = false);
+}
+
+/* ======================================================
+   RESTORED: EXPORT / IMPORT / PDF FUNCTIONS
+   ====================================================== */
+function exportJSON() {
+  if (controls.length === 0) {
+    alert("Nothing to export. Add some controls first.");
+    return;
+  }
+  const data = { 
+    model: modelSelectEl.value, 
+    controls: controls 
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `kill-chain-planner-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importJSON(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      // Update Model
+      if (data.model && MODELS[data.model]) {
+        modelSelectEl.value = data.model;
+        updateModel();
+      }
+      // Update Controls
+      if (data.controls && Array.isArray(data.controls)) {
+        controls = data.controls;
+        renderControls();
+        renderSwimlane();
+      } else {
+        throw new Error("Invalid format");
+      }
+    } catch (err) {
+      alert("Import failed: The file is not a valid planner configuration.");
+    }
+    document.getElementById('fileInput').value = ""; // Reset file picker
+  };
+  reader.readAsText(file[0]);
+}
+
+function exportPDF() {
+  window.print();
+}
+
+// Bootstrap
+init();
+</script>
+
+</body>
+</html>
