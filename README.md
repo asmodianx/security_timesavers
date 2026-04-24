@@ -43,7 +43,7 @@ Here is the updated list of folders and tools within the **Security Timesavers**
     * **Description:** An offline-capable visualizer for the MITRE ATT&CK framework, allowing users to map adversary techniques and visualize coverage.
 * **cti_assistant**
     * **Description:** A Cyber Threat Intelligence assistant designed to help ingest, organize, and manage threat data for faster analysis.
-* **kccp (Killchain Correlation Planner)**
+* **cyber_killchain_planner (Killchain Correlation Planner)**
     * **Description:** A strategic planning tool used to correlate security alerts and threats against the cyber kill chain to identify defensive gaps.
 * **stix_palette**
     * **Description:** A specialized editor or styling tool used to define and visualize STIX-based threat intelligence objects and their relationships.
