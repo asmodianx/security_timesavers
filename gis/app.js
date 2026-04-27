@@ -4,7 +4,7 @@
  */
 
 // 1. Map & Layer Initialization
-const map = L.map('map').setView([38.97, -94.67], 13);
+const map = L.map('map').setView([38.00, -94.00], 5);
 const drawnItems = new L.FeatureGroup().addTo(map);
 
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
