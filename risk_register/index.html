@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Risk Architect & Register</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #2980b9;
+            --bg: #fdfdfd;
+            --border: #e1e8ed;
+            
+            /* Matrix Colors */
+            --extreme: #e74c3c; /* Red */
+            --high: #e67e22;    /* Orange */
+            --medium: #f1c40f;  /* Yellow */
+            --low: #2ecc71;     /* Green */
+        }
+
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: #333; margin: 0; padding: 20px; line-height: 1.5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        
+        .no-print { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
+        .hidden { display: none; }
+
+        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ccd0d5; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; }
+        textarea { resize: vertical; height: 80px; }
+        label { font-weight: bold; font-size: 0.9rem; color: var(--primary); }
+
+        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        .btn-alt { background: var(--accent); }
+        .btn-danger { background: #c0392b; }
+        .btn-file { background: #7f8c8d; }
+
+        /* Dashboard Layout */
+        .dashboard { display: grid; grid-template-columns: 1fr 400px; gap: 30px; margin-top: 20px; }
+        
+        /* Risk Entry Form */
+        .form-section { background: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #eee; }
+
+        /* Risk Matrix Table Styling */
+        .matrix-table { border-collapse: collapse; width: 100%; table-layout: fixed; margin-top: 10px; font-size: 11px; }
+        .matrix-table td, .matrix-table th { border: 2px solid white; text-align: center; height: 50px; vertical-align: top; padding: 2px; position: relative;}
+        .matrix-table th { background: transparent; color: #777; font-weight: normal; }
+        
+        /* Visual plotting dot */
+        .risk-dot { display: inline-block; width: 18px; height: 18px; line-height: 18px; border-radius: 50%; background: rgba(0,0,0,0.7); color: white; margin: 2px; font-weight: bold; cursor: pointer;}
+        
+        /* Cell Colors based on Risk Score */
+        .low-cell { background: var(--low); }
+        .med-cell { background: var(--medium); }
+        .high-cell { background: var(--high); }
+        .extreme-cell { background: var(--extreme); color: white;}
+
+        /* Risk Register Table */
+        .register-section { margin-top: 30px; }
+        .register-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .register-table th, .register-table td { border-bottom: 1px solid var(--border); padding: 12px; text-align: left; }
+        .register-table th { background: #f8f9fa; color: var(--primary); position: sticky; top: 0;}
+        .register-table tr:hover { background: #fcfcfc; }
+
+        /* Scoring Badges */
+        .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 0.75rem; text-transform: uppercase;}
+        .badge.Low { background: #dff0d8; color: #3c763d; }
+        .badge.Medium { background: #fcf8e3; color: #8a6d3b; }
+        .badge.High { background: #f3e5ab; color: #af8f00; }
+        .badge.Extreme { background: #f2dede; color: #a94442; }
+
+        @media print {
+            .no-print, .btn-danger { display: none !important; }
+            .container { box-shadow: none; width: 100%; padding: 0; }
+            .dashboard { grid-template-columns: 1fr; }
+            body { background: white; padding: 0;}
+            h2 { page-break-before: always; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="no-print">
+        <h1 style="margin: 0; flex-grow: 1; color: var(--primary);">Risk Architect</h1>
+        <button class="btn-file" onclick="document.getElementById('fileInput').click()">Import JSON</button>
+        <input type="file" id="fileInput" class="hidden" accept=".json" onchange="importData(event)">
+        <button class="btn-file" onclick="exportData()">Export JSON</button>
+        <button class="btn-alt" onclick="window.print()">Export PDF</button>
+        <button onclick="newProject()">New</button>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <label>Project Name:</label>
+        <input type="text" id="projName" placeholder="Project Name (e.g., Cloud Migration)" style="font-weight: bold; font-size: 1.2rem;">
+    </div>
+
+    <div class="dashboard">
+        <div class="form-section">
+            <h3 style="margin-top:0">Identify/Update Risk</h3>
+            <input type="hidden" id="editIndex" value="-1">
+            
+            <label>ID / Ref:</label>
+            <input type="text" id="riskId" placeholder="e.g., R-01" required>
+
+            <label>Description:</label>
+            <textarea id="riskDesc" placeholder="Describe the risk event..."></textarea>
+
+            <div style="display: flex; gap: 15px;">
+                <div style="flex:1">
+                    <label>Probability (1-5):</label>
+                    <select id="riskProb" required>
+                        <option value="1">1 - Rare (<10%)</option>
+                        <option value="2">2 - Unlikely (10-30%)</option>
+                        <option value="3">3 - Possible (30-70%)</option>
+                        <option value="4">4 - Likely (70-90%)</option>
+                        <option value="5">5 - Almost Certain (>90%)</option>
+                    </select>
+                </div>
+                <div style="flex:1">
+                    <label>Impact (1-5):</label>
+                    <select id="riskImpact" required>
+                        <option value="1">1 - Insignificant</option>
+                        <option value="2">2 - Minor</option>
+                        <option value="3">3 - Moderate</option>
+                        <option value="4">4 - Major</option>
+                        <option value="5">5 - Severe/Catastrophic</option>
+                    </select>
+                </div>
+            </div>
+
+            <label>Mitigation Strategy (Treatment Plane):</label>
+            <textarea id="riskMitigation" placeholder="Avoid, Transfer, Mitigate, Accept... steps to reduce risk."></textarea>
+
+            <button onclick="saveRisk()">Save Risk to Register</button>
+            <button class="btn-file hidden" id="cancelEdit" onclick="resetForm()">Cancel Edit</button>
+        </div>
+
+        <div>
+            <h3 style="margin-top:0">Risk Matrix (P x I)</h3>
+            <table class="matrix-table">
+                <tr>
+                    <th rowspan="6" style="writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(180deg); font-weight: bold;">Probability</th>
+                    <th>5</th><td class="med-cell" id="c-5-1"></td><td class="high-cell" id="c-5-2"></td><td class="extreme-cell" id="c-5-3"></td><td class="extreme-cell" id="c-5-4"></td><td class="extreme-cell" id="c-5-5"></td>
+                </tr>
+                <tr>
+                    <th>4</th><td class="low-cell" id="c-4-1"></td><td class="med-cell" id="c-4-2"></td><td class="high-cell" id="c-4-3"></td><td class="extreme-cell" id="c-4-4"></td><td class="extreme-cell" id="c-4-5"></td>
+                </tr>
+                <tr>
+                    <th>3</th><td class="low-cell" id="c-3-1"></td><td class="med-cell" id="c-3-2"></td><td class="med-cell" id="c-3-3"></td><td class="high-cell" id="c-3-4"></td><td class="extreme-cell" id="c-3-5"></td>
+                </tr>
+                <tr>
+                    <th>2</th><td class="low-cell" id="c-2-1"></td><td class="low-cell" id="c-2-2"></td><td class="med-cell" id="c-2-3"></td><td class="high-cell" id="c-2-4"></td><td class="high-cell" id="c-2-5"></td>
+                </tr>
+                <tr>
+                    <th>1</th><td class="low-cell" id="c-1-1"></td><td class="low-cell" id="c-1-2"></td><td class="med-cell" id="c-1-3"></td><td class="med-cell" id="c-1-4"></td><td class="high-cell" id="c-1-5"></td>
+                </tr>
+                <tr>
+                    <th></th><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+                </tr>
+                <tr>
+                    <th colspan="7" style="font-weight: bold; border-top: 1px solid #ccc; padding-top: 5px;">Impact</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="register-section">
+        <h2>Risk Register</h2>
+        <table class="register-table">
+            <thead>
+                <tr>
+                    <th width="80px">Ref</th>
+                    <th>Description</th>
+                    <th width="60px">P</th>
+                    <th width="60px">I</th>
+                    <th width="100px">Score</th>
+                    <th>Mitigation Strategy</th>
+                    <th width="120px" class="no-print">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="registerBody">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // State management
+    let appState = {
+        projectName: "",
+        risks: [] // Objects: {id, desc, prob, impact, mitigation, score, band}
+    };
+
+    // DOM Elements
+    const formInputs = {
+        projName: document.getElementById('projName'),
+        editIndex: document.getElementById('editIndex'),
+        id: document.getElementById('riskId'),
+        desc: document.getElementById('riskDesc'),
+        prob: document.getElementById('riskProb'),
+        impact: document.getElementById('riskImpact'),
+        mitigation: document.getElementById('riskMitigation'),
+        cancelBtn: document.getElementById('cancelEdit')
+    };
+    const registerBody = document.getElementById('registerBody');
+
+    // Categorization logic based on PxI
+    function calculateRiskSeverity(p, i) {
+        const score = p * i;
+        let band = "Low";
+        if (score >= 6) band = "Medium";
+        if (score >= 12) band = "High";
+        if (score >= 20) band = "Extreme";
+        return { score, band };
+    }
+
+    // CRUD: Save
+    function saveRisk() {
+        const p = parseInt(formInputs.prob.value);
+        const i = parseInt(formInputs.impact.value);
+        const { score, band } = calculateRiskSeverity(p, i);
+        const idx = parseInt(formInputs.editIndex.value);
+
+        const newRisk = {
+            id: formInputs.id.value || "R-Unknown",
+            desc: formInputs.desc.value,
+            prob: p,
+            impact: i,
+            mitigation: formInputs.mitigation.value,
+            score: score,
+            band: band
+        };
+
+        if (idx === -1) {
+            appState.risks.push(newRisk);
+        } else {
+            appState.risks[idx] = newRisk;
+        }
+
+        appState.projectName = formInputs.projName.value;
+        resetForm();
+        renderApp();
+    }
+
+    // CRUD: Edit populate
+    function editRisk(index) {
+        const risk = appState.risks[index];
+        formInputs.editIndex.value = index;
+        formInputs.id.value = risk.id;
+        formInputs.desc.value = risk.desc;
+        formInputs.prob.value = risk.prob;
+        formInputs.impact.value = risk.impact;
+        formInputs.mitigation.value = risk.mitigation;
+        
+        formInputs.id.focus();
+        formInputs.cancelBtn.classList.remove('hidden');
+    }
+
+    // CRUD: Delete
+    function deleteRisk(index) {
+        if(confirm("Are you sure you want to delete this risk from the register?")) {
+            appState.risks.splice(index, 1);
+            resetForm();
+            renderApp();
+        }
+    }
+
+    // Form management
+    function resetForm() {
+        formInputs.editIndex.value = "-1";
+        formInputs.id.value = "";
+        formInputs.desc.value = "";
+        formInputs.prob.value = "3"; // Default medium
+        formInputs.impact.value = "3";
+        formInputs.mitigation.value = "";
+        formInputs.cancelBtn.classList.add('hidden');
+    }
+
+    function newProject() {
+        if(confirm("Start a new project? This will clear current unsaved data.")) {
+            appState = { projectName: "", risks: [] };
+            resetForm();
+            formInputs.projName.value = "";
+            renderApp();
+        }
+    }
+
+    // Rendering Engine
+    function renderApp() {
+        // Clear old visual matrix dots
+        document.querySelectorAll('.matrix-table td').forEach(td => td.innerHTML = '');
+        registerBody.innerHTML = '';
+
+        appState.risks.forEach((risk, index) => {
+            // 1. Plot on Matrix
+            const cellId = `c-${risk.prob}-${risk.impact}`;
+            const cell = document.getElementById(cellId);
+            if (cell) {
+                const dot = document.createElement('span');
+                dot.className = 'risk-dot';
+                dot.innerText = index + 1; // Plot number instead of ID for space
+                dot.title = `${risk.id}: ${risk.desc}`;
+                dot.onclick = () => editRisk(index);
+                cell.appendChild(dot);
+            }
+
+            // 2. Add to Register
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${risk.id}</strong><br><small style="color:#777">#${index+1}</small></td>
+                <td>${risk.desc.replace(/\n/g, '<br>')}</td>
+                <td>${risk.prob}</td>
+                <td>${risk.impact}</td>
+                <td>${risk.score} <span class="badge ${risk.band}">${risk.band}</span></td>
+                <td>${risk.mitigation.replace(/\n/g, '<br>')}</td>
+                <td class="no-print">
+                    <button class="btn-alt" style="padding: 5px 10px; font-size: 0.8rem;" onclick="editRisk(${index})">Edit</button>
+                    <button class="btn-danger" style="padding: 5px 10px; font-size: 0.8rem;" onclick="deleteRisk(${index})">Delete</button>
+                </td>
+            `;
+            registerBody.appendChild(row);
+        });
+    }
+
+    // File Operations
+    function exportData() {
+        appState.projectName = formInputs.projName.value;
+        const fn = (appState.projectName || "project").replace(/\s+/g, '_').toLowerCase();
+        const blob = new Blob([JSON.stringify(appState, null, 4)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${fn}_risk_register.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importData(event) {
+        const file = event.target.files; 
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.projectName !== undefined && Array.isArray(imported.risks)) {
+                    appState = imported;
+                    formInputs.projName.value = appState.projectName;
+                    resetForm();
+                    renderApp();
+                } else {
+                    throw new Error("Missing structure");
+                }
+            } catch (err) {
+                alert("Error: Invalid JSON Risk Register file.");
+            }
+        };
+        reader.readAsText(file[0]);
+    }
+</script>
+
+</body>
+</html>
