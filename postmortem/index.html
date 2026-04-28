@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blameless Post Mortem / After Action Report Guide</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121936;
+      --panel-2: #172044;
+      --text: #e8ecf8;
+      --muted: #aab6de;
+      --accent: #5ab0ff;
+      --accent-2: #84f7d3;
+      --danger: #ff7b7b;
+      --warn: #ffd166;
+      --border: #2c3868;
+      --ok: #84f7d3;
+      --shadow: rgba(0,0,0,.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: Arial, Helvetica, sans-serif; background: linear-gradient(180deg, #08101c, #0f1730 20%, #0b1020 100%); color: var(--text);
+    }
+    .app {
+      display: grid; grid-template-columns: 320px 1fr; min-height: 100vh;
+    }
+    .sidebar {
+      position: sticky; top: 0; height: 100vh; overflow: auto;
+      background: rgba(10, 16, 32, 0.95); border-right: 1px solid var(--border); padding: 20px;
+    }
+    .sidebar h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    .sidebar p { color: var(--muted); line-height: 1.4; }
+    .section-nav { margin-top: 16px; display: grid; gap: 8px; }
+    .section-nav button {
+      width: 100%; text-align: left; background: var(--panel); color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 10px; cursor: pointer;
+    }
+    .section-nav button.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .section-nav .small { display: block; font-size: .85rem; color: var(--muted); margin-top: 4px; }
+    .controls { margin-top: 16px; display: grid; gap: 10px; }
+    .btn, button.btn {
+      appearance: none; background: linear-gradient(180deg, #1b2d64, #16224c); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-weight: 600;
+    }
+    .btn.secondary { background: var(--panel); }
+    .btn.accent { background: linear-gradient(180deg, #0b6fe3, #0a58b4); border-color: #0d74ea; }
+    .btn.success { background: linear-gradient(180deg, #06795f, #045947); border-color: #09876c; }
+    .btn.warn { background: linear-gradient(180deg, #946c00, #6f4f00); border-color: #a97c00; }
+    .btn.danger { background: linear-gradient(180deg, #7f2435, #5e1726); border-color: #9b2e43; }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .file-input { display: none; }
+    .main { padding: 24px; }
+    .banner {
+      background: linear-gradient(180deg, rgba(90,176,255,.15), rgba(132,247,211,.08)); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 18px;
+    }
+    .banner h2 { margin-top: 0; }
+    .grid { display: grid; gap: 16px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0,1fr)); }
+    .card {
+      background: rgba(18,25,54,.95); border: 1px solid var(--border); border-radius: 14px; padding: 16px; box-shadow: 0 10px 24px var(--shadow);
+    }
+    .card h3 { margin-top: 0; }
+    label { display: block; font-weight: 700; margin-bottom: 6px; }
+    .help { color: var(--muted); font-size: .92rem; margin-bottom: 10px; line-height: 1.35; }
+    input[type="text"], input[type="date"], input[type="datetime-local"], select, textarea {
+      width: 100%; background: #0d1530; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font: inherit;
+    }
+    textarea { min-height: 96px; resize: vertical; }
+    .mini { min-height: 56px; }
+    .list { display: grid; gap: 12px; }
+    .repeat-item {
+      background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+    }
+    .repeat-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .pill { display: inline-block; padding: 3px 8px; border-radius: 999px; background: rgba(90,176,255,.12); color: #bfe0ff; font-size: .8rem; border: 1px solid rgba(90,176,255,.35); }
+    .note { color: var(--muted); font-size: .9rem; }
+    .footer-nav { margin-top: 18px; display: flex; justify-content: space-between; gap: 12px; }
+    .hidden { display: none !important; }
+    .summary { white-space: pre-wrap; line-height: 1.45; }
+    .danger-text { color: #ff9ca9; }
+    .ok-text { color: #9ff8df; }
+    .small-text { font-size: .9rem; color: var(--muted); }
+    @media (max-width: 1100px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; }
+      .grid.two, .grid.three { grid-template-columns: 1fr; }
+    }
+    @media print {
+      .sidebar, .footer-nav, .controls, .banner .btn-row, .btn, .section-nav { display: none !important; }
+      body { background: white; color: black; }
+      .main, .card, .banner { color: black !important; background: white !important; border-color: #ddd !important; box-shadow: none !important; }
+      input, textarea, select { border-color: #ccc !important; color: black !important; background: white !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Blameless Post Mortem Guide</h1>
+      <p>Stand-alone incident review worksheet for security and operational events. Works locally or from a web server. No CDN or external dependencies.</p>
+      <div class="small-text">Use this to guide a blameless after action review, preserve structured data, export JSON, create a readable PDF, and generate an LLM-ready prompt package with framing and guard rails.</div>
+      <div class="section-nav" id="sectionNav"></div>
+      <div class="controls card">
+        <div class="btn-row">
+          <button class="btn accent" id="newBtn">New report</button>
+          <button class="btn secondary" id="saveLocalBtn">Save locally</button>
+          <button class="btn secondary" id="loadLocalBtn">Load local</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn success" id="exportJsonBtn">Export JSON</button>
+          <button class="btn secondary" id="importJsonBtn">Import JSON</button>
+          <input class="file-input" type="file" id="jsonFileInput" accept="application/json,.json" />
+        </div>
+        <div class="btn-row">
+          <button class="btn warn" id="exportPdfBtn">Export PDF</button>
+          <button class="btn secondary" id="exportLlmBtn">Export LLM package</button>
+        </div>
+        <div class="small-text">Local save uses browser storage on the current device/browser. JSON export is portable.</div>
+      </div>
+    </aside>
+    <main class="main">
+      <section class="banner card">
+        <h2>Blameless facilitation notes</h2>
+        <div class="grid two">
+          <div>
+            <ul>
+              <li>Focus on <strong>what happened</strong>, <strong>why system conditions allowed it</strong>, and <strong>how to reduce future risk</strong>.</li>
+              <li>Avoid naming people as root cause. Capture process, tooling, detection, communication, and environmental factors.</li>
+              <li>Mark uncertainty explicitly. Distinguish facts, assumptions, open questions, and hypotheses.</li>
+            </ul>
+          </div>
+          <div>
+            <ul>
+              <li>For security incidents, include attacker path, containment, recovery, evidence confidence, data impact, and control gaps.</li>
+              <li>Do not paste secrets, passwords, private keys, access tokens, or sensitive personal data into the report.</li>
+              <li>Use the LLM export only after removing restricted data and reviewing prompt guard rails.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+      <div id="sectionsContainer"></div>
+      <div class="footer-nav">
+        <button class="btn secondary" id="prevBtn">← Previous</button>
+        <button class="btn accent" id="nextBtn">Next →</button>
+      </div>
+    </main>
+  </div>
+<script>
+(() => {
+  const APP_KEY = 'blameless_postmortem_guide_v1';
+  const sections = [
+    {
+      id: 'overview',
+      title: '1. Incident overview',
+      subtitle: 'Set basic context and review boundaries.',
+      fields: [
+        { key: 'reportTitle', label: 'Report title', type: 'text', help: 'Use a plain-language title that identifies the event without blame. Example: “Unauthorized mailbox forwarding incident – March 2026”.' },
+        { key: 'incidentType', label: 'Incident / event type', type: 'select', options: ['Information security incident', 'Near miss', 'Service outage', 'Degradation / instability', 'Exercise / simulation', 'Other'], help: 'Choose the event category that best matches the review.' },
+        { key: 'severity', label: 'Severity / priority', type: 'select', options: ['Critical', 'High', 'Medium', 'Low', 'Informational'], help: 'Use the organization’s severity scheme if one exists.' },
+        { key: 'status', label: 'Review status', type: 'select', options: ['Draft', 'In review', 'Final'], help: 'Track completion state for the report itself.' },
+        { key: 'lead', label: 'Facilitator / report owner', type: 'text', help: 'Person coordinating the review and ensuring follow-up actions are tracked.' },
+        { key: 'reviewDate', label: 'Review date', type: 'date', help: 'Date the review session occurred or is scheduled.' },
+        { key: 'executiveSummary', label: 'Executive summary', type: 'textarea', help: '2–6 sentences: what happened, impact, containment, current status, and most important follow-up themes.' },
+        { key: 'scopeBoundaries', label: 'Scope and boundaries', type: 'textarea', help: 'Clarify what systems, time range, teams, or evidence sources are included or excluded from this review.' }
+      ]
+    },
+    {
+      id: 'business-impact',
+      title: '2. Impact and business context',
+      subtitle: 'Capture mission, service, and stakeholder impact.',
+      fields: [
+        { key: 'servicesAffected', label: 'Services / systems affected', type: 'textarea', help: 'List systems, applications, endpoints, identities, data stores, or business capabilities impacted.' },
+        { key: 'stakeholdersAffected', label: 'Stakeholders affected', type: 'textarea', help: 'Who experienced impact: users, students, faculty, staff, patients, partners, vendors, security operations, etc.' },
+        { key: 'impactSummary', label: 'Impact summary', type: 'textarea', help: 'Describe business, academic, operational, legal, compliance, reputational, or safety impact.' },
+        { key: 'dataImpact', label: 'Data impact / exposure', type: 'textarea', help: 'For security events, note suspected or confirmed data involved, confidence level, and whether regulated or sensitive data may have been at risk.' },
+        { key: 'duration', label: 'Duration of impact', type: 'text', help: 'Example: “User-visible impact from 09:14–11:03 CDT; latent exposure from Apr 12–Apr 15”.' },
+        { key: 'customerComms', label: 'User / stakeholder communications summary', type: 'textarea', help: 'Summarize outbound communications, timing, audience, and gaps.' }
+      ]
+    },
+    {
+      id: 'detection',
+      title: '3. Detection and discovery',
+      subtitle: 'How the event was detected and initially understood.',
+      fields: [
+        { key: 'detectionMethod', label: 'Initial detection method', type: 'textarea', help: 'Example: user report, EDR alert, SIEM correlation, vulnerability scan, monitoring alert, third-party notification, law enforcement notice.' },
+        { key: 'detectionQuality', label: 'Detection quality assessment', type: 'textarea', help: 'Did alerts provide enough context? Were there false positives / noisy indicators? Was detection timely?' },
+        { key: 'knownUnknowns', label: 'Known unknowns at time of detection', type: 'textarea', help: 'Capture what investigators did not know initially. This supports better retrospective accuracy.' },
+        { key: 'investigationConstraints', label: 'Investigation constraints', type: 'textarea', help: 'Examples: missing logs, EDR sensor gap, endpoint offline, limited packet capture, time pressure, legal hold, vendor delay.' }
+      ]
+    },
+    {
+      id: 'timeline',
+      title: '4. Timeline reconstruction',
+      subtitle: 'Build the factual sequence of events.',
+      repeat: 'timeline',
+      repeatTitle: 'Timeline event',
+      repeatHelp: 'Record timestamps in order when possible. Distinguish observed facts from analyst interpretation.',
+      repeatFields: [
+        { key: 'time', label: 'Timestamp', type: 'datetime-local', help: 'Local time is fine if consistent. Include timezone in notes if needed.' },
+        { key: 'source', label: 'Evidence source', type: 'text', help: 'EDR, SIEM, firewall, email trace, interview, ticket, cloud audit log, etc.' },
+        { key: 'eventType', label: 'Event type', type: 'select', options: ['Observation', 'Attacker activity', 'Defender action', 'User action', 'Communication', 'Decision', 'Recovery step', 'Open question'], help: 'Helps separate raw evidence from actions and decisions.' },
+        { key: 'description', label: 'What happened', type: 'textarea', help: 'Brief factual description of the event.' },
+        { key: 'confidence', label: 'Confidence', type: 'select', options: ['High confidence', 'Moderate confidence', 'Low confidence', 'Hypothesis only'], help: 'Confidence in the timeline item as currently written.' }
+      ]
+    },
+    {
+      id: 'security-analysis',
+      title: '5. Security analysis and attack path',
+      subtitle: 'Information security-specific analysis and control context.',
+      fields: [
+        { key: 'initialAccess', label: 'Initial access / trigger', type: 'textarea', help: 'If known, describe how the incident started (phishing, exposed service, credential misuse, vulnerability exploitation, misconfiguration, third-party issue, insider action, accidental change, etc.).' },
+        { key: 'attackPath', label: 'Attacker path / technical sequence', type: 'textarea', help: 'For security incidents, describe the likely sequence: initial foothold, persistence, privilege use, lateral movement, collection, exfiltration, impact, cleanup. For non-security events, describe the failure path through systems.' },
+        { key: 'detectionGap', label: 'Control and detection gaps', type: 'textarea', help: 'What controls failed, were absent, misconfigured, bypassed, or produced insufficient telemetry?' },
+        { key: 'whatWorked', label: 'What worked well', type: 'textarea', help: 'Capture effective people/process/tooling/system elements to preserve.' },
+        { key: 'evidenceConfidence', label: 'Evidence confidence and limitations', type: 'textarea', help: 'Note confidence level for key conclusions and any evidence limitations that reduce certainty.' },
+        { key: 'externalFactors', label: 'External / environmental factors', type: 'textarea', help: 'Examples: vendor outage, known threat campaign, maintenance window overlap, staffing load, architecture debt, inherited design constraints.' }
+      ]
+    },
+    {
+      id: 'response',
+      title: '6. Response, containment, eradication, recovery',
+      subtitle: 'Document response steps and their outcomes.',
+      fields: [
+        { key: 'responseSummary', label: 'Response summary', type: 'textarea', help: 'Summarize major response actions from triage through restoration.' },
+        { key: 'containment', label: 'Containment actions', type: 'textarea', help: 'Examples: account disablement, device isolation, block IOC, mail rule removal, firewall deny, service failover.' },
+        { key: 'eradication', label: 'Eradication / remediation actions', type: 'textarea', help: 'Describe steps taken to remove malicious artifacts or eliminate the fault condition.' },
+        { key: 'recovery', label: 'Recovery / restoration actions', type: 'textarea', help: 'How was service or normal operation restored? Note validation steps.' },
+        { key: 'residualRisk', label: 'Residual risk after response', type: 'textarea', help: 'What uncertainty or remaining exposure exists after containment and recovery?' },
+        { key: 'communicationCoordination', label: 'Coordination and communications', type: 'textarea', help: 'How internal teams, leadership, legal, privacy, communications, or vendors coordinated during the event.' }
+      ]
+    },
+    {
+      id: 'root-cause',
+      title: '7. Contributing factors and root cause framing',
+      subtitle: 'Blameless analysis of system conditions.',
+      fields: [
+        { key: 'rootCauseStatement', label: 'Root cause statement', type: 'textarea', help: 'Frame root cause in terms of systems, decisions, conditions, controls, or architecture—not a person. Example: “The incident was enabled by an unmonitored legacy admin path combined with absent alerting on abnormal mailbox rule creation.”' },
+        { key: 'contributingFactors', label: 'Contributing factors', type: 'textarea', help: 'List people/process/technology/environment factors that increased likelihood, impact, or duration.' },
+        { key: 'decisionPoints', label: 'Important decision points', type: 'textarea', help: 'Record key choices, tradeoffs, and why the team decided as it did based on information available at the time.' },
+        { key: 'organizationalContext', label: 'Organizational / program context', type: 'textarea', help: 'Examples: staffing, role ambiguity, change backlog, training gaps, governance constraints, technical debt, incomplete asset inventory.' }
+      ]
+    },
+    {
+      id: 'lessons',
+      title: '8. Lessons learned',
+      subtitle: 'Capture insights to preserve and improve.',
+      fields: [
+        { key: 'lessonsPositive', label: 'Strengths to preserve', type: 'textarea', help: 'What should be repeated because it worked well?' },
+        { key: 'lessonsImprove', label: 'Improvement themes', type: 'textarea', help: 'What should be improved in detection, hardening, communications, playbooks, logging, monitoring, training, architecture, vendor management, etc.?' },
+        { key: 'policyProcessNeeds', label: 'Policy / procedure / playbook updates needed', type: 'textarea', help: 'Identify documentation or governance changes needed after this event.' },
+        { key: 'metrics', label: 'Metrics to improve or add', type: 'textarea', help: 'Examples: MTTD, MTTC, MTTR, alert fidelity, asset coverage, log retention, mailbox forwarding detections, privileged access review cadence.' }
+      ]
+    },
+    {
+      id: 'actions',
+      title: '9. Follow-up actions',
+      subtitle: 'Track concrete work after the review.',
+      repeat: 'actions',
+      repeatTitle: 'Action item',
+      repeatHelp: 'Create specific, testable actions with owners and dates. Focus on risk reduction and resilience.',
+      repeatFields: [
+        { key: 'title', label: 'Action', type: 'text', help: 'Short action title.' },
+        { key: 'owner', label: 'Owner', type: 'text', help: 'Team or individual responsible for follow-through.' },
+        { key: 'priority', label: 'Priority', type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], help: 'Risk or urgency ranking.' },
+        { key: 'dueDate', label: 'Due date', type: 'date', help: 'Target completion date.' },
+        { key: 'success', label: 'Success criteria', type: 'textarea', help: 'How will you know this action is complete and effective?' },
+        { key: 'status', label: 'Status', type: 'select', options: ['Open', 'In progress', 'Blocked', 'Done'], help: 'Current state of action item.' }
+      ]
+    },
+    {
+      id: 'appendix',
+      title: '10. Evidence, references, and approvals',
+      subtitle: 'Traceability, source material, and review sign-off.',
+      fields: [
+        { key: 'evidenceSources', label: 'Evidence sources and references', type: 'textarea', help: 'List tickets, case IDs, log sources, query references, screenshots, documents, vendor tickets, and related reports.' },
+        { key: 'approvals', label: 'Reviewers / approvers', type: 'textarea', help: 'List reviewers and the nature of their review (technical, leadership, privacy, legal, communications).' },
+        { key: 'distribution', label: 'Distribution guidance', type: 'textarea', help: 'Who should receive the final report? Note any sensitivity or redaction requirements.' },
+        { key: 'finalNotes', label: 'Final notes', type: 'textarea', help: 'Anything else needed for future readers.' }
+      ]
+    }
+  ];
+
+  const defaultData = () => ({
+    meta: { version: 1, savedAt: null },
+    reportTitle: '', incidentType: 'Information security incident', severity: 'Medium', status: 'Draft', lead: '', reviewDate: '',
+    executiveSummary: '', scopeBoundaries: '', servicesAffected: '', stakeholdersAffected: '', impactSummary: '', dataImpact: '', duration: '', customerComms: '',
+    detectionMethod: '', detectionQuality: '', knownUnknowns: '', investigationConstraints: '',
+    timeline: [],
+    initialAccess: '', attackPath: '', detectionGap: '', whatWorked: '', evidenceConfidence: '', externalFactors: '',
+    responseSummary: '', containment: '', eradication: '', recovery: '', residualRisk: '', communicationCoordination: '',
+    rootCauseStatement: '', contributingFactors: '', decisionPoints: '', organizationalContext: '',
+    lessonsPositive: '', lessonsImprove: '', policyProcessNeeds: '', metrics: '',
+    actions: [],
+    evidenceSources: '', approvals: '', distribution: '', finalNotes: ''
+  });
+
+  let state = defaultData();
+  let currentSectionIndex = 0;
+
+  const sectionNav = document.getElementById('sectionNav');
+  const sectionsContainer = document.getElementById('sectionsContainer');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\"/g, '&quot;');
+  }
+
+  function renderNav() {
+    sectionNav.innerHTML = '';
+    sections.forEach((sec, idx) => {
+      const btn = document.createElement('button');
+      btn.className = idx === currentSectionIndex ? 'active' : '';
+      btn.innerHTML = `<strong>${esc(sec.title)}</strong><span class="small">${esc(sec.subtitle)}</span>`;
+      btn.addEventListener('click', () => { currentSectionIndex = idx; render(); });
+      sectionNav.appendChild(btn);
+    });
+  }
+
+  function inputHtml(field, value, path) {
+    const help = `<div class="help">${esc(field.help || '')}</div>`;
+    const id = `fld_${path.replace(/[^a-zA-Z0-9_]/g,'_')}`;
+    if (field.type === 'textarea') {
+      return `<label for="${id}">${esc(field.label)}</label>${help}<textarea id="${id}" data-path="${esc(path)}">${esc(value || '')}</textarea>`;
+    }
+    if (field.type === 'select') {
+      return `<label for="${id}">${esc(field.label)}</label>${help}<select id="${id}" data-path="${esc(path)}">${(field.options || []).map(opt => `<option value="${esc(opt)}" ${String(value)===String(opt)?'selected':''}>${esc(opt)}</option>`).join('')}</select>`;
+    }
+    return `<label for="${id}">${esc(field.label)}</label>${help}<input id="${id}" type="${esc(field.type || 'text')}" data-path="${esc(path)}" value="${esc(value || '')}" />`;
+  }
+
+  function setByPath(obj, path, value) {
+    const parts = path.split('.');
+    let cur = obj;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const p = parts[i];
+      if (!(p in cur)) cur[p] = /^\d+$/.test(parts[i+1]) ? [] : {};
+      cur = cur[p];
+    }
+    cur[parts[parts.length - 1]] = value;
+  }
+
+  function getByPath(obj, path) {
+    return path.split('.').reduce((acc, p) => acc && acc[p], obj);
+  }
+
+  function renderSection(sec, idx) {
+    const wrap = document.createElement('section');
+    wrap.className = 'card' + (idx === currentSectionIndex ? '' : ' hidden');
+    wrap.id = sec.id;
+    let html = `<h3>${esc(sec.title)}</h3><div class="help">${esc(sec.subtitle)}</div>`;
+    if (sec.repeat) {
+      const items = Array.isArray(state[sec.repeat]) ? state[sec.repeat] : [];
+      html += `<div class="help">${esc(sec.repeatHelp || '')}</div><div class="list">`;
+      items.forEach((item, i) => {
+        html += `<div class="repeat-item"><div class="repeat-top"><div><span class="pill">${esc(sec.repeatTitle)} ${i+1}</span></div><button class="btn danger" data-remove-repeat="${sec.repeat}" data-index="${i}">Remove</button></div><div class="grid two">`;
+        sec.repeatFields.forEach(f => {
+          html += `<div>${inputHtml(f, item[f.key] || '', `${sec.repeat}.${i}.${f.key}`)}</div>`;
+        });
+        html += `</div></div>`;
+      });
+      html += `</div><div class="btn-row" style="margin-top:12px"><button class="btn success" data-add-repeat="${sec.repeat}">Add ${esc(sec.repeatTitle)}</button></div>`;
+    } else {
+      html += '<div class="grid two">';
+      sec.fields.forEach(f => {
+        const wide = f.type === 'textarea';
+        html += `<div style="grid-column:${wide ? '1 / -1' : 'auto'}">${inputHtml(f, state[f.key] || '', f.key)}</div>`;
+      });
+      html += '</div>';
+    }
+    wrap.innerHTML = html;
+    return wrap;
+  }
+
+  function bindInputs() {
+    document.querySelectorAll('[data-path]').forEach(el => {
+      const eventName = (el.tagName === 'SELECT' || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') ? 'input' : 'change';
+      const handler = () => {
+        setByPath(state, el.getAttribute('data-path'), el.value);
+      };
+      el.addEventListener(eventName, handler);
+      if (eventName !== 'change') el.addEventListener('change', handler);
+    });
+    document.querySelectorAll('[data-add-repeat]').forEach(btn => btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-add-repeat');
+      const sec = sections.find(s => s.repeat === key);
+      const obj = {};
+      (sec.repeatFields || []).forEach(f => obj[f.key] = '');
+      state[key].push(obj);
+      render();
+    }));
+    document.querySelectorAll('[data-remove-repeat]').forEach(btn => btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-remove-repeat');
+      const idx = Number(btn.getAttribute('data-index'));
+      state[key].splice(idx, 1);
+      render();
+    }));
+  }
+
+  function render() {
+    renderNav();
+    sectionsContainer.innerHTML = '';
+    sections.forEach((sec, idx) => sectionsContainer.appendChild(renderSection(sec, idx)));
+    bindInputs();
+    prevBtn.disabled = currentSectionIndex <= 0;
+    nextBtn.disabled = currentSectionIndex >= sections.length - 1;
+  }
+
+  function saveLocal() {
+    state.meta.savedAt = new Date().toISOString();
+    localStorage.setItem(APP_KEY, JSON.stringify(state));
+    alert('Saved to browser local storage.');
+  }
+
+  function loadLocal() {
+    const raw = localStorage.getItem(APP_KEY);
+    if (!raw) return alert('No locally saved report found for this browser.');
+    try {
+      const parsed = JSON.parse(raw);
+      state = Object.assign(defaultData(), parsed);
+      render();
+      alert('Loaded report from browser local storage.');
+    } catch (e) {
+      alert('Unable to load saved data: ' + e.message);
+    }
+  }
+
+  function downloadBlob(filename, blob, mime) {
+    const url = URL.createObjectURL(blob.type ? blob : new Blob([blob], { type: mime || 'application/octet-stream' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  }
+
+  function exportJson() {
+    state.meta.savedAt = new Date().toISOString();
+    const json = JSON.stringify(state, null, 2);
+    downloadBlob(safeBaseName() + '.json', new Blob([json], { type: 'application/json' }));
+  }
+
+  function importJsonFile(file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        state = Object.assign(defaultData(), parsed);
+        render();
+        alert('Imported JSON successfully.');
+      } catch (e) {
+        alert('Import failed: ' + e.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function safeBaseName() {
+    const raw = (state.reportTitle || 'post-mortem-report').trim();
+    return raw.replace(/[^a-z0-9-_]+/gi, '_').replace(/^_+|_+$/g, '').slice(0, 80) || 'post-mortem-report';
+  }
+
+  function flattenReportText() {
+    const lines = [];
+    lines.push(state.reportTitle || 'Untitled report');
+    lines.push('');
+    lines.push(`Incident type: ${state.incidentType || ''}`);
+    lines.push(`Severity: ${state.severity || ''}`);
+    lines.push(`Review status: ${state.status || ''}`);
+    lines.push(`Facilitator / owner: ${state.lead || ''}`);
+    lines.push(`Review date: ${state.reviewDate || ''}`);
+    lines.push('');
+    sections.forEach(sec => {
+      lines.push(sec.title);
+      lines.push('-'.repeat(sec.title.length));
+      if (sec.repeat) {
+        const items = state[sec.repeat] || [];
+        if (!items.length) {
+          lines.push('[No entries]');
+        } else {
+          items.forEach((item, i) => {
+            lines.push(`${sec.repeatTitle} ${i+1}`);
+            sec.repeatFields.forEach(f => lines.push(`${f.label}: ${item[f.key] || ''}`));
+            lines.push('');
+          });
+        }
+      } else {
+        sec.fields.forEach(f => {
+          const v = state[f.key] || '';
+          lines.push(`${f.label}: ${v}`);
+          lines.push('');
+        });
+      }
+      lines.push('');
+    });
+    return lines.join('\n');
+  }
+
+  function buildLlmExport() {
+    const structured = JSON.stringify(state, null, 2);
+    return [
+      '# LLM Post Mortem Drafting Package',
+      '',
+      '## Purpose',
+      'Use the structured incident review data below to draft a blameless post mortem / after action report. The model must preserve uncertainty, avoid blame, and clearly separate facts from assumptions.',
+      '',
+      '## Guard rails',
+      '- Do not invent facts, times, evidence, attacker actions, impacts, stakeholders, or remediation steps.',
+      '- If information is missing, say so explicitly and list it as an open question or data gap.',
+      '- Use blameless language. Do not assign root cause to an individual person or team.',
+      '- Prefer system, process, control, design, staffing, communication, or environmental explanations.',
+      '- Clearly label facts, assumptions, hypotheses, confidence levels, and unresolved items.',
+      '- For security incidents, preserve the sequence of attacker or failure path only if supported by evidence.',
+      '- Do not include secrets, passwords, tokens, private keys, or unnecessary personal data in the generated report.',
+      '- If regulated or sensitive data exposure is uncertain, state the uncertainty and recommend validation steps rather than speculating.',
+      '- Keep tone objective, specific, and suitable for technical and leadership readers.',
+      '',
+      '## Desired output format',
+      'Produce the following sections in order:',
+      '1. Executive summary',
+      '2. Incident overview and scope',
+      '3. Impact and business context',
+      '4. Detection and discovery',
+      '5. Timeline of key events',
+      '6. Technical/security analysis',
+      '7. Response actions: containment, eradication, recovery',
+      '8. Root cause and contributing factors (blameless framing)',
+      '9. What worked well',
+      '10. Improvement opportunities',
+      '11. Follow-up actions with owners/dates if provided',
+      '12. Open questions / evidence gaps',
+      '13. Appendix of references/evidence sources',
+      '',
+      '## Writing instructions',
+      '- Write in concise professional prose with bullets where useful.',
+      '- Preserve chronology and cite confidence or uncertainty where present in the input.',
+      '- If the input suggests multiple plausible explanations, present them as alternatives with confidence qualifiers.',
+      '- When mapping cause, use wording such as “enabled by”, “contributed to”, “was not detected because”, or “recovery was slowed by”.',
+      '- Avoid phrases that imply negligence unless explicitly documented and approved for inclusion.',
+      '',
+      '## Structured input data',
+      '```json',
+      structured,
+      '```',
+      '',
+      '## Optional additional prompt',
+      'Draft two versions: (1) technical audience and (2) executive summary audience, both using the same facts.'
+    ].join('\n');
+  }
+
+  function exportLlm() {
+    const text = buildLlmExport();
+    downloadBlob(safeBaseName() + '_LLM_package.md', new Blob([text], { type: 'text/markdown;charset=utf-8' }));
+  }
+
+  // Minimal PDF generator: text-only, readable, no dependencies.
+  function pdfEscape(str) {
+    return String(str).replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)').replace(/\r/g, '');
+  }
+  function createSimplePdf(text, title) {
+    const pageWidth = 612, pageHeight = 792, margin = 48, fontSize = 11, leading = 14;
+    const maxChars = 95;
+    const paragraphs = String(text).split('\n');
+    const lines = [];
+    paragraphs.forEach(p => {
+      if (!p) { lines.push(''); return; }
+      let s = p;
+      while (s.length > maxChars) {
+        let cut = s.lastIndexOf(' ', maxChars);
+        if (cut <= 0) cut = maxChars;
+        lines.push(s.slice(0, cut));
+        s = s.slice(cut).trim();
+      }
+      lines.push(s);
+    });
+    const linesPerPage = Math.floor((pageHeight - margin * 2) / leading);
+    const pages = [];
+    for (let i = 0; i < lines.length; i += linesPerPage) pages.push(lines.slice(i, i + linesPerPage));
+
+    const objs = [];
+    function addObj(str) { objs.push(str); return objs.length; }
+
+    const fontObj = addObj('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+
+    const contentObjIds = [];
+    pages.forEach((pageLines, idx) => {
+      let stream = 'BT\n/F1 ' + fontSize + ' Tf\n';
+      stream += '1 0 0 1 ' + margin + ' ' + (pageHeight - margin) + ' Tm\n';
+      stream += leading + ' TL\n';
+      pageLines.forEach((ln, i) => {
+        if (i === 0) stream += '(' + pdfEscape(ln) + ') Tj\n';
+        else stream += 'T* (' + pdfEscape(ln) + ') Tj\n';
+      });
+      stream += '\nET';
+      const streamObj = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+      contentObjIds.push(addObj(streamObj));
+    });
+
+    const pageObjIds = [];
+    const pagesPlaceholderId = objs.length + 1 + pages.length + 1; // approx, repaired below
+    pages.forEach((_, idx) => {
+      const obj = `<< /Type /Page /Parent PAGES_ID 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObj} 0 R >> >> /Contents ${contentObjIds[idx]} 0 R >>`;
+      pageObjIds.push(addObj(obj));
+    });
+    const pagesObjId = addObj(`<< /Type /Pages /Kids [${pageObjIds.map(id => id + ' 0 R').join(' ')}] /Count ${pageObjIds.length} >>`);
+    // repair parent refs
+    pageObjIds.forEach(id => { objs[id-1] = objs[id-1].replace('PAGES_ID', String(pagesObjId)); });
+    const catalogObjId = addObj(`<< /Type /Catalog /Pages ${pagesObjId} 0 R >>`);
+    const infoObjId = addObj(`<< /Title (${pdfEscape(title || 'Post Mortem Report')}) /Producer (Standalone JS PDF Export) >>`);
+
+    let pdf = '%PDF-1.4\n';
+    const offsets = [0];
+    objs.forEach((obj, i) => {
+      offsets.push(pdf.length);
+      pdf += `${i+1} 0 obj\n${obj}\nendobj\n`;
+    });
+    const xrefPos = pdf.length;
+    pdf += `xref\n0 ${objs.length + 1}\n`;
+    pdf += '0000000000 65535 f \n';
+    for (let i = 1; i < offsets.length; i++) {
+      pdf += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+    }
+    pdf += `trailer\n<< /Size ${objs.length + 1} /Root ${catalogObjId} 0 R /Info ${infoObjId} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+    return new Blob([pdf], { type: 'application/pdf' });
+  }
+
+  function exportPdf() {
+    const text = flattenReportText();
+    const pdfBlob = createSimplePdf(text, state.reportTitle || 'Blameless Post Mortem Report');
+    downloadBlob(safeBaseName() + '.pdf', pdfBlob);
+  }
+
+  function resetReport() {
+    if (!confirm('Start a new report? Unsaved changes in the page will be lost.')) return;
+    state = defaultData();
+    currentSectionIndex = 0;
+    render();
+  }
+
+  document.getElementById('newBtn').addEventListener('click', resetReport);
+  document.getElementById('saveLocalBtn').addEventListener('click', saveLocal);
+  document.getElementById('loadLocalBtn').addEventListener('click', loadLocal);
+  document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
+  document.getElementById('importJsonBtn').addEventListener('click', () => document.getElementById('jsonFileInput').click());
+  document.getElementById('jsonFileInput').addEventListener('change', e => {
+    const file = e.target.files && e.target.files[0];
+    if (file) importJsonFile(file);
+    e.target.value = '';
+  });
+  document.getElementById('exportPdfBtn').addEventListener('click', exportPdf);
+  document.getElementById('exportLlmBtn').addEventListener('click', exportLlm);
+  prevBtn.addEventListener('click', () => { if (currentSectionIndex > 0) { currentSectionIndex--; render(); window.scrollTo(0,0); } });
+  nextBtn.addEventListener('click', () => { if (currentSectionIndex < sections.length - 1) { currentSectionIndex++; render(); window.scrollTo(0,0); } });
+
+  // Initialize helpful starter entries.
+  state.timeline.push({ time: '', source: '', eventType: 'Observation', description: '', confidence: 'High confidence' });
+  state.actions.push({ title: '', owner: '', priority: 'Medium', dueDate: '', success: '', status: 'Open' });
+  render();
+})();
+</script>
+</body>
+</html>
