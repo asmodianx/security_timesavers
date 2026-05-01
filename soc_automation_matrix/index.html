@@ -1,0 +1,1260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SOC Capability Matrix</title>
+  <style>
+:root {
+  --bg: #0f172a; --panel: #111827; --panel-soft: #1f2937; --border: #334155; --text: #e5e7eb; --muted: #94a3b8;
+  --primary: #2563eb; --primary-hover: #1d4ed8; --danger: #dc2626; --danger-hover: #b91c1c; --radius: 14px; --font: Arial, Helvetica, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+body { min-height: 100vh; }
+button, input, textarea, select { font: inherit; }
+a { color: #93c5fd; }
+code { background: rgba(255,255,255,0.08); padding: 0.1rem 0.35rem; border-radius: 6px; }
+.hidden { display: none !important; }
+.subtle { color: var(--muted); }
+.panel { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 10px 25px rgba(0,0,0,0.25); }
+.app-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(15,23,42,0.94); z-index: 40; }
+.app-header h1 { margin: 0 0 0.25rem; font-size: 1.8rem; }
+.header-actions, .toolbar-actions, .card-actions, .modal-footer { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.btn { border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); padding: 0.625rem 0.9rem; border-radius: 10px; cursor: pointer; }
+.btn:hover { filter: brightness(1.08); }
+.btn.primary { background: var(--primary); border-color: transparent; }
+.btn.primary:hover { background: var(--primary-hover); }
+.btn.danger { background: var(--danger); border-color: transparent; }
+.btn.danger:hover { background: var(--danger-hover); }
+.btn.ghost { background: transparent; }
+.icon-btn { border: 1px solid var(--border); background: transparent; color: var(--text); width: 2.25rem; height: 2.25rem; border-radius: 999px; cursor: pointer; }
+.layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 1rem; padding: 1rem; }
+.sidebar { padding: 1rem; align-self: start; position: sticky; top: 6.5rem; max-height: calc(100vh - 7rem); overflow: auto; }
+.sidebar section + section { margin-top: 1.25rem; }
+.sidebar h2 { margin-top: 0; font-size: 1rem; }
+label { display: grid; gap: 0.35rem; margin-bottom: 0.85rem; }
+input[type="text"], input[type="search"], input[type="number"], textarea, select { width: 100%; background: #0b1220; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 0.7rem 0.8rem; }
+textarea { resize: vertical; }
+.checkbox-row { display: flex; align-items: center; gap: 0.65rem; }
+.checkbox-row input { width: auto; }
+.summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem; }
+.summary-card { padding: 0.75rem; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+.summary-card strong { display: block; font-size: 1.2rem; }
+.legend-list, .small-list { margin: 0; padding-left: 1.2rem; }
+.content { min-width: 0; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; margin-bottom: 1rem; }
+.matrix-root { display: grid; gap: 1rem; }
+.category-section { padding: 1rem; }
+.category-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.category-header h2 { margin: 0; }
+.category-description { margin: 0.35rem 0 0; }
+.capability-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1rem; }
+.capability-card { padding: 1rem; }
+.card-main-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
+.title-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.capability-title { margin: 0; font-size: 1.05rem; }
+.capability-description { color: #d1d5db; }
+.capability-meta { font-size: 0.9rem; }
+.maturity-pill { padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.85rem; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.06); }
+.tag-groups { display: grid; gap: 0.45rem; }
+.tag-group { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.tag { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.22rem 0.55rem; border-radius: 999px; font-size: 0.84rem; border: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+.tag.custom { background: rgba(37,99,235,0.15); color: #bfdbfe; }
+.tag.attack { background: rgba(217,119,6,0.15); color: #fed7aa; }
+.tag.d3fend { background: rgba(22,163,74,0.15); color: #bbf7d0; }
+.details { margin-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem; }
+.details-grid { display: grid; gap: 1rem; margin-bottom: 1rem; }
+.two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.details h4 { margin: 0 0 0.45rem; font-size: 0.95rem; }
+.details-text, .evidence-text { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 0.75rem; min-height: 3rem; white-space: pre-wrap; }
+.techniques-list, .references-list { margin: 0; padding-left: 1.2rem; }
+.catalog-actions { display: grid; gap: 0.5rem; }
+.catalog-hint { font-size: 0.88rem; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: grid; place-items: center; padding: 1rem; z-index: 100; }
+.modal { width: min(1100px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow: auto; padding: 1rem; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.modal-form { display: grid; gap: 0.85rem; }
+.field-grid { display: grid; gap: 0.85rem; }
+.maturity-1 { color: #fca5a5; } .maturity-2 { color: #fdba74; } .maturity-3 { color: #fcd34d; } .maturity-4 { color: #86efac; } .maturity-5 { color: #93c5fd; }
+.empty-state { padding: 2rem; text-align: center; border: 1px dashed rgba(255,255,255,0.12); border-radius: var(--radius); }
+.catalog-picker { display: grid; gap: 0.75rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 0.75rem; background: rgba(255,255,255,0.02); }
+.catalog-picker-header { display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.catalog-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem; }
+.selected-chip-box { min-height: 3rem; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.5rem; background: rgba(255,255,255,0.02); display: flex; gap: 0.35rem; flex-wrap: wrap; align-content: flex-start; }
+.catalog-options { max-height: 240px; overflow: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 0.5rem; background: rgba(255,255,255,0.02); }
+.option-row { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.25rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.option-row:last-child { border-bottom: none; }
+.option-row input { margin-top: 0.2rem; }
+.option-id { font-weight: bold; }
+.option-meta { font-size: 0.82rem; color: var(--muted); }
+.inline-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+@media (max-width: 1100px) { .layout { grid-template-columns: 1fr; } .sidebar { position: static; max-height: none; } }
+@media (max-width: 840px) { .app-header, .toolbar, .category-header, .card-main-row { flex-direction: column; align-items: stretch; } .two-col, .catalog-layout { grid-template-columns: 1fr; } }
+@media print { :root { --bg: white; --panel: white; --panel-soft: white; --border: #cbd5e1; --text: black; --muted: #475569; } body { background: white; color: black; } .app-header, .sidebar, .toolbar, .card-actions, .modal-backdrop { display: none !important; } .layout { display: block; padding: 0; } .panel { box-shadow: none; } .capability-grid { grid-template-columns: 1fr 1fr; } a { color: black; text-decoration: none; } }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>SOC Capability Matrix</h1>
+      <p class="subtle">Single file, standalone vanilla HTML CSS JS, tag catalogs, JSON import export, printable PDF export</p>
+    </div>
+    <div class="header-actions">
+      <button id="btnAdd" class="btn primary" type="button">Add Capability</button>
+      <button id="btnImport" class="btn" type="button">Import Dataset</button>
+      <button id="btnExport" class="btn" type="button">Export Dataset</button>
+      <button id="btnPdf" class="btn" type="button">Export PDF</button>
+      <button id="btnReset" class="btn danger" type="button">Reset</button>
+      <input id="fileInput" type="file" accept="application/json,.json" hidden>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="sidebar panel">
+      <section>
+        <h2>Filters</h2>
+        <label><span>Search</span><input id="searchInput" type="search" placeholder="name, description, tag, technique, reference"></label>
+        <label><span>Category</span><select id="categoryFilter"><option value="">All categories</option></select></label>
+        <label><span>Maturity</span><select id="maturityFilter"><option value="">All maturity levels</option></select></label>
+        <label><span>Tag type</span><select id="tagTypeFilter"><option value="">Any tag type</option><option value="custom">Custom</option><option value="attack">MITRE ATTACK</option><option value="d3fend">MITRE D3FEND</option></select></label>
+        <label><span>Tag contains</span><input id="tagFilter" type="text" placeholder="for example T1110, D3-AU, phishing"></label>
+        <label class="checkbox-row"><input id="hideUnimplemented" type="checkbox"><span>Hide maturity 1</span></label>
+      </section>
+      <section><h2>Summary</h2><div id="summaryPanel" class="summary-grid"></div></section>
+      <section><h2>Legend</h2><ol id="legendList" class="legend-list"></ol></section>
+      <section>
+        <h2>Tag catalogs</h2>
+        <p class="subtle catalog-hint">Catalogs drive the multi-select pickers. Custom tags are also derived from tags used by other capabilities.</p>
+        <div class="catalog-actions">
+          <button id="btnImportCatalog" class="btn" type="button">Import Tag Catalog</button>
+          <button id="btnExportCatalog" class="btn" type="button">Export Tag Catalog</button>
+          <button id="btnRebuildCatalog" class="btn" type="button">Rebuild Custom Catalog</button>
+          <input id="catalogFileInput" type="file" accept="application/json,.json" hidden>
+        </div>
+        <ul class="small-list">
+          <li>Seeded with ATTACK tactics and starter ATTACK technique IDs.</li>
+          <li>Seeded with starter D3FEND IDs and labels.</li>
+          <li>All tags already used by other events or capabilities are included automatically.</li>
+          <li>You can import larger catalogs later without changing the data model.</li>
+        </ul>
+      </section>
+      <section>
+        <h2>Notes</h2>
+        <ul class="small-list">
+          <li>No external files or CDN libraries.</li>
+          <li>Starter data and starter catalogs are embedded in this file.</li>
+          <li>Open this file directly in a normal browser tab, not a preview pane or embedded frame.</li>
+        </ul>
+      </section>
+    </aside>
+
+    <section class="content">
+      <div class="toolbar panel">
+        <div>
+          <strong id="datasetTitle">SOC Capability Matrix</strong>
+          <div id="datasetMeta" class="subtle"></div>
+        </div>
+        <div class="toolbar-actions">
+          <button id="btnExpand" class="btn" type="button">Expand all</button>
+          <button id="btnCollapse" class="btn" type="button">Collapse all</button>
+          <button id="btnSortMaturity" class="btn" type="button">Sort by maturity</button>
+          <button id="btnSortName" class="btn" type="button">Sort by name</button>
+        </div>
+      </div>
+      <div id="matrixRoot" class="matrix-root"></div>
+    </section>
+  </main>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden" aria-hidden="true">
+    <div class="modal panel">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Capability</h2>
+        <button id="btnCloseModal" class="icon-btn" type="button" aria-label="Close">X</button>
+      </div>
+      <form id="capabilityForm" class="modal-form">
+        <input id="capabilityId" type="hidden">
+        <div class="field-grid two-col">
+          <label><span>Category</span><select id="capCategory" required></select></label>
+          <label><span>Name</span><input id="capName" type="text" required maxlength="180"></label>
+        </div>
+        <div class="field-grid two-col">
+          <label><span>Importance (1 to 5)</span><input id="capImportance" type="number" min="1" max="5" value="3"></label>
+          <label><span>Implemented maturity</span><select id="capMaturity"></select></label>
+        </div>
+        <label><span>Description</span><textarea id="capDescription" rows="3"></textarea></label>
+        <label><span>Implementation notes</span><textarea id="capDetails" rows="4" placeholder="how it works, workflow notes, architecture, caveats"></textarea></label>
+        <div class="field-grid two-col">
+          <label><span>Techniques (one per line)</span><textarea id="capTechniques" rows="5"></textarea></label>
+          <label><span>References (one per line)</span><textarea id="capReferences" rows="5"></textarea></label>
+        </div>
+
+        <section class="catalog-picker">
+          <div class="catalog-picker-header"><h3>MITRE ATTACK tags</h3><div class="inline-actions"><button class="btn ghost" type="button" id="btnClearAttack">Clear</button></div></div>
+          <div class="catalog-layout">
+            <div>
+              <label><span>Search ATTACK catalog</span><input id="attackCatalogSearch" type="search" placeholder="search ATTACK ID or label"></label>
+              <div id="attackCatalogOptions" class="catalog-options"></div>
+            </div>
+            <div>
+              <label><span>Selected ATTACK tags</span><div id="attackSelectedChips" class="selected-chip-box"></div></label>
+              <label><span>Add ATTACK tags manually (comma or newline separated)</span><textarea id="capAttackManual" rows="3" placeholder="paste ATTACK IDs or labels"></textarea></label>
+            </div>
+          </div>
+        </section>
+
+        <section class="catalog-picker">
+          <div class="catalog-picker-header"><h3>MITRE D3FEND tags</h3><div class="inline-actions"><button class="btn ghost" type="button" id="btnClearD3">Clear</button></div></div>
+          <div class="catalog-layout">
+            <div>
+              <label><span>Search D3FEND catalog</span><input id="d3CatalogSearch" type="search" placeholder="search D3FEND ID or label"></label>
+              <div id="d3CatalogOptions" class="catalog-options"></div>
+            </div>
+            <div>
+              <label><span>Selected D3FEND tags</span><div id="d3SelectedChips" class="selected-chip-box"></div></label>
+              <label><span>Add D3FEND tags manually (comma or newline separated)</span><textarea id="capD3Manual" rows="3" placeholder="paste D3FEND IDs or labels"></textarea></label>
+            </div>
+          </div>
+        </section>
+
+        <section class="catalog-picker">
+          <div class="catalog-picker-header"><h3>Custom tags and display tags used by other events</h3><div class="inline-actions"><button class="btn ghost" type="button" id="btnClearCustom">Clear</button></div></div>
+          <div class="catalog-layout">
+            <div>
+              <label><span>Search custom catalog</span><input id="customCatalogSearch" type="search" placeholder="search custom tag"></label>
+              <div id="customCatalogOptions" class="catalog-options"></div>
+            </div>
+            <div>
+              <label><span>Selected custom tags</span><div id="customSelectedChips" class="selected-chip-box"></div></label>
+              <label><span>Add custom tags manually (comma or newline separated)</span><textarea id="capCustomManual" rows="3" placeholder="type custom tags"></textarea></label>
+            </div>
+          </div>
+        </section>
+
+        <div class="field-grid two-col">
+          <label><span>Owner or team</span><input id="capOwner" type="text"></label>
+          <label><span>Evidence or workflow link</span><input id="capEvidence" type="text"></label>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="btnDeleteCapability" class="btn danger hidden">Delete</button>
+          <button type="button" id="btnDuplicateCapability" class="btn hidden">Duplicate</button>
+          <button type="button" id="btnCancelModal" class="btn">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <template id="capabilityCardTemplate">
+    <article class="capability-card panel">
+      <div class="card-main-row">
+        <div>
+          <div class="title-row">
+            <h3 class="capability-title"></h3>
+            <span class="maturity-pill"></span>
+          </div>
+          <div class="subtle capability-meta"></div>
+        </div>
+        <div class="card-actions">
+          <button class="btn ghost btn-edit" type="button">Edit</button>
+          <button class="btn ghost btn-toggle" type="button">Details</button>
+        </div>
+      </div>
+      <p class="capability-description"></p>
+      <div class="tag-groups">
+        <div class="tag-group custom-tags"></div>
+        <div class="tag-group attack-tags"></div>
+        <div class="tag-group d3fend-tags"></div>
+      </div>
+      <div class="details hidden">
+        <div class="details-grid two-col">
+          <section><h4>Implementation notes</h4><div class="details-text"></div></section>
+          <section><h4>Techniques</h4><ul class="techniques-list"></ul></section>
+        </div>
+        <div class="details-grid two-col">
+          <section><h4>References</h4><ul class="references-list"></ul></section>
+          <section><h4>Evidence</h4><div class="evidence-text"></div></section>
+        </div>
+      </div>
+    </article>
+  </template>
+
+  <script>
+window.DEFAULT_DATASET = {
+  "schema": "soc-capability-matrix-v1",
+  "metadata": {
+    "title": "SOC Capability Matrix",
+    "description": "Starter dataset for a SOC automation capability matrix with ATTACK, D3FEND, custom tags, and maturity scoring.",
+    "version": "1.1.0",
+    "lastUpdated": "2026-04-30"
+  },
+  "maturityScale": [
+    {
+      "value": 1,
+      "label": "Not implemented"
+    },
+    {
+      "value": 2,
+      "label": "Manually implemented"
+    },
+    {
+      "value": 3,
+      "label": "Automation"
+    },
+    {
+      "value": 4,
+      "label": "Automation with documentation"
+    },
+    {
+      "value": 5,
+      "label": "Full SDLC continuous improvement cycle"
+    }
+  ],
+  "categories": [
+    {
+      "id": "intake",
+      "name": "Intake and Collection",
+      "description": "Capabilities for receiving, normalizing, and routing telemetry or reports.",
+      "sortOrder": 10
+    },
+    {
+      "id": "enrichment",
+      "name": "Enrichment and Context",
+      "description": "Capabilities that add context before human review or machine action.",
+      "sortOrder": 20
+    },
+    {
+      "id": "triage",
+      "name": "Triage and Decisioning",
+      "description": "Capabilities for scoring, prioritizing, deduplicating, and routing work.",
+      "sortOrder": 30
+    },
+    {
+      "id": "response",
+      "name": "Response and Containment",
+      "description": "Capabilities that drive action on endpoints, identities, and network controls.",
+      "sortOrder": 40
+    },
+    {
+      "id": "case",
+      "name": "Case Management and Reporting",
+      "description": "Capabilities for documentation, approvals, evidence, reporting, and auditability.",
+      "sortOrder": 50
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "cap-001",
+      "categoryId": "intake",
+      "name": "Normalize inbound alert payloads",
+      "description": "Convert SIEM, EDR, email reported, and case management inputs into a common schema for downstream workflows.",
+      "details": "Map incoming fields to a stable internal schema, preserve raw payloads, stamp provenance, and assign source confidence.",
+      "techniques": [
+        "Parse webhook payloads",
+        "Normalize timestamps and timezones",
+        "Store raw and normalized artifacts"
+      ],
+      "references": [
+        "Internal event schema guide",
+        "Ingestion playbook"
+      ],
+      "importance": 5,
+      "implementedMaturity": 3,
+      "attackTags": [
+        "TA0001",
+        "TA0002"
+      ],
+      "d3fendTags": [
+        "D3-DSE",
+        "D3-SCRA"
+      ],
+      "customTags": [
+        "ingestion",
+        "schema",
+        "webhook"
+      ],
+      "owner": "SOC Automation",
+      "evidence": "Parser workflow and schema mapping document",
+      "sortOrder": 10
+    },
+    {
+      "id": "cap-002",
+      "categoryId": "intake",
+      "name": "Automated phishing intake",
+      "description": "Receive user reported messages, extract indicators and metadata, and create a trackable case automatically.",
+      "details": "Collect headers, body, attachments, URLs, and recipient list; compute indicators; assign case template and queue.",
+      "techniques": [
+        "Parse EML or MSG",
+        "Extract URLs and hashes",
+        "Open or update ticket automatically"
+      ],
+      "references": [
+        "Mailbox reporting SOP",
+        "Phishing workflow template"
+      ],
+      "importance": 5,
+      "implementedMaturity": 4,
+      "attackTags": [
+        "T1566",
+        "TA0001"
+      ],
+      "d3fendTags": [
+        "D3-PSA",
+        "D3-SPE"
+      ],
+      "customTags": [
+        "phishing",
+        "email",
+        "case"
+      ],
+      "owner": "SOC Email Response",
+      "evidence": "Mailbox parser and ticket workflow",
+      "sortOrder": 20
+    },
+    {
+      "id": "cap-003",
+      "categoryId": "enrichment",
+      "name": "Indicator enrichment",
+      "description": "Automatically enrich IPs, domains, hashes, users, and hosts with asset, identity, and threat context.",
+      "details": "Join telemetry to CMDB or asset inventory, directory data, threat intelligence feeds, device posture, and prior cases for faster analyst decisions.",
+      "techniques": [
+        "IP or domain or hash lookups",
+        "Asset and owner correlation",
+        "Historical sighting lookup"
+      ],
+      "references": [
+        "Threat intelligence SOP",
+        "Asset inventory source list"
+      ],
+      "importance": 5,
+      "implementedMaturity": 3,
+      "attackTags": [
+        "T1583",
+        "TA0043"
+      ],
+      "d3fendTags": [
+        "D3-OTR",
+        "D3-TL"
+      ],
+      "customTags": [
+        "threat-intel",
+        "asset",
+        "identity"
+      ],
+      "owner": "SOC Automation",
+      "evidence": "Enrichment workflow and API docs",
+      "sortOrder": 30
+    },
+    {
+      "id": "cap-004",
+      "categoryId": "triage",
+      "name": "Alert deduplication and case correlation",
+      "description": "Group related signals into a single case or incident with timeline context and suppression logic.",
+      "details": "Use host, user, indicator, detection family, and time window logic to avoid analyst duplicate work and retain chain of events.",
+      "techniques": [
+        "Sliding time window correlation",
+        "Case merge and update logic",
+        "Suppression of known benign duplicates"
+      ],
+      "references": [
+        "Case lifecycle SOP"
+      ],
+      "importance": 5,
+      "implementedMaturity": 2,
+      "attackTags": [
+        "TA0005",
+        "TA0040"
+      ],
+      "d3fendTags": [
+        "D3-SFA",
+        "D3-FKM"
+      ],
+      "customTags": [
+        "correlation",
+        "dedup",
+        "timeline"
+      ],
+      "owner": "Tier 1 and Automation",
+      "evidence": "Case merge logic",
+      "sortOrder": 40
+    },
+    {
+      "id": "cap-005",
+      "categoryId": "triage",
+      "name": "Risk based prioritization",
+      "description": "Score alerts using severity, confidence, asset criticality, identity risk, and exploitation likelihood.",
+      "details": "Expose the score formula and rationale so analysts and auditors can review why items were routed or escalated.",
+      "techniques": [
+        "Weighted score formula",
+        "Asset criticality join",
+        "Escalation thresholds"
+      ],
+      "references": [
+        "Risk scoring design notes"
+      ],
+      "importance": 4,
+      "implementedMaturity": 3,
+      "attackTags": [
+        "TA0005"
+      ],
+      "d3fendTags": [
+        "D3-RCI"
+      ],
+      "customTags": [
+        "prioritization",
+        "risk",
+        "routing"
+      ],
+      "owner": "SOC Engineering",
+      "evidence": "Decision matrix",
+      "sortOrder": 50
+    },
+    {
+      "id": "cap-006",
+      "categoryId": "response",
+      "name": "Endpoint isolate or release",
+      "description": "Execute containment actions on managed endpoints with approvals, rollback, and audit trails.",
+      "details": "Support automatic or analyst approved isolation, expiration or rollback, and exception handling for critical systems.",
+      "techniques": [
+        "Endpoint API action",
+        "Approval gate",
+        "Rollback workflow"
+      ],
+      "references": [
+        "Endpoint containment SOP"
+      ],
+      "importance": 5,
+      "implementedMaturity": 2,
+      "attackTags": [
+        "TA0005"
+      ],
+      "d3fendTags": [
+        "D3-NI",
+        "D3-EAL"
+      ],
+      "customTags": [
+        "containment",
+        "edr",
+        "endpoint"
+      ],
+      "owner": "Incident Response",
+      "evidence": "Endpoint isolate workflow",
+      "sortOrder": 60
+    },
+    {
+      "id": "cap-007",
+      "categoryId": "response",
+      "name": "Identity containment actions",
+      "description": "Disable accounts, revoke sessions, reset credentials, or enforce MFA challenges with documented approvals.",
+      "details": "Actions should record who approved, what changed, rollback steps, and whether privileged access was involved.",
+      "techniques": [
+        "Disable account",
+        "Revoke active sessions or tokens",
+        "Force password reset or step up MFA"
+      ],
+      "references": [
+        "Identity response SOP"
+      ],
+      "importance": 5,
+      "implementedMaturity": 3,
+      "attackTags": [
+        "T1078",
+        "TA0006"
+      ],
+      "d3fendTags": [
+        "D3-UAP",
+        "D3-ANCI"
+      ],
+      "customTags": [
+        "identity",
+        "mfa",
+        "account"
+      ],
+      "owner": "IAM and SOC",
+      "evidence": "Identity response playbook",
+      "sortOrder": 70
+    },
+    {
+      "id": "cap-008",
+      "categoryId": "case",
+      "name": "Case timeline auto build",
+      "description": "Generate a structured timeline from detections, actions, analyst notes, approvals, and evidence references.",
+      "details": "Store provenance for each timeline item, flag conflicts, and preserve original event IDs for auditability.",
+      "techniques": [
+        "Chronological event assembly",
+        "Provenance badges",
+        "Conflict detection"
+      ],
+      "references": [
+        "IR documentation standard"
+      ],
+      "importance": 4,
+      "implementedMaturity": 3,
+      "attackTags": [
+        "TA0005"
+      ],
+      "d3fendTags": [
+        "D3-DA",
+        "D3-SCRA"
+      ],
+      "customTags": [
+        "timeline",
+        "documentation",
+        "audit"
+      ],
+      "owner": "Incident Response",
+      "evidence": "Timeline generator",
+      "sortOrder": 80
+    },
+    {
+      "id": "cap-009",
+      "categoryId": "case",
+      "name": "Executive and operational reporting",
+      "description": "Produce audience tailored summaries of capabilities, maturity, workflow coverage, and improvement opportunities.",
+      "details": "Generate role based views for analysts, engineering, managers, auditors, and executives without changing underlying evidence.",
+      "techniques": [
+        "Role specific report templates",
+        "Metric aggregation",
+        "Printable export"
+      ],
+      "references": [
+        "Quarterly reporting template"
+      ],
+      "importance": 4,
+      "implementedMaturity": 4,
+      "attackTags": [],
+      "d3fendTags": [
+        "D3-DA"
+      ],
+      "customTags": [
+        "reporting",
+        "metrics",
+        "leadership"
+      ],
+      "owner": "SOC Leadership",
+      "evidence": "Monthly reporting package",
+      "sortOrder": 90
+    }
+  ]
+};
+window.DEFAULT_CATALOGS = {
+  attack: [
+  {
+    "id": "TA0043",
+    "label": "Reconnaissance",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0042",
+    "label": "Resource Development",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0001",
+    "label": "Initial Access",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0002",
+    "label": "Execution",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0003",
+    "label": "Persistence",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0004",
+    "label": "Privilege Escalation",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0005",
+    "label": "Stealth",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0112",
+    "label": "Defense Impairment",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0006",
+    "label": "Credential Access",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0007",
+    "label": "Discovery",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0008",
+    "label": "Lateral Movement",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0009",
+    "label": "Collection",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0011",
+    "label": "Command and Control",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0010",
+    "label": "Exfiltration",
+    "group": "Tactic"
+  },
+  {
+    "id": "TA0040",
+    "label": "Impact",
+    "group": "Tactic"
+  },
+  {
+    "id": "T1566",
+    "label": "Phishing",
+    "group": "Technique"
+  },
+  {
+    "id": "T1078",
+    "label": "Valid Accounts",
+    "group": "Technique"
+  },
+  {
+    "id": "T1583",
+    "label": "Acquire Infrastructure",
+    "group": "Technique"
+  }
+],
+  d3fend: [
+  {
+    "id": "D3-AI",
+    "label": "Asset Inventory",
+    "group": "Model"
+  },
+  {
+    "id": "D3-NM",
+    "label": "Network Mapping",
+    "group": "Model"
+  },
+  {
+    "id": "D3-OAM",
+    "label": "Operational Activity Mapping",
+    "group": "Model"
+  },
+  {
+    "id": "D3-SYSM",
+    "label": "System Mapping",
+    "group": "Model"
+  },
+  {
+    "id": "D3-ACH",
+    "label": "Application Configuration Hardening",
+    "group": "Harden"
+  },
+  {
+    "id": "D3-CH",
+    "label": "Credential Hardening",
+    "group": "Harden"
+  },
+  {
+    "id": "D3-PH",
+    "label": "Platform Hardening",
+    "group": "Harden"
+  },
+  {
+    "id": "D3-MAN",
+    "label": "Message Authentication",
+    "group": "Harden"
+  },
+  {
+    "id": "D3-MENCR",
+    "label": "Message Encryption",
+    "group": "Harden"
+  },
+  {
+    "id": "D3-CI",
+    "label": "Configuration Inventory",
+    "group": "Model"
+  },
+  {
+    "id": "D3-DI",
+    "label": "Data Inventory",
+    "group": "Model"
+  },
+  {
+    "id": "D3-SWI",
+    "label": "Software Inventory",
+    "group": "Model"
+  },
+  {
+    "id": "D3-AVE",
+    "label": "Asset Vulnerability Enumeration",
+    "group": "Model"
+  },
+  {
+    "id": "D3-NNI",
+    "label": "Network Node Inventory",
+    "group": "Model"
+  },
+  {
+    "id": "D3-DEM",
+    "label": "Data Exchange Mapping",
+    "group": "Model"
+  },
+  {
+    "id": "D3-DSE",
+    "label": "Data Source Enrichment",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-SCRA",
+    "label": "Source Correlation and Record Association",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-PSA",
+    "label": "Phishing Sender Analysis",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-SPE",
+    "label": "Suspicious Process or Payload Examination",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-OTR",
+    "label": "Observable to Record Correlation",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-TL",
+    "label": "Threat Intel Lookup",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-SFA",
+    "label": "Signal Fusion and Aggregation",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-FKM",
+    "label": "Finding Knowledge Management",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-RCI",
+    "label": "Risk Context Integration",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-NI",
+    "label": "Network Isolation",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-EAL",
+    "label": "Endpoint Access Limitation",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-UAP",
+    "label": "User Account Permissions",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-ANCI",
+    "label": "Account and Credential Invalidation",
+    "group": "Starter"
+  },
+  {
+    "id": "D3-DA",
+    "label": "Data Analysis",
+    "group": "Starter"
+  }
+],
+  custom: []
+};
+  </script>
+  <script>
+(function () {
+  var DATASET_KEY = 'soc-capability-matrix.dataset.v1';
+  var CATALOG_KEY = 'soc-capability-matrix.catalogs.v1';
+  function safeParse(text) { try { return JSON.parse(text); } catch (error) { return null; } }
+  window.DatasetStorage = {
+    load: function () { var raw = localStorage.getItem(DATASET_KEY); return raw ? safeParse(raw) : null; },
+    save: function (dataset) { localStorage.setItem(DATASET_KEY, JSON.stringify(dataset)); },
+    clear: function () { localStorage.removeItem(DATASET_KEY); }
+  };
+  window.CatalogStorage = {
+    load: function () { var raw = localStorage.getItem(CATALOG_KEY); return raw ? safeParse(raw) : null; },
+    save: function (catalogs) { localStorage.setItem(CATALOG_KEY, JSON.stringify(catalogs)); },
+    clear: function () { localStorage.removeItem(CATALOG_KEY); }
+  };
+})();
+  </script>
+  <script>
+(function () {
+  function esc(value) {
+    return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function listHtml(items) {
+    var i, out = '';
+    if (!items || !items.length) { return '<div class="empty">N/A</div>'; }
+    out += '<ul>';
+    for (i = 0; i < items.length; i += 1) { out += '<li>' + esc(items[i]) + '</li>'; }
+    out += '</ul>';
+    return out;
+  }
+  window.MatrixPdf = {
+    exportPrintable: function (dataset, renderedSections, activeFilters) {
+      var i, j, k, html = '', filterSummary = '', section, cap;
+      html += '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(dataset.metadata.title) + '</title><style>';
+      html += 'body{font-family:Arial,Helvetica,sans-serif;color:#111827;margin:24px;}';
+      html += 'h1,h2,h3,h4{margin:0 0 8px;}.meta{color:#475569;margin-bottom:20px;}';
+      html += '.category{page-break-inside:avoid;border:1px solid #cbd5e1;border-radius:12px;padding:16px;margin-bottom:18px;}';
+      html += '.cap{page-break-inside:avoid;border:1px solid #e2e8f0;border-radius:10px;padding:12px;margin:12px 0;}';
+      html += '.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eff6ff;border:1px solid #bfdbfe;margin-left:8px;}';
+      html += '.tags{margin:8px 0;}.tag{display:inline-block;border-radius:999px;padding:2px 8px;margin:2px 4px 2px 0;border:1px solid #cbd5e1;font-size:12px;}';
+      html += '.attack{background:#fff7ed;border-color:#fdba74;}.d3fend{background:#f0fdf4;border-color:#86efac;}.custom{background:#eff6ff;border-color:#93c5fd;}';
+      html += '.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}ul{margin:8px 0;padding-left:18px;}.empty{color:#64748b;}@page{size:landscape;margin:0.5in;}';
+      html += '</style></head><body>';
+      html += '<h1>' + esc(dataset.metadata.title) + '</h1>';
+      html += '<div class="meta">' + esc(dataset.metadata.description || '') + '<br>Version: ' + esc(dataset.metadata.version || '') + ' | Last updated: ' + esc(dataset.metadata.lastUpdated || '') + '</div>';
+      for (i = 0; i < activeFilters.length; i += 1) { if (activeFilters[i].value) { filterSummary += '<li><strong>' + esc(activeFilters[i].label) + ':</strong> ' + esc(activeFilters[i].value) + '</li>'; } }
+      if (filterSummary) { html += '<h3>Active filters</h3><ul>' + filterSummary + '</ul>'; }
+      for (i = 0; i < renderedSections.length; i += 1) {
+        section = renderedSections[i];
+        html += '<section class="category"><h2>' + esc(section.name) + '</h2>';
+        if (section.description) { html += '<div class="meta">' + esc(section.description) + '</div>'; }
+        for (j = 0; j < section.capabilities.length; j += 1) {
+          cap = section.capabilities[j];
+          html += '<article class="cap">';
+          html += '<h3>' + esc(cap.name) + '<span class="pill">Maturity ' + esc(cap.implementedMaturityLabel || '') + '</span></h3>';
+          html += '<div class="meta">Importance: ' + esc(String(cap.importance || '')) + ' | Owner: ' + esc(cap.owner || 'N/A') + '</div>';
+          html += '<p>' + esc(cap.description || '') + '</p><div class="tags">';
+          for (k = 0; k < (cap.customTags || []).length; k += 1) { html += '<span class="tag custom">' + esc(cap.customTags[k]) + '</span>'; }
+          for (k = 0; k < (cap.attackTags || []).length; k += 1) { html += '<span class="tag attack">' + esc(cap.attackTags[k]) + '</span>'; }
+          for (k = 0; k < (cap.d3fendTags || []).length; k += 1) { html += '<span class="tag d3fend">' + esc(cap.d3fendTags[k]) + '</span>'; }
+          html += '</div><div class="grid">';
+          html += '<div><h4>Implementation notes</h4><div>' + esc(cap.details || 'N/A') + '</div><h4>Evidence</h4><div>' + esc(cap.evidence || 'N/A') + '</div></div>';
+          html += '<div><h4>Techniques</h4>' + listHtml(cap.techniques || []) + '<h4>References</h4>' + listHtml(cap.references || []) + '</div></div></article>';
+        }
+        html += '</section>';
+      }
+      html += '<script>window.onload=function(){setTimeout(function(){window.print();},250);};<' + '/script></body></html>';
+      var blob = new Blob([html], { type: 'text/html' });
+      var url = URL.createObjectURL(blob);
+      var win = window.open(url, '_blank');
+      if (!win) { URL.revokeObjectURL(url); alert('Popup blocked. Allow popups for this page to export PDF.'); return; }
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    }
+  };
+})();
+  </script>
+  <script>
+(function () {
+  'use strict';
+  var state = { dataset: null, catalogs: null, sortMode: 'default', filters: { search: '', category: '', maturity: '', tagType: '', tagText: '', hideUnimplemented: false }, currentSelection: { attack: [], d3fend: [], custom: [] } };
+  var els = {};
+  function byId(id) { return document.getElementById(id); }
+  function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
+  function uid(prefix) { return (prefix || 'id') + '-' + Math.random().toString(36).slice(2, 10); }
+  function esc(value) { return String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+  function slugify(text) { return String(text || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''); }
+  function normalizeTextArray(text) { if (!text) { return []; } return String(text).split(/[\r\n,]+/g).map(function (item) { return item.trim(); }).filter(Boolean).filter(function (item, index, array) { return array.indexOf(item) === index; }); }
+  function ensureCatalogShape(catalogs) {
+    catalogs = catalogs || clone(window.DEFAULT_CATALOGS);
+    catalogs.attack = Array.isArray(catalogs.attack) ? catalogs.attack : [];
+    catalogs.d3fend = Array.isArray(catalogs.d3fend) ? catalogs.d3fend : [];
+    catalogs.custom = Array.isArray(catalogs.custom) ? catalogs.custom : [];
+    return catalogs;
+  }
+  function catalogMapKey(item) { return String(item.id || item.label || '').trim().toUpperCase(); }
+  function normalizeCatalogItems(items, fallbackGroup) {
+    var map = {}, out = [], i, item, key;
+    for (i = 0; i < items.length; i += 1) {
+      item = items[i];
+      if (typeof item === 'string') { item = { id: item, label: item, group: fallbackGroup || 'Imported' }; }
+      if (!item || (!item.id && !item.label)) { continue; }
+      item.id = String(item.id || item.label).trim();
+      item.label = String(item.label || item.id).trim();
+      item.group = String(item.group || fallbackGroup || 'Imported').trim();
+      key = catalogMapKey(item);
+      if (!map[key]) { map[key] = true; out.push(item); }
+    }
+    out.sort(function (a, b) { return String(a.id).localeCompare(String(b.id)); });
+    return out;
+  }
+  function rebuildCustomCatalog() {
+    var map = {}, out = [], i, j, cap, all;
+    for (i = 0; i < state.dataset.capabilities.length; i += 1) {
+      cap = state.dataset.capabilities[i];
+      all = (cap.customTags || []).concat(cap.attackTags || []).concat(cap.d3fendTags || []);
+      for (j = 0; j < all.length; j += 1) {
+        if (!map[String(all[j]).toLowerCase()]) {
+          map[String(all[j]).toLowerCase()] = true;
+          out.push({ id: String(all[j]), label: String(all[j]), group: 'Seen in other capabilities' });
+        }
+      }
+    }
+    state.catalogs.custom = normalizeCatalogItems(state.catalogs.custom.concat(out), 'Seen in other capabilities');
+    CatalogStorage.save(state.catalogs);
+  }
+  function mergeCatalogs(base, imported) {
+    base = ensureCatalogShape(base);
+    imported = ensureCatalogShape(imported);
+    base.attack = normalizeCatalogItems(base.attack.concat(imported.attack || []), 'Imported');
+    base.d3fend = normalizeCatalogItems(base.d3fend.concat(imported.d3fend || []), 'Imported');
+    base.custom = normalizeCatalogItems(base.custom.concat(imported.custom || []), 'Imported');
+    return base;
+  }
+  function normalizeImportedDataset(data) {
+    var i, out;
+    if (!data || typeof data !== 'object') { throw new Error('JSON did not contain an object dataset.'); }
+    if (data.schema === 'soc-capability-matrix-v1' && Array.isArray(data.categories) && Array.isArray(data.capabilities)) {
+      data.metadata = data.metadata || { title: 'Imported SOC Capability Matrix', version: 'imported', lastUpdated: new Date().toISOString().slice(0, 10) };
+      data.maturityScale = data.maturityScale || clone(window.DEFAULT_DATASET.maturityScale);
+      return data;
+    }
+    if (Array.isArray(data.categories) && Array.isArray(data.capabilities)) {
+      data.schema = 'soc-capability-matrix-v1';
+      data.metadata = data.metadata || { title: 'Imported SOC Capability Matrix', version: 'imported', lastUpdated: new Date().toISOString().slice(0, 10) };
+      data.maturityScale = data.maturityScale || clone(window.DEFAULT_DATASET.maturityScale);
+      return data;
+    }
+    if (Array.isArray(data.boards) && Array.isArray(data.capabilities)) {
+      out = { schema: 'soc-capability-matrix-v1', metadata: { title: data.title || 'Imported ACM style dataset', description: data.description || '', version: 'imported', lastUpdated: new Date().toISOString().slice(0, 10) }, maturityScale: clone(window.DEFAULT_DATASET.maturityScale), categories: [], capabilities: [] };
+      for (i = 0; i < data.boards.length; i += 1) { out.categories.push({ id: data.boards[i].id || slugify(data.boards[i].name || ('Category ' + (i + 1))), name: data.boards[i].name || ('Category ' + (i + 1)), description: data.boards[i].description || '', sortOrder: i + 1 }); }
+      for (i = 0; i < data.capabilities.length; i += 1) { out.capabilities.push({ id: data.capabilities[i].id || uid('cap'), categoryId: data.capabilities[i].categoryId || data.capabilities[i].boardId || (out.categories[0] ? out.categories[0].id : 'default'), name: data.capabilities[i].name || data.capabilities[i].title || ('Capability ' + (i + 1)), description: data.capabilities[i].description || '', details: data.capabilities[i].details || data.capabilities[i].notes || '', techniques: Array.isArray(data.capabilities[i].techniques) ? data.capabilities[i].techniques : normalizeTextArray(data.capabilities[i].techniques || ''), references: Array.isArray(data.capabilities[i].references) ? data.capabilities[i].references : normalizeTextArray(data.capabilities[i].references || ''), importance: Number(data.capabilities[i].importance || data.capabilities[i].priority || 3), implementedMaturity: Number(data.capabilities[i].implementedMaturity || 1), attackTags: Array.isArray(data.capabilities[i].attackTags) ? data.capabilities[i].attackTags : normalizeTextArray(data.capabilities[i].attackTags || ''), d3fendTags: Array.isArray(data.capabilities[i].d3fendTags) ? data.capabilities[i].d3fendTags : normalizeTextArray(data.capabilities[i].d3fendTags || ''), customTags: Array.isArray(data.capabilities[i].customTags) ? data.capabilities[i].customTags : normalizeTextArray(data.capabilities[i].customTags || ''), owner: data.capabilities[i].owner || '', evidence: data.capabilities[i].evidence || '', sortOrder: i + 1 }); }
+      return out;
+    }
+    throw new Error('Unsupported JSON schema. Expected soc-capability-matrix-v1 or ACM style boards plus capabilities.');
+  }
+  function getScale() { return state.dataset.maturityScale || window.DEFAULT_DATASET.maturityScale || []; }
+  function getMaturityLabel(value) { var i, scale = getScale(); for (i = 0; i < scale.length; i += 1) { if (Number(scale[i].value) === Number(value)) { return scale[i].label; } } return String(value); }
+  function loadState() {
+    state.dataset = normalizeImportedDataset(clone(DatasetStorage.load() || window.DEFAULT_DATASET));
+    state.catalogs = ensureCatalogShape(clone(CatalogStorage.load() || window.DEFAULT_CATALOGS));
+    state.catalogs.attack = normalizeCatalogItems(state.catalogs.attack.concat(window.DEFAULT_CATALOGS.attack), 'ATTACK');
+    state.catalogs.d3fend = normalizeCatalogItems(state.catalogs.d3fend.concat(window.DEFAULT_CATALOGS.d3fend), 'D3FEND');
+    rebuildCustomCatalog();
+  }
+  function saveDataset() { state.dataset.metadata.lastUpdated = new Date().toISOString().slice(0, 10); DatasetStorage.save(state.dataset); }
+  function sortCapabilities(caps) {
+    var sorted = caps.slice();
+    if (state.sortMode === 'name') { sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }); return sorted; }
+    if (state.sortMode === 'maturity') { sorted.sort(function (a, b) { var diff = Number(b.implementedMaturity || 0) - Number(a.implementedMaturity || 0); if (diff !== 0) { return diff; } return Number(b.importance || 0) - Number(a.importance || 0); }); return sorted; }
+    sorted.sort(function (a, b) { var diff = Number(a.sortOrder || 0) - Number(b.sortOrder || 0); if (diff !== 0) { return diff; } return String(a.name).localeCompare(String(b.name)); }); return sorted;
+  }
+  function getFilteredSections() {
+    var search = state.filters.search.trim().toLowerCase(); var tagText = state.filters.tagText.trim().toLowerCase();
+    return state.dataset.categories.slice().sort(function (a, b) { return Number(a.sortOrder || 0) - Number(b.sortOrder || 0); }).filter(function (category) { return !state.filters.category || category.id === state.filters.category; }).map(function (category) {
+      var caps = state.dataset.capabilities.filter(function (cap) {
+        var searchableText, selectedTags, hit;
+        if (cap.categoryId !== category.id) { return false; }
+        if (state.filters.maturity && Number(cap.implementedMaturity) !== Number(state.filters.maturity)) { return false; }
+        if (state.filters.hideUnimplemented && Number(cap.implementedMaturity) === 1) { return false; }
+        searchableText = [cap.name, cap.description, cap.details, cap.owner, cap.evidence, (cap.techniques || []).join(' '), (cap.references || []).join(' '), (cap.customTags || []).join(' '), (cap.attackTags || []).join(' '), (cap.d3fendTags || []).join(' ')].join(' ').toLowerCase();
+        if (search && searchableText.indexOf(search) === -1) { return false; }
+        if (tagText) {
+          selectedTags = [];
+          if (!state.filters.tagType || state.filters.tagType === 'custom') { selectedTags = selectedTags.concat(cap.customTags || []); }
+          if (!state.filters.tagType || state.filters.tagType === 'attack') { selectedTags = selectedTags.concat(cap.attackTags || []); }
+          if (!state.filters.tagType || state.filters.tagType === 'd3fend') { selectedTags = selectedTags.concat(cap.d3fendTags || []); }
+          hit = selectedTags.some(function (tag) { return String(tag).toLowerCase().indexOf(tagText) !== -1; });
+          if (!hit) { return false; }
+        }
+        return true;
+      });
+      return { id: category.id, name: category.name, description: category.description, capabilities: sortCapabilities(caps).map(function (cap) { var copy = clone(cap); copy.implementedMaturityLabel = getMaturityLabel(copy.implementedMaturity); return copy; }) };
+    }).filter(function (section) { return section.capabilities.length > 0; });
+  }
+  function renderFilters() {
+    var html = '', i;
+    html = '<option value="">All categories</option>'; for (i = 0; i < state.dataset.categories.length; i += 1) { html += '<option value="' + esc(state.dataset.categories[i].id) + '">' + esc(state.dataset.categories[i].name) + '</option>'; } els.categoryFilter.innerHTML = html; els.categoryFilter.value = state.filters.category;
+    html = '<option value="">All maturity levels</option>'; for (i = 0; i < getScale().length; i += 1) { html += '<option value="' + getScale()[i].value + '">' + getScale()[i].value + ' - ' + esc(getScale()[i].label) + '</option>'; } els.maturityFilter.innerHTML = html; els.maturityFilter.value = state.filters.maturity;
+    html = ''; for (i = 0; i < getScale().length; i += 1) { html += '<option value="' + getScale()[i].value + '">' + getScale()[i].value + ' - ' + esc(getScale()[i].label) + '</option>'; } els.capMaturity.innerHTML = html;
+    html = ''; for (i = 0; i < state.dataset.categories.length; i += 1) { html += '<option value="' + esc(state.dataset.categories[i].id) + '">' + esc(state.dataset.categories[i].name) + '</option>'; } els.capCategory.innerHTML = html;
+  }
+  function renderSummary(sections) {
+    var caps = [], i, j, html = '', avg = 0, scale = getScale();
+    for (i = 0; i < sections.length; i += 1) { for (j = 0; j < sections[i].capabilities.length; j += 1) { caps.push(sections[i].capabilities[j]); } }
+    for (i = 0; i < caps.length; i += 1) { avg += Number(caps[i].implementedMaturity || 0); } avg = caps.length ? (avg / caps.length).toFixed(2) : '0.00';
+    html += '<div class="summary-card"><span class="subtle">Categories</span><strong>' + sections.length + '</strong></div>';
+    html += '<div class="summary-card"><span class="subtle">Capabilities</span><strong>' + caps.length + '</strong></div>';
+    html += '<div class="summary-card"><span class="subtle">Average maturity</span><strong>' + avg + '</strong></div>';
+    html += '<div class="summary-card"><span class="subtle">Tagged with ATTACK</span><strong>' + caps.filter(function (cap) { return (cap.attackTags || []).length; }).length + '</strong></div>';
+    for (i = 0; i < scale.length; i += 1) { html += '<div class="summary-card"><span class="subtle">' + scale[i].value + '</span><strong>' + caps.filter(function (cap) { return Number(cap.implementedMaturity) === Number(scale[i].value); }).length + '</strong><div class="subtle">' + esc(scale[i].label) + '</div></div>'; }
+    els.summaryPanel.innerHTML = html; html = ''; for (i = 0; i < scale.length; i += 1) { html += '<li class="maturity-' + scale[i].value + '"><strong>' + scale[i].value + '</strong> - ' + esc(scale[i].label) + '</li>'; } els.legendList.innerHTML = html;
+  }
+  function createTags(container, tags, type, prefix) { var i; container.innerHTML = ''; if (!tags || !tags.length) { return; } for (i = 0; i < tags.length; i += 1) { container.innerHTML += '<span class="tag ' + type + '">' + esc(prefix + ': ' + tags[i]) + '</span>'; } }
+  function makeList(listEl, items, isLinkList) { var i, html = ''; if (!items || !items.length) { listEl.innerHTML = '<li class="subtle">N/A</li>'; return; } for (i = 0; i < items.length; i += 1) { if (isLinkList && /^https?:\/\//i.test(items[i])) { html += '<li><a href="' + esc(items[i]) + '" target="_blank" rel="noopener noreferrer">' + esc(items[i]) + '</a></li>'; } else { html += '<li>' + esc(items[i]) + '</li>'; } } listEl.innerHTML = html; }
+  function renderMatrix() {
+    var sections, i, j, sectionEl, header, grid, node, tpl;
+    renderFilters(); sections = getFilteredSections(); renderSummary(sections);
+    els.datasetTitle.textContent = state.dataset.metadata.title || 'SOC Capability Matrix';
+    els.datasetMeta.textContent = [state.dataset.metadata.description || '', state.dataset.metadata.version ? ('Version ' + state.dataset.metadata.version) : '', state.dataset.metadata.lastUpdated ? ('Updated ' + state.dataset.metadata.lastUpdated) : ''].filter(Boolean).join(' | ');
+    els.matrixRoot.innerHTML = '';
+    if (!sections.length) { els.matrixRoot.innerHTML = '<div class="empty-state panel"><h2>No capabilities matched the current filters</h2><p class="subtle">Try clearing filters or importing a different dataset.</p></div>'; return; }
+    tpl = byId('capabilityCardTemplate');
+    for (i = 0; i < sections.length; i += 1) {
+      sectionEl = document.createElement('section'); sectionEl.className = 'category-section panel'; sectionEl.setAttribute('data-category-id', sections[i].id);
+      header = document.createElement('div'); header.className = 'category-header'; header.innerHTML = '<div><h2>' + esc(sections[i].name) + '</h2>' + (sections[i].description ? '<p class="subtle category-description">' + esc(sections[i].description) + '</p>' : '') + '</div><div class="subtle">' + sections[i].capabilities.length + ' capabilities</div>'; sectionEl.appendChild(header);
+      grid = document.createElement('div'); grid.className = 'capability-grid';
+      for (j = 0; j < sections[i].capabilities.length; j += 1) {
+        node = tpl.content.firstElementChild.cloneNode(true);
+        node.setAttribute('data-capability-id', sections[i].capabilities[j].id);
+        node.querySelector('.capability-title').textContent = sections[i].capabilities[j].name;
+        node.querySelector('.maturity-pill').textContent = sections[i].capabilities[j].implementedMaturity + ' - ' + sections[i].capabilities[j].implementedMaturityLabel;
+        node.querySelector('.maturity-pill').classList.add('maturity-' + sections[i].capabilities[j].implementedMaturity);
+        node.querySelector('.capability-meta').textContent = 'Importance ' + sections[i].capabilities[j].importance + ' | Owner ' + (sections[i].capabilities[j].owner || 'N/A');
+        node.querySelector('.capability-description').textContent = sections[i].capabilities[j].description || 'N/A';
+        createTags(node.querySelector('.custom-tags'), sections[i].capabilities[j].customTags || [], 'custom', 'Custom');
+        createTags(node.querySelector('.attack-tags'), sections[i].capabilities[j].attackTags || [], 'attack', 'ATTACK');
+        createTags(node.querySelector('.d3fend-tags'), sections[i].capabilities[j].d3fendTags || [], 'd3fend', 'D3FEND');
+        node.querySelector('.details-text').textContent = sections[i].capabilities[j].details || 'N/A';
+        node.querySelector('.evidence-text').textContent = sections[i].capabilities[j].evidence || 'N/A';
+        makeList(node.querySelector('.techniques-list'), sections[i].capabilities[j].techniques || [], false);
+        makeList(node.querySelector('.references-list'), sections[i].capabilities[j].references || [], true);
+        (function (capId, cardNode) { cardNode.querySelector('.btn-edit').addEventListener('click', function () { openModal(capId); }); cardNode.querySelector('.btn-toggle').addEventListener('click', function () { var details = cardNode.querySelector('.details'); var hidden = details.classList.toggle('hidden'); cardNode.querySelector('.btn-toggle').textContent = hidden ? 'Details' : 'Hide'; }); }(sections[i].capabilities[j].id, node));
+        grid.appendChild(node);
+      }
+      sectionEl.appendChild(grid); els.matrixRoot.appendChild(sectionEl);
+    }
+  }
+  function renderCatalogOptions(type) {
+    var searchValue = (type === 'attack' ? els.attackCatalogSearch.value : type === 'd3fend' ? els.d3CatalogSearch.value : els.customCatalogSearch.value).trim().toLowerCase();
+    var container = type === 'attack' ? els.attackCatalogOptions : type === 'd3fend' ? els.d3CatalogOptions : els.customCatalogOptions;
+    var list = state.catalogs[type] || [];
+    var selected = state.currentSelection[type] || [];
+    var html = '', i, option, isChecked;
+    for (i = 0; i < list.length; i += 1) {
+      option = list[i];
+      if (searchValue && String(option.id + ' ' + option.label + ' ' + option.group).toLowerCase().indexOf(searchValue) === -1) { continue; }
+      isChecked = selected.indexOf(option.id) !== -1 ? ' checked' : '';
+      html += '<label class="option-row"><input type="checkbox" data-tag-type="' + type + '" data-tag-id="' + esc(option.id) + '"' + isChecked + '><span><span class="option-id">' + esc(option.id) + '</span> - ' + esc(option.label) + '<br><span class="option-meta">' + esc(option.group) + '</span></span></label>';
+    }
+    container.innerHTML = html || '<div class="subtle">No catalog entries match the search.</div>';
+    Array.prototype.forEach.call(container.querySelectorAll('input[type="checkbox"]'), function (box) { box.addEventListener('change', onCatalogCheckboxChange); });
+  }
+  function renderSelectedChips(type) {
+    var box = type === 'attack' ? els.attackSelectedChips : type === 'd3fend' ? els.d3SelectedChips : els.customSelectedChips;
+    var selected = state.currentSelection[type] || [];
+    var source = state.catalogs[type] || [];
+    var map = {}, i, html = '', id, found;
+    for (i = 0; i < source.length; i += 1) { map[source[i].id] = source[i]; }
+    for (i = 0; i < selected.length; i += 1) {
+      id = selected[i];
+      found = map[id] || { id: id, label: id, group: 'Manual' };
+      html += '<span class="tag ' + (type === 'custom' ? 'custom' : type) + '">' + esc(found.id) + (found.label && found.label !== found.id ? ' - ' + esc(found.label) : '') + ' <button type="button" class="btn ghost" data-remove-tag-type="' + type + '" data-remove-tag-id="' + esc(found.id) + '">x</button></span>';
+    }
+    box.innerHTML = html || '<span class="subtle">No tags selected.</span>';
+    Array.prototype.forEach.call(box.querySelectorAll('button[data-remove-tag-id]'), function (btn) { btn.addEventListener('click', function () { removeSelectedTag(btn.getAttribute('data-remove-tag-type'), btn.getAttribute('data-remove-tag-id')); }); });
+  }
+  function syncAllTagPickers() { renderCatalogOptions('attack'); renderCatalogOptions('d3fend'); renderCatalogOptions('custom'); renderSelectedChips('attack'); renderSelectedChips('d3fend'); renderSelectedChips('custom'); }
+  function addCatalogItemsFromManual(type, text) {
+    var arr = normalizeTextArray(text), additions = [], i, raw, m;
+    for (i = 0; i < arr.length; i += 1) {
+      raw = arr[i];
+      if (type === 'attack') { m = raw.match(/^(TA\d{4}|T\d{4}(?:\.\d{3})?)\s*-?\s*(.*)$/i); }
+      else if (type === 'd3fend') { m = raw.match(/^(D3-[A-Z0-9]+)\s*-?\s*(.*)$/i); }
+      else { m = [null, raw, raw]; }
+      additions.push({ id: (m && m[1] ? m[1] : raw).toUpperCase(), label: m && m[2] ? m[2].trim() || (m[1] ? m[1].toUpperCase() : raw) : (m[1] ? m[1].toUpperCase() : raw), group: 'Manual' });
+      if (state.currentSelection[type].indexOf((m && m[1] ? m[1] : raw).toUpperCase()) === -1) { state.currentSelection[type].push((m && m[1] ? m[1] : raw).toUpperCase()); }
+    }
+    state.catalogs[type] = normalizeCatalogItems(state.catalogs[type].concat(additions), 'Manual');
+    CatalogStorage.save(state.catalogs);
+  }
+  function onCatalogCheckboxChange(event) {
+    var type = event.target.getAttribute('data-tag-type');
+    var id = event.target.getAttribute('data-tag-id');
+    if (event.target.checked) { if (state.currentSelection[type].indexOf(id) === -1) { state.currentSelection[type].push(id); } }
+    else { state.currentSelection[type] = state.currentSelection[type].filter(function (item) { return item !== id; }); }
+    syncAllTagPickers();
+  }
+  function removeSelectedTag(type, id) { state.currentSelection[type] = state.currentSelection[type].filter(function (item) { return item !== id; }); syncAllTagPickers(); }
+  function openModal(capabilityId) {
+    var editing = capabilityId ? state.dataset.capabilities.find(function (cap) { return cap.id === capabilityId; }) : null;
+    els.modalTitle.textContent = editing ? 'Edit Capability' : 'Add Capability';
+    els.capabilityId.value = editing ? editing.id : '';
+    els.capCategory.value = editing ? editing.categoryId : state.dataset.categories[0].id;
+    els.capName.value = editing ? editing.name : '';
+    els.capImportance.value = editing ? editing.importance : 3;
+    els.capMaturity.value = editing ? editing.implementedMaturity : 1;
+    els.capDescription.value = editing ? editing.description : '';
+    els.capDetails.value = editing ? editing.details : '';
+    els.capTechniques.value = editing ? (editing.techniques || []).join('\n') : '';
+    els.capReferences.value = editing ? (editing.references || []).join('\n') : '';
+    els.capOwner.value = editing ? (editing.owner || '') : '';
+    els.capEvidence.value = editing ? (editing.evidence || '') : '';
+    state.currentSelection.attack = editing ? (editing.attackTags || []).slice() : [];
+    state.currentSelection.d3fend = editing ? (editing.d3fendTags || []).slice() : [];
+    state.currentSelection.custom = editing ? (editing.customTags || []).slice() : [];
+    els.capAttackManual.value = ''; els.capD3Manual.value = ''; els.capCustomManual.value = '';
+    els.btnDeleteCapability.classList.toggle('hidden', !editing);
+    els.btnDuplicateCapability.classList.toggle('hidden', !editing);
+    syncAllTagPickers();
+    els.modalBackdrop.classList.remove('hidden'); els.modalBackdrop.setAttribute('aria-hidden', 'false'); setTimeout(function () { els.capName.focus(); }, 50);
+  }
+  function closeModal() { els.modalBackdrop.classList.add('hidden'); els.modalBackdrop.setAttribute('aria-hidden', 'true'); els.capabilityForm.reset(); }
+  function saveCapabilityFromForm(event) {
+    var id, existing, record;
+    event.preventDefault();
+    addCatalogItemsFromManual('attack', els.capAttackManual.value);
+    addCatalogItemsFromManual('d3fend', els.capD3Manual.value);
+    addCatalogItemsFromManual('custom', els.capCustomManual.value);
+    id = els.capabilityId.value || uid('cap'); existing = state.dataset.capabilities.find(function (cap) { return cap.id === id; }); record = existing || { id: id, sortOrder: state.dataset.capabilities.length + 1 };
+    record.categoryId = els.capCategory.value; record.name = els.capName.value.trim(); record.importance = Math.max(1, Math.min(5, Number(els.capImportance.value || 3))); record.implementedMaturity = Math.max(1, Math.min(5, Number(els.capMaturity.value || 1))); record.description = els.capDescription.value.trim(); record.details = els.capDetails.value.trim(); record.techniques = normalizeTextArray(els.capTechniques.value); record.references = normalizeTextArray(els.capReferences.value); record.attackTags = normalizeCatalogItems(state.currentSelection.attack.map(function (idValue) { return { id: idValue, label: idValue, group: 'Selected' }; }), 'Selected').map(function (item) { return item.id; }); record.d3fendTags = normalizeCatalogItems(state.currentSelection.d3fend.map(function (idValue) { return { id: idValue, label: idValue, group: 'Selected' }; }), 'Selected').map(function (item) { return item.id; }); record.customTags = normalizeCatalogItems(state.currentSelection.custom.map(function (idValue) { return { id: idValue, label: idValue, group: 'Selected' }; }), 'Selected').map(function (item) { return item.id; }); record.owner = els.capOwner.value.trim(); record.evidence = els.capEvidence.value.trim();
+    if (!existing) { state.dataset.capabilities.push(record); }
+    saveDataset(); rebuildCustomCatalog(); renderMatrix(); closeModal();
+  }
+  function deleteCurrentCapability() { var id = els.capabilityId.value; if (!id) { return; } if (!confirm('Delete this capability?')) { return; } state.dataset.capabilities = state.dataset.capabilities.filter(function (cap) { return cap.id !== id; }); saveDataset(); rebuildCustomCatalog(); renderMatrix(); closeModal(); }
+  function duplicateCurrentCapability() { var id = els.capabilityId.value, cap, copy; if (!id) { return; } cap = state.dataset.capabilities.find(function (item) { return item.id === id; }); if (!cap) { return; } copy = clone(cap); copy.id = uid('cap'); copy.name = cap.name + ' Copy'; copy.sortOrder = state.dataset.capabilities.length + 1; state.dataset.capabilities.push(copy); saveDataset(); rebuildCustomCatalog(); renderMatrix(); openModal(copy.id); }
+  function exportJson() { var blob = new Blob([JSON.stringify(state.dataset, null, 2)], { type: 'application/json' }); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = (slugify(state.dataset.metadata.title || 'soc-capability-matrix') || 'soc-capability-matrix') + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); }
+  function importDataset(file) { var reader; if (!file) { return; } reader = new FileReader(); reader.onload = function () { try { var parsed = JSON.parse(reader.result); state.dataset = normalizeImportedDataset(parsed); saveDataset(); rebuildCustomCatalog(); renderMatrix(); alert('Dataset imported successfully.'); } catch (error) { console.error(error); alert('Import failed: ' + error.message); } }; reader.readAsText(file, 'utf-8'); }
+  function importCatalog(file) { var reader; if (!file) { return; } reader = new FileReader(); reader.onload = function () { try { var parsed = JSON.parse(reader.result); state.catalogs = mergeCatalogs(state.catalogs, parsed); CatalogStorage.save(state.catalogs); syncAllTagPickers(); alert('Catalog imported successfully.'); } catch (error) { console.error(error); alert('Catalog import failed: ' + error.message); } }; reader.readAsText(file, 'utf-8'); }
+  function exportCatalog() { var blob = new Blob([JSON.stringify(state.catalogs, null, 2)], { type: 'application/json' }); var url = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = url; a.download = 'soc-capability-tag-catalog.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); }
+  function syncFiltersFromUi() { state.filters.search = els.searchInput.value; state.filters.category = els.categoryFilter.value; state.filters.maturity = els.maturityFilter.value; state.filters.tagType = els.tagTypeFilter.value; state.filters.tagText = els.tagFilter.value; state.filters.hideUnimplemented = els.hideUnimplemented.checked; renderMatrix(); }
+  function bindEvents() {
+    els.btnAdd.addEventListener('click', function () { openModal(); });
+    els.btnImport.addEventListener('click', function () { els.fileInput.click(); });
+    els.fileInput.addEventListener('change', function () { importDataset(els.fileInput.files[0]); els.fileInput.value = ''; });
+    els.btnExport.addEventListener('click', exportJson);
+    els.btnImportCatalog.addEventListener('click', function () { els.catalogFileInput.click(); });
+    els.catalogFileInput.addEventListener('change', function () { importCatalog(els.catalogFileInput.files[0]); els.catalogFileInput.value = ''; });
+    els.btnExportCatalog.addEventListener('click', exportCatalog);
+    els.btnRebuildCatalog.addEventListener('click', function () { rebuildCustomCatalog(); syncAllTagPickers(); alert('Custom catalog rebuilt from tags used by capabilities.'); });
+    els.btnPdf.addEventListener('click', function () { MatrixPdf.exportPrintable(state.dataset, getFilteredSections(), [{ label: 'Search', value: state.filters.search }, { label: 'Category', value: state.filters.category ? ((state.dataset.categories.find(function (c) { return c.id === state.filters.category; }) || {}).name || state.filters.category) : '' }, { label: 'Maturity', value: state.filters.maturity ? getMaturityLabel(state.filters.maturity) : '' }, { label: 'Tag type', value: state.filters.tagType }, { label: 'Tag contains', value: state.filters.tagText }, { label: 'Hide unimplemented', value: state.filters.hideUnimplemented ? 'Yes' : '' }]); });
+    els.btnReset.addEventListener('click', function () { if (!confirm('Reset local changes and restore the embedded starter dataset and starter catalogs?')) { return; } DatasetStorage.clear(); CatalogStorage.clear(); loadState(); syncAllTagPickers(); renderMatrix(); });
+    els.btnExpand.addEventListener('click', function () { document.querySelectorAll('.details').forEach(function (el) { el.classList.remove('hidden'); }); document.querySelectorAll('.btn-toggle').forEach(function (btn) { btn.textContent = 'Hide'; }); });
+    els.btnCollapse.addEventListener('click', function () { document.querySelectorAll('.details').forEach(function (el) { el.classList.add('hidden'); }); document.querySelectorAll('.btn-toggle').forEach(function (btn) { btn.textContent = 'Details'; }); });
+    els.btnSortMaturity.addEventListener('click', function () { state.sortMode = 'maturity'; renderMatrix(); });
+    els.btnSortName.addEventListener('click', function () { state.sortMode = state.sortMode === 'name' ? 'default' : 'name'; renderMatrix(); });
+    ['searchInput','categoryFilter','maturityFilter','tagTypeFilter','tagFilter'].forEach(function (id) { byId(id).addEventListener('input', syncFiltersFromUi); byId(id).addEventListener('change', syncFiltersFromUi); });
+    els.hideUnimplemented.addEventListener('change', syncFiltersFromUi);
+    els.capabilityForm.addEventListener('submit', saveCapabilityFromForm);
+    els.btnCancelModal.addEventListener('click', closeModal); els.btnCloseModal.addEventListener('click', closeModal);
+    els.modalBackdrop.addEventListener('click', function (event) { if (event.target === els.modalBackdrop) { closeModal(); } });
+    els.btnDeleteCapability.addEventListener('click', deleteCurrentCapability); els.btnDuplicateCapability.addEventListener('click', duplicateCurrentCapability);
+    document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !els.modalBackdrop.classList.contains('hidden')) { closeModal(); } });
+    els.attackCatalogSearch.addEventListener('input', function () { renderCatalogOptions('attack'); });
+    els.d3CatalogSearch.addEventListener('input', function () { renderCatalogOptions('d3fend'); });
+    els.customCatalogSearch.addEventListener('input', function () { renderCatalogOptions('custom'); });
+    els.btnClearAttack.addEventListener('click', function () { state.currentSelection.attack = []; syncAllTagPickers(); });
+    els.btnClearD3.addEventListener('click', function () { state.currentSelection.d3fend = []; syncAllTagPickers(); });
+    els.btnClearCustom.addEventListener('click', function () { state.currentSelection.custom = []; syncAllTagPickers(); });
+  }
+  function collectEls() { ['btnAdd','btnImport','btnExport','btnPdf','btnReset','btnExpand','btnCollapse','btnSortMaturity','btnSortName','fileInput','catalogFileInput','btnImportCatalog','btnExportCatalog','btnRebuildCatalog','searchInput','categoryFilter','maturityFilter','tagTypeFilter','tagFilter','hideUnimplemented','summaryPanel','legendList','datasetTitle','datasetMeta','matrixRoot','modalBackdrop','capabilityForm','modalTitle','capabilityId','capCategory','capName','capImportance','capMaturity','capDescription','capDetails','capTechniques','capReferences','capOwner','capEvidence','btnDeleteCapability','btnDuplicateCapability','btnCancelModal','btnCloseModal','attackCatalogSearch','attackCatalogOptions','attackSelectedChips','capAttackManual','d3CatalogSearch','d3CatalogOptions','d3SelectedChips','capD3Manual','customCatalogSearch','customCatalogOptions','customSelectedChips','capCustomManual','btnClearAttack','btnClearD3','btnClearCustom'].forEach(function (id) { els[id] = byId(id); }); }
+  function init() { collectEls(); loadState(); bindEvents(); syncAllTagPickers(); renderMatrix(); }
+  document.addEventListener('DOMContentLoaded', init);
+})();
+  </script>
+</body>
+</html>
