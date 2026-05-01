@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Packet Viewer v3.0.1 Corrected</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header>
+  <div>
+    <h1>Packet Viewer v3.0.1 <span>Corrected Architecture Build</span></h1>
+    <p>Worker parser, virtualized packet table, lazy dissection, plugin registry, detection foundation, TLS/JA3/cert metadata, HTTP and HTTP/2 views.</p>
+  </div>
+  <div id="status" class="pill">Idle</div>
+</header>
+<main>
+  <section class="toolbar panel">
+    <label>Capture <input id="file" type="file" accept=".pcap,.pcapng"></label>
+    <label>SSLKEYLOGFILE <input id="keylog" type="file" accept=".log,.txt"></label>
+    <button id="loadSample">Load Sample</button>
+    <button id="runValidation">Run Validation</button>
+    <label class="grow">Filter <input id="filter" placeholder="protocol == TLS or tls.ja3 contains 771 or http.host contains example"></label>
+    <button id="applyFilter">Apply</button>
+    <button id="exportJson" disabled>Export JSON</button>
+    <button id="clear">Clear</button>
+  </section>
+
+  <section id="summary" class="panel summary">No capture loaded.</section>
+  <section id="warnings" class="panel warnings empty">No warnings.</section>
+  <section id="filterStatus" class="panel filterstatus empty">Filter ready.</section>
+
+  <nav class="tabs panel">
+    <button data-tab="packets" class="active">Packets</button>
+    <button data-tab="details">Lazy Details</button>
+    <button data-tab="plugins">Plugins</button>
+    <button data-tab="detections">Detection Rules</button>
+    <button data-tab="tls">TLS / JA3 / Certs</button>
+    <button data-tab="http">HTTP / H2 / H3</button>
+    <button data-tab="expert">Expert</button>
+    <button data-tab="stats">Stats</button>
+    <button data-tab="validation">Validation</button>
+  </nav>
+
+  <section id="packets" class="tab active">
+    <div class="panel">
+      <div class="title">Virtualized Packet Table <span id="visibleRange"></span></div>
+      <div id="virtualScroller" class="virtual-scroller">
+        <div id="virtualSpacer"></div>
+        <table id="packetTable">
+          <thead><tr><th>No.</th><th>Time</th><th>Source</th><th>Destination</th><th>Protocol</th><th>Length</th><th>Info</th></tr></thead>
+          <tbody id="packetRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="details" class="tab">
+    <div class="split">
+      <div class="panel"><div class="title">Lazy Packet Dissection</div><div id="detailsPane" class="pane empty">Select a packet.</div></div>
+      <div class="panel"><div class="title">Hex / ASCII</div><pre id="hexPane" class="pane hex empty">Select a packet.</pre></div>
+    </div>
+  </section>
+
+  <section id="plugins" class="tab panel"><div class="title">Plugin-style Dissector Registry</div><div id="pluginPane" class="pane"></div></section>
+  <section id="detections" class="tab panel"><div class="title">Detection-rule Engine Foundation</div><div id="detectionPane" class="pane"></div></section>
+  <section id="tls" class="tab panel"><div class="title">TLS Decryption / JA3 / Certificate Metadata</div><div id="tlsPane" class="pane empty">No TLS data.</div></section>
+  <section id="http" class="tab panel"><div class="title">HTTP Transactions</div><div id="httpPane" class="pane empty">No HTTP transactions.</div><div class="title">HTTP/2 Details</div><div id="http2Pane" class="pane empty">No HTTP/2 data.</div></section>
+  <section id="expert" class="tab panel"><div class="title">Expert Findings</div><div id="expertPane" class="pane empty">No expert findings.</div></section>
+  <section id="stats" class="tab panel"><div class="title">Statistics</div><div id="statsPane" class="pane empty">No stats.</div></section>
+  <section id="validation" class="tab panel"><div class="title">Validation</div><div id="validationPane" class="pane empty">Click Run Validation.</div></section>
+</main>
+<footer>v3.0.1 corrected UI/JS pane alignment. TLS decryption, full ASN.1, HPACK/QPACK, and encrypted HTTP/2 inspection remain scaffolded capability states.</footer>
+<script src="app.js"></script>
+</body>
+</html>
