@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidence & Escalation Packager</title>
+    <style>
+        :root {
+            --primary: #1a2a3a;
+            --secondary: #455a64;
+            --accent: #0078d4;
+            --danger: #d32f2f;
+            --success: #2e7d32;
+            --bg: #f5f7f9;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .wizard-card {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary);
+            color: #fff;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content {
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        .step { display: none; }
+        .step.active { display: block; }
+
+        h2 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        .field-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; color: var(--secondary); }
+        
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        .import-banner {
+            background: #eef2f7;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            border: 1px solid #d1d9e4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .tlp-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tlp-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            opacity: 0.4;
+            transition: all 0.2s;
+        }
+        .tlp-btn.active { opacity: 1; border-color: #000; transform: translateY(-2px); }
+        .tlp-RED { background: #ff4d4d; color: #fff; }
+        .tlp-AMBER { background: #ffaf40; color: #000; }
+        .tlp-GREEN { background: #32ff7e; color: #000; }
+        .tlp-CLEAR { background: #fff; color: #333; border: 1px solid #ccc; }
+
+        .evidence-card {
+            background: #fff;
+            border: 1px solid #ddd;
+            margin-top: 15px;
+            border-left: 6px solid var(--accent);
+            padding: 20px;
+            position: relative;
+        }
+        .evidence-header { display: flex; justify-content: space-between; align-items: center; }
+        .hash-display {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            background: #f0f0f0;
+            padding: 5px 10px;
+            display: block;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 10px; }
+        
+        .btn-remove { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+
+        .footer {
+            background: #f1f3f5;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        button {
+            padding: 12px 24px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        .btn-next { background: var(--accent); color: #fff; }
+        .btn-prev { background: #90a4ae; color: #fff; }
+        .btn-load { background: var(--secondary); color: #fff; }
+        .btn-package { background: var(--success); color: #fff; }
+
+        @media print {
+            .no-print, button, .import-banner, .tlp-btn:not(.active) { display: none !important; }
+            .step { display: block !important; border: none; box-shadow: none; }
+            .wizard-card { box-shadow: none; border: none; width: 100%; }
+            body { background: white; padding: 0; }
+            .evidence-card { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wizard-card">
+    <div class="header">
+        <div style="font-size: 1.2rem; font-weight: bold;">EVIDENCE ESCALATION UTILITY</div>
+        <div id="session-time" style="font-size: 0.8rem; opacity: 0.8;"></div>
+    </div>
+
+    <div class="content">
+        <div class="step active" id="step1">
+            <div class="import-banner no-print">
+                <span><strong>Existing Project:</strong> Resume an investigation via JSON import</span>
+                <button class="btn-load" onclick="document.getElementById('import_file').click()">Import Project</button>
+                <input type="file" id="import_file" style="display:none" onchange="importJSON(event)">
+            </div>
+
+            <h2>Step 1: Case Identification</h2>
+            <div class="field-group">
+                <label>Case / Reference Number</label>
+                <input type="text" id="case_num" placeholder="e.g. 2026-ISAC-NY-440">
+            </div>
+            <div class="field-group">
+                <label>Stakeholder List & Contact Data</label>
+                <textarea id="stakeholders" rows="2" placeholder="e.g. Lead: Analyst Smith; Legal: J. Doe..."></textarea>
+            </div>
+            <div class="field-group">
+                <label>Classification (TLP)</label>
+                <div class="tlp-container">
+                    <div class="tlp-btn tlp-RED" onclick="setTLP('RED')">TLP:RED</div>
+                    <div class="tlp-btn tlp-AMBER" onclick="setTLP('AMBER')">TLP:AMBER</div>
+                    <div class="tlp-btn tlp-GREEN" onclick="setTLP('GREEN')">TLP:GREEN</div>
+                    <div class="tlp-btn tlp-CLEAR active" onclick="setTLP('CLEAR')">TLP:CLEAR</div>
+                </div>
+            </div>
+            <div class="field-group">
+                <label>Organizational Legal Agreements</label>
+                <input type="text" id="legal_ref" placeholder="e.g. NDA-2024-ISAC-44">
+            </div>
+        </div>
+
+        <div class="step" id="step2">
+            <h2>Step 2: Narrative & Objectives</h2>
+            <div class="field-group">
+                <label>Case Description</label>
+                <textarea id="case_desc" rows="6" placeholder="Document incident details and forensic context..."></textarea>
+            </div>
+            <div class="field-group">
+                <label>Requested Activities</label>
+                <textarea id="requested_actions" rows="3" placeholder="e.g. Traffic analysis, decryption, attribution..."></textarea>
+            </div>
+        </div>
+
+        <div class="step" id="step3">
+            <h2>Step 3: Evidence Metadata</h2>
+            <div class="no-print" style="background: #eef2f7; padding: 20px; border-radius: 4px; border: 1px dashed var(--accent); margin-bottom: 20px;">
+                <label>Attach Evidence Files</label>
+                <input type="file" id="file_picker" multiple>
+            </div>
+            <div id="evidence_registry"></div>
+        </div>
+
+        <div class="step" id="step4">
+            <h2>Step 4: Finalize & Export</h2>
+            <div id="summary_view" style="background: #fdfdfd; border: 1px solid #ddd; padding: 20px;"></div>
+            
+            <div class="no-print" style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn-load" style="background: #2c3e50;" onclick="exportJSON()">Export JSON Session</button>
+                <button class="btn-load" style="background:#444" onclick="window.print()">Print PDF Summary</button>
+                <button class="btn-package" onclick="generateTarPackage()">Download .TAR Package</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer no-print">
+        <button class="btn-prev" id="btnPrev" onclick="moveStep(-1)" disabled>Previous</button>
+        <button class="btn-next" id="btnNext" onclick="moveStep(1)">Next</button>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+    let selectedTLP = 'CLEAR';
+    let evidence = [];
+
+    document.getElementById('session-time').innerText = "Export Date: " + new Date().toLocaleDateString();
+
+    function moveStep(dir) {
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        currentStep += dir;
+        document.getElementById(`step${currentStep}`).classList.add('active');
+        document.getElementById('btnPrev').disabled = currentStep === 1;
+        document.getElementById('btnNext').innerText = currentStep === 4 ? "Review" : "Next";
+        document.getElementById('btnNext').style.visibility = currentStep === 4 ? "hidden" : "visible";
+        if (currentStep === 4) renderSummary();
+    }
+
+    function setTLP(val) {
+        selectedTLP = val;
+        document.querySelectorAll('.tlp-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.classList.contains(`tlp-${val}`)) btn.classList.add('active');
+        });
+    }
+
+    document.getElementById('file_picker').addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        for (const f of files) {
+            const hash = await computeHash(f);
+            const tzDefault = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            evidence.push({
+                id: crypto.randomUUID(),
+                name: f.name,
+                size: f.size,
+                type: f.type,
+                hash: hash,
+                tz: tzDefault,
+                drift: "0s",
+                description: "",
+                content: await f.arrayBuffer(),
+                base64: await toBase64(f)
+            });
+        }
+        renderEvidence();
+    });
+
+    async function computeHash(file) {
+        const buffer = await file.arrayBuffer();
+        const hashBuf = await crypto.subtle.digest('SHA-256', buffer);
+        return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    const toBase64 = f => new Promise(res => {
+        const reader = new FileReader();
+        reader.readAsDataURL(f);
+        reader.onload = () => res(reader.result);
+    });
+
+    function removeEvidence(id) {
+        evidence = evidence.filter(e => e.id !== id);
+        renderEvidence();
+    }
+
+    function renderEvidence() {
+        const registry = document.getElementById('evidence_registry');
+        registry.innerHTML = '';
+        evidence.forEach((e, idx) => {
+            const card = document.createElement('div');
+            card.className = 'evidence-card';
+            card.innerHTML = `
+                <div class="evidence-header">
+                    <strong>${e.name}</strong>
+                    <button class="btn-remove no-print" onclick="removeEvidence('${e.id}')">Remove</button>
+                </div>
+                <code class="hash-display">SHA-256: ${e.hash}</code>
+                <div class="meta-grid">
+                    <div><label>Time Zone</label><input type="text" value="${e.tz}" onchange="evidence[${idx}].tz = this.value"></div>
+                    <div><label>Drift</label><input type="text" value="${e.drift}" onchange="evidence[${idx}].drift = this.value"></div>
+                    <div><label>Notes</label><input type="text" value="${e.description}" onchange="evidence[${idx}].description = this.value"></div>
+                </div>`;
+            registry.appendChild(card);
+        });
+    }
+
+    async function importJSON(e) {
+        const file = e.target.files;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                document.getElementById('case_num').value = data.case_num || "";
+                document.getElementById('stakeholders').value = data.stakeholders || "";
+                setTLP(data.tlp || "CLEAR");
+                document.getElementById('legal_ref').value = data.legal_ref || "";
+                document.getElementById('case_desc').value = data.case_desc || "";
+                document.getElementById('requested_actions').value = data.requested_actions || "";
+                for (let item of data.evidence) {
+                    if (item.base64) {
+                        const bString = atob(item.base64.split(','));
+                        const bytes = new Uint8Array(bString.length);
+                        for (let i = 0; i < bString.length; i++) bytes[i] = bString.charCodeAt(i);
+                        item.content = bytes.buffer;
+                    }
+                }
+                evidence = data.evidence || [];
+                renderEvidence();
+                alert("Project Imported.");
+            } catch (err) { alert("Import Error."); }
+        };
+        reader.readAsText(file[0]);
+    }
+
+    function exportJSON() {
+        const data = {
+            case_num: document.getElementById('case_num').value,
+            stakeholders: document.getElementById('stakeholders').value,
+            tlp: selectedTLP,
+            legal_ref: document.getElementById('legal_ref').value,
+            case_desc: document.getElementById('case_desc').value,
+            requested_actions: document.getElementById('requested_actions').value,
+            evidence: evidence.map(e => ({...e, content: null})) 
+        };
+        triggerDownload(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}), `PROJECT_${data.case_num}.json`);
+    }
+
+    // --- TAR Logic with Full Case Data Markdown ---
+    function generateTarPackage() {
+        const encoder = new TextEncoder();
+        let tarBlocks = [];
+
+        function addFile(path, content) {
+            let data = typeof content === 'string' ? encoder.encode(content) : new Uint8Array(content);
+            let header = new Uint8Array(512);
+            for (let i = 0; i < path.length; i++) header[i] = path.charCodeAt(i);
+            header.set(encoder.encode("0000644\0"), 100);
+            header.set(encoder.encode(data.length.toString(8).padStart(11, '0') + " "), 124);
+            header.set(encoder.encode("        "), 148);
+            let chk = 0; header.forEach(b => chk += b);
+            header.set(encoder.encode(chk.toString(8).padStart(6, '0') + "\0 "), 148);
+            tarBlocks.push(header, data);
+            let padding = (512 - (data.length % 512)) % 512;
+            if (padding > 0) tarBlocks.push(new Uint8Array(padding));
+        }
+
+        // 1. Generate full Case Data Markdown string
+        const cNum = document.getElementById('case_num').value;
+        const cStake = document.getElementById('stakeholders').value;
+        const cLegal = document.getElementById('legal_ref').value;
+        const cDesc = document.getElementById('case_desc').value;
+        const cReq = document.getElementById('requested_actions').value;
+
+        let markdown = `# CASE FORENSIC SUMMARY: ${cNum || 'N/A'}\n`;
+        markdown += `Generated: ${new Date().toLocaleString()}\n\n`;
+        markdown += `## 1. Administrative Details\n- **TLP Classification:** TLP:${selectedTLP}\n`;
+        markdown += `- **Stakeholders:** ${cStake || 'None specified'}\n`;
+        markdown += `- **Legal Authority/MOU:** ${cLegal || 'None specified'}\n\n`;
+        markdown += `## 2. Investigative Context\n### Narrative Description\n${cDesc || 'No description provided.'}\n\n`;
+        markdown += `### Requested Activities\n${cReq || 'No activities specified.'}\n\n`;
+        markdown += `## 3. Evidence Manifest & Metadata\n`;
+
+        let manifestTxt = `--- EVIDENCE MANIFEST ---\nCase: ${cNum}\n\n`;
+
+        evidence.forEach(e => {
+            addFile(`evidence/${e.name}`, e.content);
+            const entry = `File: ${e.name}\n- SHA256: ${e.hash}\n- Time Zone: ${e.tz}\n- Drift: ${e.drift}\n- Analyst Notes: ${e.description}\n\n`;
+            markdown += `### ${e.name}\n- **SHA-256:** \`${e.hash}\`\n- **Time Zone:** ${e.tz}\n- **Clock Drift:** ${e.drift}\n- **Notes:** ${e.description}\n\n`;
+            manifestTxt += entry;
+        });
+
+        // Add documenting files to archive
+        addFile("case_summary.md", markdown);
+        addFile("manifest.txt", manifestTxt);
+        
+        tarBlocks.push(new Uint8Array(1024));
+        triggerDownload(new Blob(tarBlocks, {type: 'application/x-tar'}), `CASE_${cNum || 'PACKAGE'}.tar`);
+    }
+
+    function triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function renderSummary() {
+        const view = document.getElementById('summary_view');
+        view.innerHTML = `<h3>Ready for Export</h3><p><strong>Case:</strong> ${document.getElementById('case_num').value}</p><p><strong>TLP:</strong> ${selectedTLP}</p><hr><h4>Evidence Count: ${evidence.length}</h4>`;
+    }
+</script>
+</body>
+</html>
