@@ -1,6 +1,6 @@
-# Vanilla Zettelkasten
+# Zettelkasten
 
-A minimalist, privacy-first, single-file Zettelkasten note-taking tool. Built entirely with vanilla HTML, CSS, and JavaScript. 
+A minimalist, privacy-first, single-file Zettelkasten note-taking tool. Built entirely with HTML, CSS, and JavaScript. 
 
 There are no databases to set up, no servers to run, and no dependencies to install. Your notes live entirely within your browser's local storage, ensuring complete privacy and offline availability.
 
@@ -60,6 +60,6 @@ Because this tool uses your browser's `localStorage`, **your notes will be lost 
 
 ## Technical Details
 
-* **Language:** Vanilla HTML5, CSS3, ES6 JavaScript.
+* **Language:** HTML5, CSS3, ES6 JavaScript.
 * **Dependencies:** None. No React, Vue, jQuery, or external Markdown parsers. The parsing is handled by lightweight, custom regular expressions optimized for this specific use case.
 * **Storage Limit:** Dictated by your browser's `localStorage` quota (typically around 5MB, which equates to roughly 1 to 5 million characters of plain text).
