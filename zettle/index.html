@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanilla Zettelkasten</title>
+    <style>
+        :root {
+            --bg: #fdfdfd;
+            --text: #333;
+            --border: #ccc;
+            --accent: #2b6cb0;
+            --sidebar-bg: #f4f5f7;
+            --hover-bg: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            color: var(--text);
+            background: var(--bg);
+        }
+
+        /* Sidebar */
+        #sidebar {
+            width: 320px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .controls {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 5px;
+        }
+
+        #note-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .note-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+
+        .note-item:hover { background: var(--hover-bg); }
+        .note-item.active { background: white; border-left: 4px solid var(--accent); }
+        .note-item .id-label { font-family: monospace; font-size: 0.8em; color: #718096; display: block; margin-bottom: 3px;}
+        .note-item .title-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Main Area */
+        #main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        #toolbar {
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+
+        .editor-container {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        #editor-pane { border-right: 1px solid var(--border); }
+        
+        #note-title {
+            padding: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: none;
+            border-bottom: 1px solid var(--border);
+            outline: none;
+            font-family: inherit;
+        }
+
+        #note-body {
+            flex-grow: 1;
+            padding: 20px;
+            border: none;
+            outline: none;
+            resize: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        #preview { 
+            padding: 20px 30px; 
+            overflow-y: auto; 
+            line-height: 1.6;
+        }
+
+        /* Markdown Styles */
+        #preview h1, #preview h2 { border-bottom: 1px solid #edf2f7; padding-bottom: 5px; }
+        .wikilink { color: var(--accent); cursor: pointer; text-decoration: none; font-weight: 500; }
+        .wikilink:hover { text-decoration: underline; }
+        .backlinks { margin-top: 40px; padding-top: 20px; border-top: 2px dashed var(--border); background: #f8fafc; padding: 20px; border-radius: 8px;}
+
+        /* Buttons & Inputs */
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+        button:hover { background: #edf2f7; }
+        button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+        button.primary:hover { background: #2c5282; }
+        button.danger { color: #e53e3e; border-color: #feb2b2; }
+        button.danger:hover { background: #fff5f5; }
+        
+        input[type="text"] { 
+            padding: 8px; 
+            border: 1px solid var(--border); 
+            border-radius: 4px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <div class="controls">
+        <button class="primary" onclick="createNewNote()" style="width: 100%;">+ New Zettel</button>
+        <input type="text" id="search" placeholder="Search title or ID..." oninput="renderNoteList()">
+        <div class="button-group">
+            <button onclick="exportData()" style="flex: 1;">Export All JSON</button>
+            <button onclick="document.getElementById('import-file').click()" style="flex: 1;">Import</button>
+        </div>
+        <input type="file" id="import-file" accept=".json,.md" style="display:none" onchange="importData(event)">
+    </div>
+    <ul id="note-list"></ul>
+</div>
+
+<div id="main">
+    <div id="toolbar">
+        <span id="current-id-display" style="font-family: monospace; color: #718096;">ID: ---</span>
+        <div class="button-group">
+            <button onclick="exportCurrentMD()">Export .md</button>
+            <button class="danger" onclick="deleteCurrentNote()">Delete</button>
+        </div>
+    </div>
+    <div class="editor-container">
+        <div class="pane" id="editor-pane">
+            <input type="text" id="note-title" placeholder="Note Title...">
+            <textarea id="note-body" placeholder="Write your markdown here... Use [[ID]] to link to other notes."></textarea>
+        </div>
+        <div class="pane" id="preview">
+            </div>
+    </div>
+</div>
+
+<script>
+    // --- APP STATE ---
+    let notes = JSON.parse(localStorage.getItem('zettel_notes_v2')) || {};
+    let currentNoteId = null;
+
+    // --- UTILITIES ---
+    const generateId = () => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const h = String(now.getHours()).padStart(2, '0');
+        const min = String(now.getMinutes()).padStart(2, '0');
+        const s = String(now.getSeconds()).padStart(2, '0');
+        return `${y}${m}${d}${h}${min}${s}`;
+    };
+
+    const saveToDisk = () => {
+        localStorage.setItem('zettel_notes_v2', JSON.stringify(notes));
+    };
+
+    const downloadFile = (content, filename, contentType) => {
+        const blob = new Blob([content], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    // --- MARKDOWN PARSER ---
+    function parseMarkdown(text) {
+        if (!text) return "";
+        let html = text
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // basic sanitize
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+            .replace(/`([^`]+)`/gim, '<code style="background:#edf2f7; padding:2px 4px; border-radius:3px;">$1</code>')
+            .replace(/\[\[(\d+)\]\]/gim, '<span class="wikilink" onclick="loadNote(\'$1\')">[[$1]]</span>')
+            .replace(/\n$/gim, '<br />');
+
+        return html.split('\n').map(line => {
+            if (line.match(/<(h1|h2|h3)/)) return line;
+            return line.trim() ? `<p style="margin-top:0;">${line}</p>` : '';
+        }).join('');
+    }
+
+    // --- CORE FUNCTIONS ---
+    function createNewNote() {
+        const id = generateId();
+        notes[id] = {
+            id: id,
+            title: "New Note",
+            content: "",
+            created: Date.now()
+        };
+        saveToDisk();
+        renderNoteList();
+        loadNote(id);
+    }
+
+    function loadNote(id) {
+        if (!notes[id]) {
+            alert("Note not found: " + id);
+            return;
+        }
+        currentNoteId = id;
+        const note = notes[id];
+        
+        document.getElementById('current-id-display').innerText = `ID: ${id}`;
+        document.getElementById('note-title').value = note.title;
+        document.getElementById('note-body').value = note.content;
+        
+        updatePreview();
+        renderNoteList();
+    }
+
+    function updatePreview() {
+        if (!currentNoteId) return;
+
+        const title = document.getElementById('note-title').value;
+        const body = document.getElementById('note-body').value;
+        
+        // Update state
+        notes[currentNoteId].title = title;
+        notes[currentNoteId].content = body;
+        saveToDisk();
+
+        // Render HTML
+        let html = `<h1>${title}</h1>` + parseMarkdown(body);
+        
+        // Find Backlinks
+        const backlinks = Object.values(notes).filter(n => 
+            n.content.includes(`[[${currentNoteId}]]`) && n.id !== currentNoteId
+        );
+
+        if (backlinks.length > 0) {
+            html += `<div class="backlinks"><h3>Linked Mentions</h3><ul style="padding-left: 20px; margin-bottom: 0;">`;
+            backlinks.forEach(bl => {
+                html += `<li style="margin-bottom: 5px;"><span class="wikilink" onclick="loadNote('${bl.id}')">${bl.title} (${bl.id})</span></li>`;
+            });
+            html += `</ul></div>`;
+        }
+
+        document.getElementById('preview').innerHTML = html;
+    }
+
+    function renderNoteList() {
+        const list = document.getElementById('note-list');
+        const searchTerm = document.getElementById('search').value.toLowerCase();
+        list.innerHTML = "";
+
+        const sortedKeys = Object.keys(notes).sort((a, b) => b - a);
+
+        sortedKeys.forEach(id => {
+            const note = notes[id];
+            if (note.title.toLowerCase().includes(searchTerm) || id.includes(searchTerm)) {
+                const li = document.createElement('li');
+                li.className = `note-item ${id === currentNoteId ? 'active' : ''}`;
+                li.innerHTML = `<span class="id-label">${id}</span> <div class="title-label">${note.title || 'Untitled'}</div>`;
+                li.onclick = () => loadNote(id);
+                list.appendChild(li);
+            }
+        });
+    }
+
+    function deleteCurrentNote() {
+        if (!currentNoteId) return;
+        if (confirm("Delete this note forever?")) {
+            delete notes[currentNoteId];
+            saveToDisk();
+            currentNoteId = null;
+            document.getElementById('current-id-display').innerText = `ID: ---`;
+            document.getElementById('note-title').value = "";
+            document.getElementById('note-body').value = "";
+            document.getElementById('preview').innerHTML = "";
+            
+            const remainingKeys = Object.keys(notes);
+            if (remainingKeys.length > 0) {
+                loadNote(remainingKeys.sort((a,b) => b-a));
+            } else {
+                renderNoteList();
+            }
+        }
+    }
+
+    // --- IMPORT/EXPORT ---
+    function exportData() {
+        const jsonString = JSON.stringify(notes, null, 2);
+        downloadFile(jsonString, "zettelkasten_backup.json", "application/json");
+    }
+
+    function exportCurrentMD() {
+        if (!currentNoteId) return;
+        const note = notes[currentNoteId];
+        
+        // Build Markdown string with YAML frontmatter
+        const mdContent = 
+`---
+id: ${note.id}
+title: ${note.title}
+date: ${new Date(note.created || Date.now()).toISOString()}
+---
+
+# ${note.title}
+
+${note.content}`;
+
+        const filename = `${note.id}-${note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
+        downloadFile(mdContent, filename, "text/markdown");
+    }
+
+    function importData(event) {
+        const file = event.target.files;
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            
+            // Handle Full JSON Backup Import
+            if (file[0].name.endsWith('.json')) {
+                try {
+                    const importedNotes = JSON.parse(content);
+                    notes = { ...notes, ...importedNotes };
+                    saveToDisk();
+                    renderNoteList();
+                    alert("JSON Import successful!");
+                } catch (err) {
+                    alert("Error parsing JSON file.");
+                }
+            } 
+            // Handle Individual Markdown File Import
+            else if (file.name.endsWith('.md')) {
+                let id = generateId(); // Default to new ID
+                let title = file.name.replace('.md', ''); // Default title to filename
+                let bodyContent = content;
+
+                // Try to extract ID from filename (e.g., "20231024120030-my_note.md")
+                const idMatch = file.name.match(/^(\d+)/);
+                if (idMatch) {
+                    id = idMatch;
+                }
+
+                // Try to strip frontmatter and extract title if it exists
+                if (content.startsWith('---')) {
+                    const parts = content.split('---');
+                    if (parts.length >= 3) {
+                        bodyContent = parts.slice(2).join('---').trim();
+                        // Try to find title in frontmatter
+                        const titleMatch = parts.match(/title:\s*(.*)/i);
+                        if (titleMatch) title = titleMatch.trim();
+                    }
+                }
+
+                // If no title found in frontmatter, try to find an H1
+                if (title === file.name.replace('.md', '')) {
+                    const h1Match = bodyContent.match(/^#\s+(.*)/m);
+                    if (h1Match) {
+                        title = h1Match.trim();
+                        bodyContent = bodyContent.replace(/^#\s+.*(\r?\n)*/m, ''); // remove H1 from body to prevent duplication
+                    }
+                }
+
+                // Save imported Markdown as a Zettel
+                notes[id] = {
+                    id: id,
+                    title: title,
+                    content: bodyContent.trim(),
+                    created: Date.now()
+                };
+                
+                saveToDisk();
+                renderNoteList();
+                loadNote(id);
+            }
+        };
+        
+        reader.readAsText(file[0]);
+        event.target.value = ''; // Reset input so same file can be imported again if needed
+    }
+
+    // --- EVENT LISTENERS ---
+    document.getElementById('note-title').addEventListener('input', updatePreview);
+    document.getElementById('note-body').addEventListener('input', updatePreview);
+
+    // --- INIT ---
+    if (Object.keys(notes).length > 0) {
+        renderNoteList();
+        loadNote(Object.keys(notes).sort((a,b) => b-a)); // Load newest
+    } else {
+        createNewNote();
+    }
+</script>
+
+</body>
+</html>
