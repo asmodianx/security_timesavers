@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bibliography Database Utility</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+        h1, h2, h3 { margin-top: 0; }
+        .panel {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid var(--border);
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+        select, input {
+            width: 100%; padding: 8px; border: 1px solid var(--border);
+            border-radius: 4px; box-sizing: border-box; font-family: inherit;
+        }
+        button {
+            background-color: var(--primary); color: white; border: none;
+            padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: var(--primary-hover); }
+        .btn-danger { background-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-outline { background-color: transparent; color: var(--primary); border: 1px solid var(--primary); }
+        .btn-outline:hover { background-color: var(--primary); color: white; }
+        
+        #dynamic-fields { padding: 15px; background: #f1f5f9; border-radius: 4px; margin-bottom: 15px; }
+        
+        .source-card {
+            border: 1px solid var(--border); padding: 15px; border-radius: 6px; margin-bottom: 15px;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .source-content { font-family: Georgia, serif; line-height: 1.5; }
+        .source-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        .top-bar { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
+        .file-controls { display: flex; gap: 10px; align-items: center; }
+        input[type="file"] { display: none; }
+        
+        @media (max-width: 768px) {
+            body { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar panel">
+        <h1>Citation Database</h1>
+        <div class="file-controls">
+            <button onclick="exportJSON()">Export JSON</button>
+            <button onclick="document.getElementById('file-import').click()" class="btn-outline">Import JSON</button>
+            <input type="file" id="file-import" accept=".json" onchange="importJSON(event)">
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>Add New Source</h2>
+        <form id="source-form">
+            <div class="form-group">
+                <label for="citation-style">Default View Style</label>
+                <select id="citation-style" onchange="renderList()">
+                    <option value="APA">APA (7th Ed)</option>
+                    <option value="MLA">MLA (9th Ed)</option>
+                    <option value="Harvard">Harvard</option>
+                    <option value="IEEE">IEEE</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="source-type">Source Type</label>
+                <select id="source-type" onchange="renderForm()">
+                    <option value="book">Book</option>
+                    <option value="journal">Journal Article</option>
+                    <option value="website">Website</option>
+                </select>
+            </div>
+
+            <div id="dynamic-fields"></div>
+
+            <button type="submit" style="width: 100%; padding: 10px;">Save Source to Database</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2>Saved Sources (<span id="source-count">0</span>)</h2>
+        <div id="source-list"></div>
+    </div>
+
+<script>
+    // Database state
+    let sources = JSON.parse(localStorage.getItem('citationDB')) || [];
+
+    // Field configurations mapped to source types
+    const fieldDefinitions = {
+        book: ['authorLast', 'authorFirst', 'title', 'year', 'publisher', 'city'],
+        journal: ['authorLast', 'authorFirst', 'title', 'journal', 'volume', 'issue', 'pages', 'year'],
+        website: ['authorLast', 'authorFirst', 'title', 'website', 'url', 'year', 'dateAccessed']
+    };
+
+    const fieldLabels = {
+        authorLast: 'Author Last Name', authorFirst: 'Author First Name', title: 'Title of Work',
+        year: 'Year Published', publisher: 'Publisher', city: 'City of Publication', journal: 'Journal Name',
+        volume: 'Volume', issue: 'Issue', pages: 'Pages (e.g., 10-25)', website: 'Website Name',
+        url: 'URL', dateAccessed: 'Date Accessed (YYYY-MM-DD)'
+    };
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', () => {
+        renderForm();
+        renderList();
+        
+        document.getElementById('source-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveSource();
+        });
+    });
+
+    // Generate input fields based on selected source type
+    function renderForm() {
+        const type = document.getElementById('source-type').value;
+        const container = document.getElementById('dynamic-fields');
+        container.innerHTML = ''; // Clear previous
+
+        fieldDefinitions[type].forEach(field => {
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.innerHTML = `
+                <label for="${field}">${fieldLabels[field]}</label>
+                <input type="${field === 'url' ? 'url' : 'text'}" id="${field}" required>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // Save data from form to database
+    function saveSource() {
+        const type = document.getElementById('source-type').value;
+        const newSource = { id: Date.now(), type: type };
+        
+        fieldDefinitions[type].forEach(field => {
+            newSource[field] = document.getElementById(field).value.trim();
+        });
+
+        sources.push(newSource);
+        saveToLocalStorage();
+        renderList();
+        document.getElementById('source-form').reset();
+        renderForm(); // Reset dynamic fields
+    }
+
+    function deleteSource(id) {
+        sources = sources.filter(s => s.id !== id);
+        saveToLocalStorage();
+        renderList();
+    }
+
+    function saveToLocalStorage() {
+        localStorage.setItem('citationDB', JSON.stringify(sources));
+    }
+
+    // --- Formatting Logic --- //
+
+    function formatBibliography(source, style) {
+        const { authorLast, authorFirst, title, year, publisher, city, journal, volume, issue, pages, website, url, dateAccessed, type } = source;
+        const fInitial = authorFirst ? `${authorFirst.charAt(0)}.` : '';
+
+        if (style === 'APA') {
+            if (type === 'book') return `${authorLast}, ${fInitial} (${year}). <i>${title}</i>. ${publisher}.`;
+            if (type === 'journal') return `${authorLast}, ${fInitial} (${year}). ${title}. <i>${journal}</i>, ${volume}(${issue}), ${pages}.`;
+            if (type === 'website') return `${authorLast}, ${fInitial} (${year}). ${title}. <i>${website}</i>. Retrieved ${dateAccessed}, from ${url}`;
+        } 
+        else if (style === 'MLA') {
+            if (type === 'book') return `${authorLast}, ${authorFirst}. <i>${title}</i>. ${publisher}, ${year}.`;
+            if (type === 'journal') return `${authorLast}, ${authorFirst}. "${title}." <i>${journal}</i>, vol. ${volume}, no. ${issue}, ${year}, pp. ${pages}.`;
+            if (type === 'website') return `${authorLast}, ${authorFirst}. "${title}." <i>${website}</i>, ${year}, ${url}. Accessed ${dateAccessed}.`;
+        }
+        else if (style === 'Harvard') {
+            if (type === 'book') return `${authorLast}, ${fInitial} ${year}, <i>${title}</i>, ${publisher}, ${city}.`;
+            if (type === 'journal') return `${authorLast}, ${fInitial} ${year}, '${title}', <i>${journal}</i>, vol. ${volume}, no. ${issue}, pp. ${pages}.`;
+            if (type === 'website') return `${authorLast}, ${fInitial} ${year}, <i>${title}</i>, ${website}, viewed ${dateAccessed}, &lt;${url}&gt;.`;
+        }
+        else if (style === 'IEEE') {
+            if (type === 'book') return `${fInitial} ${authorLast}, <i>${title}</i>. ${city}: ${publisher}, ${year}.`;
+            if (type === 'journal') return `${fInitial} ${authorLast}, "${title}," <i>${journal}</i>, vol. ${volume}, no. ${issue}, pp. ${pages}, ${year}.`;
+            if (type === 'website') return `${fInitial} ${authorLast}, "${title}," ${website}. ${url} (accessed ${dateAccessed}).`;
+        }
+        return 'Format error.';
+    }
+
+    function formatInText(source, style, index) {
+        if (style === 'APA' || style === 'Harvard') return `(${source.authorLast}, ${source.year})`;
+        if (style === 'MLA') return `(${source.authorLast})`;
+        if (style === 'IEEE') return `[${index + 1}]`;
+    }
+
+    // --- UI Rendering & Actions --- //
+
+    function renderList() {
+        const style = document.getElementById('citation-style').value;
+        const container = document.getElementById('source-list');
+        document.getElementById('source-count').textContent = sources.length;
+        container.innerHTML = '';
+
+        if (sources.length === 0) {
+            container.innerHTML = '<p style="color: #64748b;">No sources saved yet. Add one from the left panel.</p>';
+            return;
+        }
+
+        sources.forEach((source, index) => {
+            const bibTextHtml = formatBibliography(source, style);
+            const inText = formatInText(source, style, index);
+            // Plain text version for clipboard (strips HTML tags)
+            const bibTextPlain = bibTextHtml.replace(/<[^>]*>?/gm, '');
+
+            const card = document.createElement('div');
+            card.className = 'source-card';
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div class="source-content">
+                        ${style === 'IEEE' ? `[${index+1}] ` : ''}${bibTextHtml}
+                    </div>
+                    <span style="font-size: 0.8em; background: var(--border); padding: 2px 6px; border-radius: 10px;">${source.type.toUpperCase()}</span>
+                </div>
+                <div class="source-actions">
+                    <button onclick="copyToClipboard(\`${bibTextPlain}\`)">Copy Bibliography</button>
+                    <button onclick="copyToClipboard(\`${inText}\`)" class="btn-outline">Copy In-Text: ${inText}</button>
+                    <button onclick="deleteSource(${source.id})" class="btn-danger" style="margin-left: auto;">Delete</button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            // Temporary visual feedback could be added here
+            alert('Copied to clipboard: \n' + text);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert('Failed to copy to clipboard.');
+        });
+    }
+
+    // --- JSON Import/Export --- //
+
+    function exportJSON() {
+        if (sources.length === 0) {
+            alert("No data to export!");
+            return;
+        }
+        const dataStr = JSON.stringify(sources, null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bibliography_database_${new Date().toISOString().split('T')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function importJSON(event) {
+        const file = event.target.files;
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (Array.isArray(importedData)) {
+                    sources = importedData;
+                    saveToLocalStorage();
+                    renderList();
+                    alert("Database successfully imported!");
+                } else {
+                    alert("Invalid JSON format. Expected an array of sources.");
+                }
+            } catch (err) {
+                alert("Error parsing JSON file: " + err.message);
+            }
+            // Reset file input so the same file can be uploaded again if needed
+            event.target.value = ''; 
+        };
+        reader.readAsText(file[0]);
+    }
+</script>
+</body>
+</html>
