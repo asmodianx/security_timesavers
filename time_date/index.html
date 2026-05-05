@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Standalone Timezone Clock and Calendar Tool</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel2: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --accent2: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --border: #374151;
+      --shadow: rgba(0, 0, 0, 0.25);
+      --input: #0b1220;
+      --chip: #243044;
+      --clockFace: #0b1220;
+      --clockTick: #64748b;
+      --clockHand: #e5e7eb;
+      --clockSecond: #ef4444;
+      --radius: 16px;
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --panel2: #f1f5f9;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0369a1;
+      --accent2: #15803d;
+      --warn: #b45309;
+      --danger: #b91c1c;
+      --border: #cbd5e1;
+      --shadow: rgba(15, 23, 42, 0.12);
+      --input: #ffffff;
+      --chip: #e2e8f0;
+      --clockFace: #ffffff;
+      --clockTick: #334155;
+      --clockHand: #0f172a;
+      --clockSecond: #dc2626;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.16), transparent 32%), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 22px 24px 12px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.34);
+      backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    [data-theme="light"] header { background: rgba(255,255,255,0.72); }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.35;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 18px;
+      padding: 18px 24px 28px;
+      max-width: 1520px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; padding: 14px; }
+      header { padding: 18px 14px 10px; }
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 12px 30px var(--shadow);
+      padding: 16px;
+    }
+
+    .panel h2, .panel h3 {
+      margin: 0 0 12px;
+      font-size: 1.1rem;
+    }
+
+    .panel h3 { font-size: 1rem; }
+
+    .stack { display: grid; gap: 14px; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .between { justify-content: space-between; }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    input, select, textarea, button {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: var(--input);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.18);
+    }
+
+    textarea { min-height: 90px; resize: vertical; }
+
+    button {
+      background: var(--accent);
+      color: #001018;
+      border: 0;
+      border-radius: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(56,189,248,0.18);
+    }
+
+    button.secondary {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: var(--danger);
+      color: #fff;
+      box-shadow: none;
+    }
+
+    button.small {
+      padding: 6px 9px;
+      font-size: 0.82rem;
+      border-radius: 9px;
+    }
+
+    button:hover { filter: brightness(1.08); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: none;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #001018;
+      border-color: transparent;
+    }
+
+    .hidden { display: none !important; }
+
+    .widgets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+      gap: 14px;
+    }
+
+    .clock-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: 0 10px 24px var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .clock-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-top: 4px solid var(--cardColor, var(--accent));
+      pointer-events: none;
+    }
+
+    .clock-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--chip);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 0.78rem;
+      white-space: nowrap;
+    }
+
+    .tz-name {
+      color: var(--muted);
+      font-size: 0.82rem;
+      word-break: break-word;
+    }
+
+    .digital-time {
+      font-size: 2.35rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin: 12px 0 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .digital-date {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .analog-wrap {
+      display: grid;
+      place-items: center;
+      padding: 8px 0 6px;
+    }
+
+    .analog-clock {
+      width: 178px;
+      height: 178px;
+      border-radius: 50%;
+      background: var(--clockFace);
+      border: 8px solid var(--panel2);
+      position: relative;
+      box-shadow: inset 0 0 0 1px var(--border), 0 8px 18px var(--shadow);
+    }
+
+    .tick {
+      position: absolute;
+      width: 2px;
+      height: 9px;
+      background: var(--clockTick);
+      left: 50%;
+      top: 8px;
+      transform-origin: 0 73px;
+    }
+
+    .tick.major {
+      height: 14px;
+      width: 3px;
+      background: var(--text);
+    }
+
+    .hand {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform-origin: bottom center;
+      border-radius: 999px;
+    }
+
+    .hour-hand { width: 6px; height: 48px; margin-left: -3px; background: var(--clockHand); }
+    .minute-hand { width: 4px; height: 65px; margin-left: -2px; background: var(--clockHand); opacity: 0.95; }
+    .second-hand { width: 2px; height: 70px; margin-left: -1px; background: var(--clockSecond); }
+
+    .center-dot {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--accent);
+      left: calc(50% - 6px);
+      top: calc(50% - 6px);
+      z-index: 3;
+    }
+
+    .clock-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .comparison-panel, .calendar-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .slider-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: 0 10px 24px var(--shadow);
+    }
+
+    input[type="range"] {
+      padding: 0;
+      accent-color: var(--accent);
+    }
+
+    .time-row {
+      display: grid;
+      grid-template-columns: 150px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel2);
+      margin-top: 8px;
+    }
+
+    @media (max-width: 720px) {
+      .time-row { grid-template-columns: 1fr; }
+      .digital-time { font-size: 1.85rem; }
+    }
+
+    .bar-track {
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #1e3a8a, #0284c7, #f59e0b, #7f1d1d);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .bar-marker {
+      position: absolute;
+      top: -4px;
+      width: 3px;
+      height: 22px;
+      border-radius: 999px;
+      background: #fff;
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 8px rgba(255,255,255,0.75);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+
+    .calendar-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      box-shadow: 0 10px 24px var(--shadow);
+    }
+
+    .calendar-value {
+      font-size: 1.15rem;
+      font-weight: 800;
+      line-height: 1.35;
+      margin: 8px 0;
+    }
+
+    .note, .hint {
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.85rem;
+      min-height: 1.2em;
+    }
+
+    .checkbox-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .check-item {
+      display: flex;
+      gap: 7px;
+      align-items: center;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 0.88rem;
+    }
+
+    .check-item input { width: auto; }
+
+    .kbd {
+      background: var(--chip);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-size: 0.78rem;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body data-theme="dark">
+  <header>
+    <div class="row between">
+      <div>
+        <h1>Standalone Timezone Clock and Calendar Tool</h1>
+        <p class="subtitle">Create digital or analog clock widgets, compare stacked timezones with a slider, and view multiple calendar standards. No external libraries. Works locally with <span class="kbd">file://</span> or from a standard web server.</p>
+      </div>
+      <button id="themeToggle" class="secondary" type="button">Light Theme</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel stack">
+      <section>
+        <h2>Create Clock Widget</h2>
+        <div class="form-grid">
+          <div class="full">
+            <label for="clockLabel">Label / Tag</label>
+            <input id="clockLabel" type="text" placeholder="SOC Shift, KU, UTC, Vendor" />
+          </div>
+          <div class="full">
+            <label for="clockTimezone">Timezone</label>
+            <select id="clockTimezone"></select>
+          </div>
+          <div>
+            <label for="clockType">Clock Type</label>
+            <select id="clockType">
+              <option value="digital">Digital</option>
+              <option value="analog">Analog</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+          <div>
+            <label for="clockColor">Accent</label>
+            <input id="clockColor" type="color" value="#38bdf8" />
+          </div>
+          <div>
+            <label for="clockFormat">Hour Format</label>
+            <select id="clockFormat">
+              <option value="24">24-hour</option>
+              <option value="12">12-hour</option>
+            </select>
+          </div>
+          <div>
+            <label for="showSeconds">Seconds</label>
+            <select id="showSeconds">
+              <option value="yes">Show</option>
+              <option value="no">Hide</option>
+            </select>
+          </div>
+          <div class="full row">
+            <button id="addClock" type="button">Add Clock</button>
+            <button id="resetDefaults" class="secondary" type="button">Restore Defaults</button>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Timezone Comparison</h2>
+        <div class="stack">
+          <div>
+            <label for="compareTimezone">Add Timezone to Stack</label>
+            <select id="compareTimezone"></select>
+          </div>
+          <div class="row">
+            <button id="addCompareTz" type="button">Add Timezone</button>
+            <button id="clearCompare" class="secondary" type="button">Clear Stack</button>
+          </div>
+          <div>
+            <label for="baseDate">Base Date</label>
+            <input id="baseDate" type="date" />
+          </div>
+          <div class="hint">The slider represents the selected base date in 15-minute increments. Stacked rows show each timezone's corresponding local time.</div>
+        </div>
+      </section>
+
+      <section>
+        <h2>Calendar Layers</h2>
+        <div>
+          <label for="calendarTimezone">Calendar Timezone</label>
+          <select id="calendarTimezone"></select>
+        </div>
+        <div class="checkbox-list" id="calendarChecks"></div>
+        <div class="hint">Some calendars are calculated using browser Intl calendar support. Fallback formulas are included for Julian, ISO week, Unix time, Modified Julian Day, Rata Die, and day-of-year.</div>
+      </section>
+
+      <section>
+        <h2>Data</h2>
+        <div class="row">
+          <button id="exportJson" class="secondary" type="button">Export JSON</button>
+          <button id="importJsonBtn" class="secondary" type="button">Import JSON</button>
+          <input id="importJson" class="hidden" type="file" accept="application/json,.json" />
+        </div>
+        <p id="status" class="status"></p>
+      </section>
+    </aside>
+
+    <section class="stack">
+      <div class="panel">
+        <div class="toolbar">
+          <div class="tabs">
+            <button class="tab active" type="button" data-tab="clocks">Clock Widgets</button>
+            <button class="tab" type="button" data-tab="compare">Timezone Slider</button>
+            <button class="tab" type="button" data-tab="calendar">Calendar Stack</button>
+          </div>
+          <div class="note" id="nowStatus"></div>
+        </div>
+
+        <div id="tab-clocks">
+          <div id="widgetsGrid" class="widgets-grid"></div>
+        </div>
+
+        <div id="tab-compare" class="comparison-panel hidden">
+          <div class="slider-box">
+            <div class="row between">
+              <h2>Timezone Comparison Slider</h2>
+              <div id="sliderLabel" class="tag">00:00</div>
+            </div>
+            <input id="timeSlider" type="range" min="0" max="95" step="1" value="48" />
+            <div class="row between note">
+              <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:45</span>
+            </div>
+          </div>
+          <div id="compareRows"></div>
+        </div>
+
+        <div id="tab-calendar" class="calendar-panel hidden">
+          <div class="slider-box">
+            <div class="form-grid">
+              <div>
+                <label for="calendarDate">Calendar Date</label>
+                <input id="calendarDate" type="date" />
+              </div>
+              <div>
+                <label for="calendarTime">Calendar Time</label>
+                <input id="calendarTime" type="time" step="1" />
+              </div>
+            </div>
+          </div>
+          <div id="calendarGrid" class="calendar-grid"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var TIMEZONES = [
+        "UTC",
+        "America/New_York",
+        "America/Chicago",
+        "America/Denver",
+        "America/Los_Angeles",
+        "America/Anchorage",
+        "Pacific/Honolulu",
+        "America/Toronto",
+        "America/Vancouver",
+        "America/Mexico_City",
+        "America/Phoenix",
+        "America/Bogota",
+        "America/Lima",
+        "America/Sao_Paulo",
+        "America/Argentina/Buenos_Aires",
+        "Europe/London",
+        "Europe/Dublin",
+        "Europe/Paris",
+        "Europe/Berlin",
+        "Europe/Madrid",
+        "Europe/Rome",
+        "Europe/Amsterdam",
+        "Europe/Brussels",
+        "Europe/Zurich",
+        "Europe/Stockholm",
+        "Europe/Warsaw",
+        "Europe/Athens",
+        "Europe/Helsinki",
+        "Europe/Moscow",
+        "Africa/Cairo",
+        "Africa/Johannesburg",
+        "Africa/Nairobi",
+        "Asia/Jerusalem",
+        "Asia/Dubai",
+        "Asia/Riyadh",
+        "Asia/Kolkata",
+        "Asia/Dhaka",
+        "Asia/Bangkok",
+        "Asia/Singapore",
+        "Asia/Hong_Kong",
+        "Asia/Shanghai",
+        "Asia/Taipei",
+        "Asia/Seoul",
+        "Asia/Tokyo",
+        "Australia/Perth",
+        "Australia/Adelaide",
+        "Australia/Sydney",
+        "Pacific/Auckland"
+      ];
+
+      var CALENDARS = [
+        { id: "gregory", label: "Gregorian" },
+        { id: "julian", label: "Julian" },
+        { id: "chinese", label: "Chinese" },
+        { id: "islamic", label: "Islamic Hijri" },
+        { id: "hebrew", label: "Hebrew" },
+        { id: "buddhist", label: "Buddhist" },
+        { id: "japanese", label: "Japanese" },
+        { id: "indian", label: "Indian National" },
+        { id: "persian", label: "Persian" },
+        { id: "coptic", label: "Coptic" },
+        { id: "ethiopic", label: "Ethiopic" },
+        { id: "isoWeek", label: "ISO Week Date" },
+        { id: "ordinal", label: "Ordinal / Day of Year" },
+        { id: "unix", label: "Unix Time" },
+        { id: "julianDay", label: "Julian Day Number" },
+        { id: "modifiedJulianDay", label: "Modified Julian Day" },
+        { id: "rataDie", label: "Rata Die" }
+      ];
+
+      var state = {
+        theme: "dark",
+        clocks: [],
+        compareZones: ["UTC", "America/Chicago", "Europe/London", "Asia/Tokyo"],
+        calendarLayers: ["gregory", "julian", "chinese", "islamic", "hebrew", "isoWeek", "ordinal", "unix", "julianDay"],
+        calendarTimezone: guessTimezone(),
+        baseDate: dateInputValue(new Date()),
+        calendarDate: dateInputValue(new Date()),
+        calendarTime: timeInputValue(new Date()),
+        sliderStep: 48
+      };
+
+      var els = {};
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        cacheElements();
+        loadState();
+        ensureDefaults();
+        populateTimezoneSelects();
+        populateCalendarChecks();
+        bindEvents();
+        syncFormValues();
+        renderAll();
+        setInterval(renderAll, 1000);
+      }
+
+      function cacheElements() {
+        els.body = document.body;
+        els.themeToggle = document.getElementById("themeToggle");
+        els.clockLabel = document.getElementById("clockLabel");
+        els.clockTimezone = document.getElementById("clockTimezone");
+        els.clockType = document.getElementById("clockType");
+        els.clockColor = document.getElementById("clockColor");
+        els.clockFormat = document.getElementById("clockFormat");
+        els.showSeconds = document.getElementById("showSeconds");
+        els.addClock = document.getElementById("addClock");
+        els.resetDefaults = document.getElementById("resetDefaults");
+        els.compareTimezone = document.getElementById("compareTimezone");
+        els.addCompareTz = document.getElementById("addCompareTz");
+        els.clearCompare = document.getElementById("clearCompare");
+        els.baseDate = document.getElementById("baseDate");
+        els.calendarTimezone = document.getElementById("calendarTimezone");
+        els.calendarChecks = document.getElementById("calendarChecks");
+        els.exportJson = document.getElementById("exportJson");
+        els.importJsonBtn = document.getElementById("importJsonBtn");
+        els.importJson = document.getElementById("importJson");
+        els.status = document.getElementById("status");
+        els.nowStatus = document.getElementById("nowStatus");
+        els.widgetsGrid = document.getElementById("widgetsGrid");
+        els.timeSlider = document.getElementById("timeSlider");
+        els.sliderLabel = document.getElementById("sliderLabel");
+        els.compareRows = document.getElementById("compareRows");
+        els.calendarDate = document.getElementById("calendarDate");
+        els.calendarTime = document.getElementById("calendarTime");
+        els.calendarGrid = document.getElementById("calendarGrid");
+      }
+
+      function bindEvents() {
+        els.themeToggle.addEventListener("click", function () {
+          state.theme = state.theme === "dark" ? "light" : "dark";
+          saveState();
+          renderAll();
+        });
+
+        els.addClock.addEventListener("click", addClockFromForm);
+        els.resetDefaults.addEventListener("click", function () {
+          if (confirm("Restore default clocks, comparison zones, and calendar layers?")) {
+            localStorage.removeItem("standaloneClockCalendarStateV1");
+            state = defaultState();
+            populateCalendarChecks();
+            syncFormValues();
+            saveState();
+            renderAll();
+            setStatus("Defaults restored.");
+          }
+        });
+
+        els.addCompareTz.addEventListener("click", function () {
+          var tz = els.compareTimezone.value;
+          if (state.compareZones.indexOf(tz) === -1) state.compareZones.push(tz);
+          saveState();
+          renderAll();
+        });
+
+        els.clearCompare.addEventListener("click", function () {
+          state.compareZones = [];
+          saveState();
+          renderAll();
+        });
+
+        els.baseDate.addEventListener("change", function () {
+          state.baseDate = els.baseDate.value || dateInputValue(new Date());
+          saveState();
+          renderAll();
+        });
+
+        els.timeSlider.addEventListener("input", function () {
+          state.sliderStep = parseInt(els.timeSlider.value, 10) || 0;
+          saveState();
+          renderAll();
+        });
+
+        els.calendarTimezone.addEventListener("change", function () {
+          state.calendarTimezone = els.calendarTimezone.value;
+          saveState();
+          renderAll();
+        });
+
+        els.calendarDate.addEventListener("change", function () {
+          state.calendarDate = els.calendarDate.value || dateInputValue(new Date());
+          saveState();
+          renderAll();
+        });
+
+        els.calendarTime.addEventListener("change", function () {
+          state.calendarTime = els.calendarTime.value || "00:00:00";
+          saveState();
+          renderAll();
+        });
+
+        els.exportJson.addEventListener("click", exportState);
+        els.importJsonBtn.addEventListener("click", function () { els.importJson.click(); });
+        els.importJson.addEventListener("change", importState);
+
+        document.querySelectorAll(".tab").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            activateTab(btn.getAttribute("data-tab"));
+          });
+        });
+      }
+
+      function activateTab(tab) {
+        document.querySelectorAll(".tab").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-tab") === tab);
+        });
+        document.getElementById("tab-clocks").classList.toggle("hidden", tab !== "clocks");
+        document.getElementById("tab-compare").classList.toggle("hidden", tab !== "compare");
+        document.getElementById("tab-calendar").classList.toggle("hidden", tab !== "calendar");
+      }
+
+      function defaultState() {
+        return {
+          theme: "dark",
+          clocks: [
+            { id: makeId(), label: "Local", timezone: guessTimezone(), type: "both", color: "#38bdf8", format: "12", seconds: true },
+            { id: makeId(), label: "UTC", timezone: "UTC", type: "digital", color: "#22c55e", format: "24", seconds: true },
+            { id: makeId(), label: "London", timezone: "Europe/London", type: "analog", color: "#f59e0b", format: "24", seconds: true }
+          ],
+          compareZones: ["UTC", "America/Chicago", "Europe/London", "Asia/Tokyo"],
+          calendarLayers: ["gregory", "julian", "chinese", "islamic", "hebrew", "isoWeek", "ordinal", "unix", "julianDay"],
+          calendarTimezone: guessTimezone(),
+          baseDate: dateInputValue(new Date()),
+          calendarDate: dateInputValue(new Date()),
+          calendarTime: timeInputValue(new Date()),
+          sliderStep: 48
+        };
+      }
+
+      function ensureDefaults() {
+        if (!state.clocks || !state.clocks.length) state.clocks = defaultState().clocks;
+        if (!state.compareZones) state.compareZones = defaultState().compareZones;
+        if (!state.calendarLayers) state.calendarLayers = defaultState().calendarLayers;
+        if (!state.calendarTimezone) state.calendarTimezone = guessTimezone();
+        if (!state.baseDate) state.baseDate = dateInputValue(new Date());
+        if (!state.calendarDate) state.calendarDate = dateInputValue(new Date());
+        if (!state.calendarTime) state.calendarTime = timeInputValue(new Date());
+        if (typeof state.sliderStep !== "number") state.sliderStep = 48;
+      }
+
+      function populateTimezoneSelects() {
+        var lists = [els.clockTimezone, els.compareTimezone, els.calendarTimezone];
+        lists.forEach(function (select) {
+          select.innerHTML = "";
+          TIMEZONES.forEach(function (tz) {
+            var opt = document.createElement("option");
+            opt.value = tz;
+            opt.textContent = tz;
+            select.appendChild(opt);
+          });
+        });
+      }
+
+      function populateCalendarChecks() {
+        els.calendarChecks.innerHTML = "";
+        CALENDARS.forEach(function (cal) {
+          var label = document.createElement("label");
+          label.className = "check-item";
+          var input = document.createElement("input");
+          input.type = "checkbox";
+          input.value = cal.id;
+          input.checked = state.calendarLayers.indexOf(cal.id) !== -1;
+          input.addEventListener("change", function () {
+            if (input.checked && state.calendarLayers.indexOf(cal.id) === -1) state.calendarLayers.push(cal.id);
+            if (!input.checked) state.calendarLayers = state.calendarLayers.filter(function (id) { return id !== cal.id; });
+            saveState();
+            renderAll();
+          });
+          var span = document.createElement("span");
+          span.textContent = cal.label;
+          label.appendChild(input);
+          label.appendChild(span);
+          els.calendarChecks.appendChild(label);
+        });
+      }
+
+      function syncFormValues() {
+        els.body.setAttribute("data-theme", state.theme);
+        els.themeToggle.textContent = state.theme === "dark" ? "Light Theme" : "Dark Theme";
+        els.clockTimezone.value = guessTimezone();
+        els.compareTimezone.value = "UTC";
+        els.calendarTimezone.value = state.calendarTimezone;
+        els.baseDate.value = state.baseDate;
+        els.calendarDate.value = state.calendarDate;
+        els.calendarTime.value = normalizeTimeInput(state.calendarTime);
+        els.timeSlider.value = String(state.sliderStep);
+      }
+
+      function renderAll() {
+        syncThemeOnly();
+        renderNowStatus();
+        renderClocks();
+        renderComparison();
+        renderCalendar();
+      }
+
+      function syncThemeOnly() {
+        els.body.setAttribute("data-theme", state.theme);
+        els.themeToggle.textContent = state.theme === "dark" ? "Light Theme" : "Dark Theme";
+      }
+
+      function renderNowStatus() {
+        var now = new Date();
+        els.nowStatus.textContent = "Current local browser time: " + now.toLocaleString();
+      }
+
+      function addClockFromForm() {
+        var label = (els.clockLabel.value || els.clockTimezone.value).trim();
+        state.clocks.push({
+          id: makeId(),
+          label: label,
+          timezone: els.clockTimezone.value,
+          type: els.clockType.value,
+          color: els.clockColor.value,
+          format: els.clockFormat.value,
+          seconds: els.showSeconds.value === "yes"
+        });
+        els.clockLabel.value = "";
+        saveState();
+        renderAll();
+        setStatus("Clock added.");
+      }
+
+      function renderClocks() {
+        els.widgetsGrid.innerHTML = "";
+        state.clocks.forEach(function (clock) {
+          var card = document.createElement("article");
+          card.className = "clock-card";
+          card.style.setProperty("--cardColor", clock.color || "#38bdf8");
+
+          var title = document.createElement("div");
+          title.className = "clock-title";
+          var titleLeft = document.createElement("div");
+          var tag = document.createElement("div");
+          tag.className = "tag";
+          tag.textContent = clock.label || clock.timezone;
+          var tz = document.createElement("div");
+          tz.className = "tz-name";
+          tz.textContent = clock.timezone;
+          titleLeft.appendChild(tag);
+          titleLeft.appendChild(tz);
+          title.appendChild(titleLeft);
+          card.appendChild(title);
+
+          var date = zonedDateParts(new Date(), clock.timezone);
+          if (clock.type === "digital" || clock.type === "both") {
+            var digital = document.createElement("div");
+            digital.className = "digital-time";
+            digital.textContent = formatTime(new Date(), clock.timezone, clock.format, clock.seconds);
+            var ddate = document.createElement("div");
+            ddate.className = "digital-date";
+            ddate.textContent = formatDateLong(new Date(), clock.timezone);
+            card.appendChild(digital);
+            card.appendChild(ddate);
+          }
+
+          if (clock.type === "analog" || clock.type === "both") {
+            var wrap = document.createElement("div");
+            wrap.className = "analog-wrap";
+            var analog = createAnalogClock(date.hour, date.minute, date.second);
+            wrap.appendChild(analog);
+            card.appendChild(wrap);
+          }
+
+          var actions = document.createElement("div");
+          actions.className = "clock-actions";
+          var duplicate = document.createElement("button");
+          duplicate.className = "secondary small";
+          duplicate.type = "button";
+          duplicate.textContent = "Duplicate";
+          duplicate.addEventListener("click", function () {
+            var copy = JSON.parse(JSON.stringify(clock));
+            copy.id = makeId();
+            copy.label = copy.label + " Copy";
+            state.clocks.push(copy);
+            saveState();
+            renderAll();
+          });
+          var remove = document.createElement("button");
+          remove.className = "danger small";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.addEventListener("click", function () {
+            state.clocks = state.clocks.filter(function (c) { return c.id !== clock.id; });
+            saveState();
+            renderAll();
+          });
+          actions.appendChild(duplicate);
+          actions.appendChild(remove);
+          card.appendChild(actions);
+
+          els.widgetsGrid.appendChild(card);
+        });
+      }
+
+      function createAnalogClock(hour, minute, second) {
+        var clock = document.createElement("div");
+        clock.className = "analog-clock";
+        for (var i = 0; i < 60; i++) {
+          var tick = document.createElement("div");
+          tick.className = "tick" + (i % 5 === 0 ? " major" : "");
+          tick.style.transform = "rotate(" + (i * 6) + "deg)";
+          clock.appendChild(tick);
+        }
+        var h = document.createElement("div");
+        h.className = "hand hour-hand";
+        var m = document.createElement("div");
+        m.className = "hand minute-hand";
+        var s = document.createElement("div");
+        s.className = "hand second-hand";
+        var dot = document.createElement("div");
+        dot.className = "center-dot";
+        var hourAngle = ((hour % 12) * 30) + (minute * 0.5);
+        var minuteAngle = (minute * 6) + (second * 0.1);
+        var secondAngle = second * 6;
+        h.style.transform = "rotate(" + hourAngle + "deg)";
+        m.style.transform = "rotate(" + minuteAngle + "deg)";
+        s.style.transform = "rotate(" + secondAngle + "deg)";
+        clock.appendChild(h);
+        clock.appendChild(m);
+        clock.appendChild(s);
+        clock.appendChild(dot);
+        return clock;
+      }
+
+      function renderComparison() {
+        els.timeSlider.value = String(state.sliderStep);
+        els.baseDate.value = state.baseDate;
+        var minutes = state.sliderStep * 15;
+        var hh = Math.floor(minutes / 60);
+        var mm = minutes % 60;
+        els.sliderLabel.textContent = pad2(hh) + ":" + pad2(mm) + " base date time";
+
+        els.compareRows.innerHTML = "";
+        if (!state.compareZones.length) {
+          var empty = document.createElement("div");
+          empty.className = "note";
+          empty.textContent = "No timezones selected. Add zones from the left panel.";
+          els.compareRows.appendChild(empty);
+          return;
+        }
+
+        var baseInstant = localInputToInstant(state.baseDate, hh, mm, 0);
+        state.compareZones.forEach(function (tz) {
+          var row = document.createElement("div");
+          row.className = "time-row";
+          var left = document.createElement("div");
+          left.innerHTML = "<strong>" + escapeHtml(shortZoneLabel(tz)) + "</strong><div class='tz-name'>" + escapeHtml(tz) + "</div>";
+          var mid = document.createElement("div");
+          var parts = zonedDateParts(baseInstant, tz);
+          mid.innerHTML = "<div class='digital-time' style='font-size:1.45rem;margin:0;'>" + escapeHtml(formatTime(baseInstant, tz, "24", true)) + "</div><div class='digital-date'>" + escapeHtml(formatDateLong(baseInstant, tz)) + "</div>";
+          var bar = document.createElement("div");
+          bar.className = "bar-track";
+          var marker = document.createElement("div");
+          marker.className = "bar-marker";
+          var pct = ((parts.hour * 60 + parts.minute) / 1439) * 100;
+          marker.style.left = "calc(" + pct + "% - 1px)";
+          bar.appendChild(marker);
+          mid.appendChild(bar);
+          var right = document.createElement("button");
+          right.type = "button";
+          right.className = "danger small";
+          right.textContent = "Remove";
+          right.addEventListener("click", function () {
+            state.compareZones = state.compareZones.filter(function (z) { return z !== tz; });
+            saveState();
+            renderAll();
+          });
+          row.appendChild(left);
+          row.appendChild(mid);
+          row.appendChild(right);
+          els.compareRows.appendChild(row);
+        });
+      }
+
+      function renderCalendar() {
+        els.calendarTimezone.value = state.calendarTimezone;
+        els.calendarDate.value = state.calendarDate;
+        els.calendarTime.value = normalizeTimeInput(state.calendarTime);
+        els.calendarGrid.innerHTML = "";
+        var dt = calendarInputToInstant(state.calendarDate, state.calendarTime);
+
+        state.calendarLayers.forEach(function (id) {
+          var cal = CALENDARS.filter(function (c) { return c.id === id; })[0];
+          if (!cal) return;
+          var card = document.createElement("article");
+          card.className = "calendar-card";
+          var h = document.createElement("h3");
+          h.textContent = cal.label;
+          var value = document.createElement("div");
+          value.className = "calendar-value";
+          value.textContent = formatCalendarValue(id, dt, state.calendarTimezone);
+          var note = document.createElement("div");
+          note.className = "note";
+          note.textContent = calendarNote(id);
+          card.appendChild(h);
+          card.appendChild(value);
+          card.appendChild(note);
+          els.calendarGrid.appendChild(card);
+        });
+      }
+
+      function formatCalendarValue(id, date, tz) {
+        if (id === "julian") return formatJulianCalendar(date, tz);
+        if (id === "isoWeek") return formatIsoWeek(date, tz);
+        if (id === "ordinal") return formatOrdinal(date, tz);
+        if (id === "unix") return Math.floor(date.getTime() / 1000).toString() + " seconds since 1970-01-01T00:00:00Z";
+        if (id === "julianDay") return julianDay(date).toFixed(5);
+        if (id === "modifiedJulianDay") return (julianDay(date) - 2400000.5).toFixed(5);
+        if (id === "rataDie") return rataDie(date, tz).toString();
+        return formatIntlCalendar(date, tz, id);
+      }
+
+      function calendarNote(id) {
+        var notes = {
+          gregory: "Proleptic Gregorian calendar via browser Intl support.",
+          julian: "Calculated Julian calendar date using Gregorian-to-Julian conversion.",
+          chinese: "Chinese calendar via browser Intl support when available.",
+          islamic: "Islamic calendar via browser Intl support when available.",
+          hebrew: "Hebrew calendar via browser Intl support when available.",
+          buddhist: "Buddhist calendar via browser Intl support when available.",
+          japanese: "Japanese era calendar via browser Intl support when available.",
+          indian: "Indian National calendar via browser Intl support when available.",
+          persian: "Persian calendar via browser Intl support when available.",
+          coptic: "Coptic calendar via browser Intl support when available.",
+          ethiopic: "Ethiopic calendar via browser Intl support when available.",
+          isoWeek: "ISO-8601 week date calculated locally.",
+          ordinal: "Gregorian year and day-of-year calculated locally.",
+          unix: "Unix timestamp from the selected instant.",
+          julianDay: "Astronomical Julian Day Number from the selected instant.",
+          modifiedJulianDay: "Julian Day minus 2,400,000.5.",
+          rataDie: "Rata Die day count using Gregorian date, where 0001-01-01 is day 1."
+        };
+        return notes[id] || "Calendar layer.";
+      }
+
+      function formatIntlCalendar(date, tz, calendar) {
+        try {
+          return new Intl.DateTimeFormat("en-US-u-ca-" + calendar, {
+            timeZone: tz,
+            weekday: "long",
+            era: "short",
+            year: "numeric",
+            month: "long",
+            day: "numeric"
+          }).format(date);
+        } catch (e) {
+          return "Not supported by this browser's Intl calendar data.";
+        }
+      }
+
+      function formatJulianCalendar(date, tz) {
+        var p = zonedDateParts(date, tz);
+        var jdn = gregorianToJdn(p.year, p.month, p.day);
+        var jul = jdnToJulian(jdn);
+        return jul.year + "-" + pad2(jul.month) + "-" + pad2(jul.day) + " Julian";
+      }
+
+      function formatIsoWeek(date, tz) {
+        var p = zonedDateParts(date, tz);
+        var d = new Date(Date.UTC(p.year, p.month - 1, p.day));
+        var day = d.getUTCDay();
+        if (day === 0) day = 7;
+        d.setUTCDate(d.getUTCDate() + 4 - day);
+        var isoYear = d.getUTCFullYear();
+        var yearStart = new Date(Date.UTC(isoYear, 0, 1));
+        var week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return isoYear + "-W" + pad2(week) + "-" + day;
+      }
+
+      function formatOrdinal(date, tz) {
+        var p = zonedDateParts(date, tz);
+        var start = Date.UTC(p.year, 0, 1);
+        var current = Date.UTC(p.year, p.month - 1, p.day);
+        var doy = Math.floor((current - start) / 86400000) + 1;
+        return p.year + " day " + doy + " of " + (isLeapYear(p.year) ? "366" : "365");
+      }
+
+      function rataDie(date, tz) {
+        var p = zonedDateParts(date, tz);
+        return gregorianToJdn(p.year, p.month, p.day) - 1721425;
+      }
+
+      function gregorianToJdn(y, m, d) {
+        var a = Math.floor((14 - m) / 12);
+        var yy = y + 4800 - a;
+        var mm = m + 12 * a - 3;
+        return d + Math.floor((153 * mm + 2) / 5) + 365 * yy + Math.floor(yy / 4) - Math.floor(yy / 100) + Math.floor(yy / 400) - 32045;
+      }
+
+      function jdnToJulian(jdn) {
+        var c = jdn + 32082;
+        var d = Math.floor((4 * c + 3) / 1461);
+        var e = c - Math.floor((1461 * d) / 4);
+        var m = Math.floor((5 * e + 2) / 153);
+        var day = e - Math.floor((153 * m + 2) / 5) + 1;
+        var month = m + 3 - 12 * Math.floor(m / 10);
+        var year = d - 4800 + Math.floor(m / 10);
+        return { year: year, month: month, day: day };
+      }
+
+      function julianDay(date) {
+        return date.getTime() / 86400000 + 2440587.5;
+      }
+
+      function isLeapYear(y) {
+        return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+      }
+
+      function zonedDateParts(date, timeZone) {
+        var dtf = new Intl.DateTimeFormat("en-US", {
+          timeZone: timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        });
+        var parts = dtf.formatToParts(date);
+        var map = {};
+        parts.forEach(function (p) { if (p.type !== "literal") map[p.type] = p.value; });
+        var hour = parseInt(map.hour, 10);
+        if (hour === 24) hour = 0;
+        return {
+          year: parseInt(map.year, 10),
+          month: parseInt(map.month, 10),
+          day: parseInt(map.day, 10),
+          hour: hour,
+          minute: parseInt(map.minute, 10),
+          second: parseInt(map.second, 10)
+        };
+      }
+
+      function formatTime(date, tz, format, seconds) {
+        var opts = {
+          timeZone: tz,
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: format === "12"
+        };
+        if (seconds) opts.second = "2-digit";
+        return new Intl.DateTimeFormat("en-US", opts).format(date);
+      }
+
+      function formatDateLong(date, tz) {
+        return new Intl.DateTimeFormat("en-US", {
+          timeZone: tz,
+          weekday: "short",
+          year: "numeric",
+          month: "short",
+          day: "2-digit",
+          timeZoneName: "short"
+        }).format(date);
+      }
+
+      function localInputToInstant(dateStr, hour, minute, second) {
+        var bits = (dateStr || dateInputValue(new Date())).split("-").map(Number);
+        return new Date(bits[0], bits[1] - 1, bits[2], hour || 0, minute || 0, second || 0);
+      }
+
+      function calendarInputToInstant(dateStr, timeStr) {
+        var d = (dateStr || dateInputValue(new Date())).split("-").map(Number);
+        var t = (timeStr || "00:00:00").split(":").map(Number);
+        return new Date(d[0], d[1] - 1, d[2], t[0] || 0, t[1] || 0, t[2] || 0);
+      }
+
+      function dateInputValue(date) {
+        return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
+      }
+
+      function timeInputValue(date) {
+        return pad2(date.getHours()) + ":" + pad2(date.getMinutes()) + ":" + pad2(date.getSeconds());
+      }
+
+      function normalizeTimeInput(t) {
+        if (!t) return "00:00:00";
+        var parts = t.split(":");
+        return pad2(parseInt(parts[0] || "0", 10)) + ":" + pad2(parseInt(parts[1] || "0", 10)) + ":" + pad2(parseInt(parts[2] || "0", 10));
+      }
+
+      function pad2(n) { return String(n).padStart(2, "0"); }
+
+      function shortZoneLabel(tz) {
+        if (tz === "UTC") return "UTC";
+        var parts = tz.split("/");
+        return parts[parts.length - 1].replace(/_/g, " ");
+      }
+
+      function guessTimezone() {
+        try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; }
+        catch (e) { return "UTC"; }
+      }
+
+      function makeId() {
+        return "id_" + Math.random().toString(36).slice(2) + "_" + Date.now().toString(36);
+      }
+
+      function saveState() {
+        try {
+          localStorage.setItem("standaloneClockCalendarStateV1", JSON.stringify(state));
+        } catch (e) {
+          setStatus("Unable to save state to localStorage: " + e.message);
+        }
+      }
+
+      function loadState() {
+        try {
+          var raw = localStorage.getItem("standaloneClockCalendarStateV1");
+          if (raw) state = JSON.parse(raw);
+          else state = defaultState();
+        } catch (e) {
+          state = defaultState();
+        }
+      }
+
+      function exportState() {
+        var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "clock-calendar-tool-config.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        setStatus("Configuration exported.");
+      }
+
+      function importState(evt) {
+        var file = evt.target.files && evt.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          try {
+            var imported = JSON.parse(String(reader.result || "{}"));
+            state = sanitizeImportedState(imported);
+            populateCalendarChecks();
+            syncFormValues();
+            saveState();
+            renderAll();
+            setStatus("Configuration imported.");
+          } catch (e) {
+            setStatus("Import failed: " + e.message);
+          }
+          els.importJson.value = "";
+        };
+        reader.readAsText(file);
+      }
+
+      function sanitizeImportedState(imported) {
+        var d = defaultState();
+        imported = imported || {};
+        return {
+          theme: imported.theme === "light" ? "light" : "dark",
+          clocks: Array.isArray(imported.clocks) ? imported.clocks.map(function (c) {
+            return {
+              id: c.id || makeId(),
+              label: String(c.label || c.timezone || "Clock"),
+              timezone: TIMEZONES.indexOf(c.timezone) !== -1 ? c.timezone : "UTC",
+              type: ["digital", "analog", "both"].indexOf(c.type) !== -1 ? c.type : "digital",
+              color: /^#[0-9a-fA-F]{6}$/.test(c.color || "") ? c.color : "#38bdf8",
+              format: c.format === "12" ? "12" : "24",
+              seconds: c.seconds !== false
+            };
+          }) : d.clocks,
+          compareZones: Array.isArray(imported.compareZones) ? imported.compareZones.filter(function (z) { return TIMEZONES.indexOf(z) !== -1; }) : d.compareZones,
+          calendarLayers: Array.isArray(imported.calendarLayers) ? imported.calendarLayers.filter(function (id) { return CALENDARS.some(function (c) { return c.id === id; }); }) : d.calendarLayers,
+          calendarTimezone: TIMEZONES.indexOf(imported.calendarTimezone) !== -1 ? imported.calendarTimezone : guessTimezone(),
+          baseDate: /^\d{4}-\d{2}-\d{2}$/.test(imported.baseDate || "") ? imported.baseDate : d.baseDate,
+          calendarDate: /^\d{4}-\d{2}-\d{2}$/.test(imported.calendarDate || "") ? imported.calendarDate : d.calendarDate,
+          calendarTime: /^\d{2}:\d{2}(:\d{2})?$/.test(imported.calendarTime || "") ? imported.calendarTime : d.calendarTime,
+          sliderStep: typeof imported.sliderStep === "number" ? Math.max(0, Math.min(95, imported.sliderStep)) : d.sliderStep
+        };
+      }
+
+      function setStatus(msg) {
+        els.status.textContent = msg;
+        clearTimeout(setStatus._timer);
+        setStatus._timer = setTimeout(function () { els.status.textContent = ""; }, 3500);
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>'"]/g, function (ch) {
+          return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", "\"": "&quot;" })[ch];
+        });
+      }
+    }());
+  </script>
+</body>
+</html>
