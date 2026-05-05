@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Media Player</title>
+    <style>
+        :root {
+            --primary-color: #ff8c00; /* VLC-style orange accent */
+            --bg-color: #121212;
+            --panel-bg: #242424;
+            --text-color: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .player-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        h2 { margin: 0; font-size: 1.5rem; font-weight: 500; }
+
+        /* Hide the default file input and style a custom label */
+        input[type="file"] { display: none; }
+        .file-upload-btn {
+            background-color: var(--primary-color);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .file-upload-btn:hover { background-color: #ffa533; }
+
+        .media-screen {
+            width: 100%;
+            background-color: #000;
+            border-radius: 8px;
+            aspect-ratio: 16 / 9;
+            object-fit: contain;
+            margin-bottom: 15px;
+            box-shadow: inset 0 0 20px rgba(255,255,255,0.05);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+        }
+
+        button {
+            background: #3a3a3a;
+            color: var(--text-color);
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+        }
+        button:hover { background: #4a4a4a; }
+
+        .slider-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            margin-top: -6px;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #555;
+            border-radius: 2px;
+        }
+
+        .time-display {
+            font-family: monospace;
+            font-size: 0.95rem;
+            min-width: 110px;
+            text-align: right;
+        }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 130px;
+        }
+
+        #file-name {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 10px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-container">
+        <div class="header">
+            <h2>Web Media Player</h2>
+            <label class="file-upload-btn">
+                Open File
+                <input type="file" id="media-upload" accept="video/*, audio/*">
+            </label>
+        </div>
+
+        <video id="media-player" class="media-screen"></video>
+
+        <div class="controls">
+            <button id="play-pause-btn">Play</button>
+            <button id="stop-btn">Stop</button>
+            
+            <div class="slider-container">
+                <input type="range" id="seek-bar" value="0" min="0" step="0.1">
+                <div class="time-display" id="time-display">0:00 / 0:00</div>
+            </div>
+
+            <div class="volume-container">
+                <span>Vol</span>
+                <input type="range" id="volume-bar" min="0" max="1" step="0.05" value="1">
+            </div>
+        </div>
+
+        <div id="file-name">No file loaded</div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('media-upload');
+        const player = document.getElementById('media-player');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const seekBar = document.getElementById('seek-bar');
+        const timeDisplay = document.getElementById('time-display');
+        const volumeBar = document.getElementById('volume-bar');
+        const fileNameDisplay = document.getElementById('file-name');
+
+        let currentObjectUrl = null;
+
+        // Handle File Selection
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files;
+            if (file) {
+                // Clean up previous file memory
+                if (currentObjectUrl) {
+                    URL.revokeObjectURL(currentObjectUrl);
+                }
+                
+                // Create a local URL for the selected file
+                currentObjectUrl = URL.createObjectURL(file[0]);
+                player.src = currentObjectUrl;
+                fileNameDisplay.textContent = `Playing: ${file.name}`;
+                
+                // Auto-play
+                player.play();
+                playPauseBtn.textContent = 'Pause';
+            }
+        });
+
+        // Play / Pause Logic
+        playPauseBtn.addEventListener('click', () => {
+            if (!player.src) return;
+            
+            if (player.paused || player.ended) {
+                player.play();
+                playPauseBtn.textContent = 'Pause';
+            } else {
+                player.pause();
+                playPauseBtn.textContent = 'Play';
+            }
+        });
+
+        // Stop Logic
+        stopBtn.addEventListener('click', () => {
+            if (!player.src) return;
+            
+            player.pause();
+            player.currentTime = 0;
+            playPauseBtn.textContent = 'Play';
+        });
+
+        // Update progress bar and time as media plays
+        player.addEventListener('timeupdate', () => {
+            const current = player.currentTime;
+            const duration = player.duration;
+
+            if (!isNaN(duration)) {
+                seekBar.max = duration;
+                seekBar.value = current;
+                timeDisplay.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+            }
+        });
+
+        // Handle user seeking via the progress bar
+        seekBar.addEventListener('input', () => {
+            player.currentTime = seekBar.value;
+        });
+
+        // Handle volume changes
+        volumeBar.addEventListener('input', () => {
+            player.volume = volumeBar.value;
+        });
+
+        // Reset play button when media ends
+        player.addEventListener('ended', () => {
+            playPauseBtn.textContent = 'Play';
+        });
+
+        // Helper function to format seconds into M:SS or H:MM:SS
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+
+            if (hrs > 0) {
+                return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            } else {
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+        }
+    </script>
+</body>
+</html>
