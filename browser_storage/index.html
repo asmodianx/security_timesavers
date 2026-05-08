@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Storage Manager Tree Widget</title>
+<style>
+:root{
+  --bg:#0f172a;
+  --panel:#111827;
+  --panel2:#1e293b;
+  --line:#334155;
+  --text:#e2e8f0;
+  --muted:#94a3b8;
+  --blue:#2563eb;
+  --red:#dc2626;
+  --green:#16a34a;
+  --amber:#d97706;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif;font-size:13px}
+body{overflow:auto}
+.header{position:sticky;top:0;z-index:2;background:var(--panel2);border-bottom:1px solid var(--line);padding:8px;display:flex;gap:6px;align-items:center}
+.title{font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+button{border:0;border-radius:5px;background:var(--blue);color:white;padding:5px 8px;font-size:12px;cursor:pointer}
+button:hover{filter:brightness(1.12)}
+button.danger{background:var(--red)}
+button.good{background:var(--green)}
+button.warn{background:var(--amber)}
+.wrap{padding:8px;display:grid;grid-template-columns:minmax(180px,42%) minmax(0,1fr);gap:8px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;min-width:0;overflow:auto}
+.panelHeader{padding:7px 8px;border-bottom:1px solid var(--line);font-weight:bold;background:#0b1220;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.tree{padding:6px;max-height:calc(100vh - 92px);overflow:auto}
+details{border-left:1px solid #263449;margin-left:6px;padding-left:7px}
+summary{cursor:pointer;padding:4px 2px;outline:none;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:before{content:'+';display:inline-block;width:14px;color:var(--muted)}
+details[open] > summary:before{content:'-'}
+.node{display:flex;align-items:center;gap:5px;min-width:0}
+.nodeLabel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.leaf{display:flex;align-items:center;gap:5px;padding:3px 2px 3px 21px;border-radius:4px;cursor:pointer;min-width:0}
+.leaf:hover{background:#1f2a44}
+.leaf.active{background:#263b61}
+.leafName{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.badge{display:inline-block;border-radius:999px;padding:1px 5px;font-size:10px;background:#334155;color:#e2e8f0;white-space:nowrap}
+.badge.local{background:#1d4ed8}.badge.session{background:#7c2d12}.badge.idb{background:#6d28d9}.badge.cache{background:#0e7490}.badge.app{background:#475569}
+.detail{padding:8px;max-height:calc(100vh - 92px);overflow:auto}
+.kv{display:grid;grid-template-columns:96px minmax(0,1fr);gap:4px 8px;margin-bottom:8px}
+.k{color:var(--muted)}
+.v{word-break:break-word;font-family:Consolas,monospace}
+pre{white-space:pre-wrap;word-break:break-word;background:#020617;border:1px solid var(--line);border-radius:6px;padding:8px;margin:8px 0 0 0;max-height:320px;overflow:auto;font-family:Consolas,monospace}
+.empty{color:var(--muted);padding:10px}
+.footer{color:var(--muted);font-size:11px;padding:6px 8px;border-top:1px solid var(--line)}
+.search{width:100%;background:#020617;color:var(--text);border:1px solid var(--line);border-radius:5px;padding:6px;margin-bottom:6px}
+@media(max-width:640px){
+  .wrap{grid-template-columns:1fr;padding:6px}
+  .tree,.detail{max-height:none}
+  .panel{max-height:none}
+  .header{padding:6px}
+  .title{font-size:13px}
+  button{padding:5px 7px}
+}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="title">SOC Storage Manager Tree Widget</div>
+  <button id="refreshBtn">Refresh</button>
+  <button id="deleteSelectedBtn" class="danger">Delete Selected</button>
+</div>
+<div class="wrap">
+  <div class="panel">
+    <div class="panelHeader"><span>Storage Tree</span><span id="itemCount" class="badge">0</span></div>
+    <div class="tree">
+      <input id="filterBox" class="search" type="text" placeholder="Filter keys/apps...">
+      <div id="treeRoot"></div>
+    </div>
+    <div class="footer" id="originLine"></div>
+  </div>
+  <div class="panel">
+    <div class="panelHeader"><span>Details</span><span id="selectedType" class="badge">none</span></div>
+    <div class="detail" id="detailPane"><div class="empty">Select a storage item from the tree.</div></div>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+
+var state={
+  items:[],
+  selectedId:null,
+  filter:''
+};
+
+var knownPrefixes=['zettle','sentinelflow','sentinel','blameless','postmortem','incident','nist','soc','packet','cti','sbom','asset','risk','clock','timesaver','storage','rapid7','insightvm'];
+
+function el(id){return document.getElementById(id);}
+function now(){return new Date().toISOString();}
+function localNow(){return new Date().toLocaleString();}
+function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch];});}
+function bytes(v){return new Blob([String(v||'')]).size;}
+function hashString(str){
+  var h=2166136261;
+  str=String(str||'');
+  for(var i=0;i<str.length;i++){
+    h^=str.charCodeAt(i);
+    h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24);
+  }
+  return ('00000000'+(h>>>0).toString(16)).slice(-8);
+}
+function tryJson(v){
+  try{return {ok:true,value:JSON.parse(v)};}catch(e){return {ok:false,error:e.message};}
+}
+function inferApp(key){
+  var k=String(key||'').toLowerCase();
+  var parts=k.split(/[.:_\-\/]/).filter(Boolean);
+  if(parts.length && knownPrefixes.indexOf(parts[0])>=0){return parts[0];}
+  for(var i=0;i<knownPrefixes.length;i++){
+    if(k.indexOf(knownPrefixes[i])>=0){return knownPrefixes[i];}
+  }
+  return 'unassigned';
+}
+function inferUi(key){
+  var k=String(key||'').toLowerCase();
+  if(k.indexOf('note')>=0){return 'notes';}
+  if(k.indexOf('case')>=0){return 'case-ui';}
+  if(k.indexOf('timeline')>=0){return 'timeline-ui';}
+  if(k.indexOf('setting')>=0 || k.indexOf('config')>=0 || k.indexOf('pref')>=0){return 'settings-ui';}
+  if(k.indexOf('filter')>=0 || k.indexOf('search')>=0){return 'search-filter-ui';}
+  if(k.indexOf('incident')>=0){return 'incident-ui';}
+  if(k.indexOf('report')>=0){return 'report-ui';}
+  return 'unknown-ui';
+}
+function truncate(v,n){
+  v=String(v==null?'':v);
+  return v.length>n?v.slice(0,n)+'...':v;
+}
+function getById(id){
+  for(var i=0;i<state.items.length;i++){
+    if(state.items[i].id===id){return state.items[i];}
+  }
+  return null;
+}
+function addItem(item){
+  item.id='item_'+state.items.length;
+  state.items.push(item);
+}
+
+function scanLocalAndSession(){
+  var stores=[{name:'localStorage',shortName:'local',area:localStorage},{name:'sessionStorage',shortName:'session',area:sessionStorage}];
+  for(var s=0;s<stores.length;s++){
+    var st=stores[s];
+    for(var i=0;i<st.area.length;i++){
+      var key=st.area.key(i);
+      var value=st.area.getItem(key);
+      var parsed=tryJson(value);
+      addItem({
+        kind:st.shortName,
+        storeName:st.name,
+        key:key,
+        name:key,
+        app:inferApp(key),
+        ui:inferUi(key),
+        value:value,
+        size:bytes(value),
+        hash:hashString(value),
+        jsonType:parsed.ok?(Array.isArray(parsed.value)?'JSON array':'JSON object'):'string/raw',
+        canDelete:true,
+        discoveredAt:now(),
+        localDiscoveredAt:localNow(),
+        origin:location.origin,
+        url:location.href,
+        path:location.pathname
+      });
+    }
+  }
+}
+
+function scanIndexedDB(done){
+  if(!window.indexedDB || !indexedDB.databases){done();return;}
+  indexedDB.databases().then(function(dbs){
+    for(var i=0;i<dbs.length;i++){
+      addItem({
+        kind:'idb',
+        storeName:'IndexedDB',
+        key:dbs[i].name || '(unnamed)',
+        name:dbs[i].name || '(unnamed)',
+        app:inferApp(dbs[i].name || ''),
+        ui:'database',
+        value:'IndexedDB database version '+(dbs[i].version || ''),
+        size:0,
+        hash:'',
+        jsonType:'database',
+        canDelete:!!dbs[i].name,
+        dbName:dbs[i].name,
+        dbVersion:dbs[i].version,
+        discoveredAt:now(),
+        localDiscoveredAt:localNow(),
+        origin:location.origin,
+        url:location.href,
+        path:location.pathname
+      });
+    }
+    done();
+  }).catch(function(){done();});
+}
+
+function scanCaches(done){
+  if(!window.caches){done();return;}
+  caches.keys().then(function(keys){
+    for(var i=0;i<keys.length;i++){
+      addItem({
+        kind:'cache',
+        storeName:'Cache Storage',
+        key:keys[i],
+        name:keys[i],
+        app:inferApp(keys[i]),
+        ui:'cache',
+        value:'Cache storage bucket',
+        size:0,
+        hash:'',
+        jsonType:'cache',
+        canDelete:true,
+        cacheName:keys[i],
+        discoveredAt:now(),
+        localDiscoveredAt:localNow(),
+        origin:location.origin,
+        url:location.href,
+        path:location.pathname
+      });
+    }
+    done();
+  }).catch(function(){done();});
+}
+
+function refresh(){
+  state.items=[];
+  state.selectedId=null;
+  el('detailPane').innerHTML='<div class="empty">Select a storage item from the tree.</div>';
+  el('selectedType').textContent='none';
+  scanLocalAndSession();
+  scanIndexedDB(function(){
+    scanCaches(function(){
+      renderTree();
+    });
+  });
+}
+
+function itemMatches(item){
+  var q=state.filter.toLowerCase();
+  if(!q){return true;}
+  var text=[item.kind,item.storeName,item.key,item.app,item.ui,item.value].join(' ').toLowerCase();
+  return text.indexOf(q)>=0;
+}
+
+function groupItems(){
+  var grouped={};
+  for(var i=0;i<state.items.length;i++){
+    var item=state.items[i];
+    if(!itemMatches(item)){continue;}
+    if(!grouped[item.app]){grouped[item.app]={};}
+    if(!grouped[item.app][item.storeName]){grouped[item.app][item.storeName]=[];}
+    grouped[item.app][item.storeName].push(item);
+  }
+  return grouped;
+}
+
+function renderTree(){
+  var grouped=groupItems();
+  var apps=Object.keys(grouped).sort();
+  var total=0;
+  var html='';
+  if(apps.length===0){
+    html='<div class="empty">No storage items found for this origin/filter.</div>';
+  }
+  for(var a=0;a<apps.length;a++){
+    var app=apps[a];
+    var stores=Object.keys(grouped[app]).sort();
+    var appCount=0;
+    for(var c=0;c<stores.length;c++){appCount+=grouped[app][stores[c]].length;}
+    total+=appCount;
+    html+='<details open><summary><span class="node"><span class="badge app">app</span><span class="nodeLabel">'+esc(app)+'</span><span class="badge">'+appCount+'</span></span></summary>';
+    for(var s=0;s<stores.length;s++){
+      var storeName=stores[s];
+      var list=grouped[app][storeName];
+      html+='<details open><summary><span class="node"><span class="badge">store</span><span class="nodeLabel">'+esc(storeName)+'</span><span class="badge">'+list.length+'</span></span></summary>';
+      list.sort(function(x,y){return String(x.key).localeCompare(String(y.key));});
+      for(var i=0;i<list.length;i++){
+        var item=list[i];
+        var active=item.id===state.selectedId?' active':'';
+        html+='<div class="leaf'+active+'" data-id="'+esc(item.id)+'"><span class="badge '+esc(item.kind)+'">'+esc(item.kind)+'</span><span class="leafName">'+esc(item.key)+'</span></div>';
+      }
+      html+='</details>';
+    }
+    html+='</details>';
+  }
+  el('treeRoot').innerHTML=html;
+  el('itemCount').textContent=String(total);
+  el('originLine').textContent='Origin: '+location.origin;
+}
+
+function prettyValue(item){
+  if(item.kind==='local' || item.kind==='session'){
+    var parsed=tryJson(item.value);
+    if(parsed.ok){return JSON.stringify(parsed.value,null,2);}
+    return String(item.value==null?'':item.value);
+  }
+  return String(item.value==null?'':item.value);
+}
+
+function renderDetails(item){
+  state.selectedId=item.id;
+  el('selectedType').textContent=item.kind;
+  renderTree();
+  var deleteButton=item.canDelete?'delete-selectedDelete This Data</button>':'';
+  var html='';
+  html+='<div class="toolbar">'+deleteButton+'<button data-action="refresh">Refresh</button></div>';
+  html+='<div class="kv">';
+  html+='<div class="k">Type</div><div class="v">'+esc(item.kind)+'</div>';
+  html+='<div class="k">Store</div><div class="v">'+esc(item.storeName)+'</div>';
+  html+='<div class="k">App</div><div class="v">'+esc(item.app)+'</div>';
+  html+='<div class="k">UI</div><div class="v">'+esc(item.ui)+'</div>';
+  html+='<div class="k">Key</div><div class="v">'+esc(item.key)+'</div>';
+  html+='<div class="k">Size</div><div class="v">'+esc(item.size)+' bytes</div>';
+  html+='<div class="k">Hash</div><div class="v">'+esc(item.hash || '(n/a)')+'</div>';
+  html+='<div class="k">Value Type</div><div class="v">'+esc(item.jsonType)+'</div>';
+  html+='<div class="k">Origin</div><div class="v">'+esc(item.origin)+'</div>';
+  html+='<div class="k">Path</div><div class="v">'+esc(item.path)+'</div>';
+  html+='<div class="k">Discovered</div><div class="v">'+esc(item.localDiscoveredAt)+'</div>';
+  html+='</div>';
+  html+='<h3>Value / Description</h3>';
+  html+='<pre>'+esc(prettyValue(item))+'</pre>';
+  el('detailPane').innerHTML=html;
+}
+
+function deleteSelected(){
+  var item=getById(state.selectedId);
+  if(!item){return;}
+  var label=item.storeName+' / '+item.key;
+  if(!confirm('Delete data for '+label+'?')){return;}
+  if(item.kind==='local'){
+    localStorage.removeItem(item.key);
+    refresh();
+    return;
+  }
+  if(item.kind==='session'){
+    sessionStorage.removeItem(item.key);
+    refresh();
+    return;
+  }
+  if(item.kind==='idb' && item.dbName){
+    var req=indexedDB.deleteDatabase(item.dbName);
+    req.onsuccess=function(){refresh();};
+    req.onerror=function(){alert('Unable to delete IndexedDB database. It may be open in another tab.');refresh();};
+    req.onblocked=function(){alert('Delete blocked. Close other tabs using this database and try again.');};
+    return;
+  }
+  if(item.kind==='cache' && item.cacheName && window.caches){
+    caches.delete(item.cacheName).then(function(){refresh();});
+    return;
+  }
+}
+
+el('refreshBtn').addEventListener('click',function(){refresh();});
+el('deleteSelectedBtn').addEventListener('click',function(){deleteSelected();});
+el('filterBox').addEventListener('input',function(){state.filter=this.value;renderTree();});
+document.addEventListener('click',function(evt){
+  var leaf=evt.target.closest('.leaf');
+  if(leaf){
+    var item=getById(leaf.getAttribute('data-id'));
+    if(item){renderDetails(item);}
+    return;
+  }
+  var action=evt.target.getAttribute('data-action');
+  if(action==='delete-selected'){deleteSelected();return;}
+  if(action==='refresh'){refresh();return;}
+});
+
+refresh();
+})();
+</script>
+</body>
+</html>
