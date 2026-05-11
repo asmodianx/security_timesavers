@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSDP Full Manual & Wizard</title>
+    <style>
+        :root { --primary: #002244; --secondary: #0051ba; --accent: #ffc82d; --bg: #f8f9fa; --text: #333; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: var(--text); background: var(--bg); margin: 0; padding: 10px; }
+        .wrapper { max-width: 1300px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; flex-direction: column; min-height: 95vh; }
+        header { background: var(--primary); color: white; padding: 15px 25px; border-bottom: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .main-layout { display: flex; flex: 1; overflow: hidden; border-top: 1px solid #ddd; }
+        
+        /* Sidebar Navigation */
+        nav { width: 300px; background: #f1f3f5; border-right: 1px solid #dee2e6; padding: 15px; overflow-y: auto; }
+        .nav-group-title { font-weight: bold; color: #666; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 10px 5px; }
+        .nav-btn { display: block; width: 100%; padding: 10px 12px; margin-bottom: 5px; border: 1px solid #ced4da; background: white; text-align: left; border-radius: 4px; cursor: pointer; font-size: 0.85em; transition: 0.2s; }
+        .nav-btn:hover { background: #e9ecef; }
+        .nav-btn.active { background: var(--secondary); color: white; border-color: var(--secondary); font-weight: bold; }
+
+        /* Main Content Area */
+        article { flex: 1; padding: 35px; overflow-y: auto; position: relative; }
+        .step-header { display: flex; align-items: center; gap: 12px; margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .help-icon { background: var(--accent); color: var(--primary); width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 1px solid var(--primary); font-size: 18px; }
+
+        /* Form and Notation */
+        .form-section { background: #fff; border: 1px solid #dee2e6; padding: 25px; border-radius: 8px; margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: var(--primary); font-size: 0.9em; }
+        input, textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; font-size: 1em; }
+        .builder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .code-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; background: #f1f3f5; padding: 15px; border-radius: 6px; }
+
+        /* Modal / Help System */
+        #modalOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 1000; align-items: center; justify-content: center; }
+        #helpModal { background: white; width: 90%; max-width: 900px; max-height: 85vh; border-radius: 8px; padding: 40px; overflow-y: auto; position: relative; }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 32px; cursor: pointer; color: #999; }
+        .modal-body p { margin-bottom: 20px; text-align: justify; }
+        .modal-body blockquote { border-left: 5px solid var(--secondary); background: #f9f9f9; padding: 20px; margin: 25px 0; font-style: italic; }
+
+        /* Output View */
+        .output-box { background: #e7f1ff; padding: 20px; border: 2px solid var(--secondary); border-radius: 6px; margin-top: 30px; }
+        #finalResult { white-space: pre-wrap; font-family: 'Courier New', monospace; display: block; background: #fff; padding: 15px; border: 1px solid #b6d4fe; margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 10px; }
+        .action-btn { background: var(--secondary); color: white; border: none; padding: 12px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; flex: 1; }
+        .task-item { background: #343a40; color: #fff; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.85em; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div id="modalOverlay">
+    <div id="helpModal">
+        <span class="close-modal" onclick="closeHelp()">&times;</span>
+        <div id="modalBody" class="modal-body"></div>
+    </div>
+</div>
+
+<div class="wrapper">
+    <header>
+        <div>
+            <h1 style="margin:0; font-size:1.4em;">SSDP Manual & Project Wizard</h1>
+            <span style="font-size:0.85em; opacity:0.9;">EMGT 821 - Strategic Management of Technology Projects</span>
+        </div>
+        <button class="action-btn" style="max-width:160px; background:var(--accent); color:var(--primary);" onclick="window.print()">Export Full View</button>
+    </header>
+
+    <div class="main-layout">
+        <nav>
+            <div class="nav-group-title">Course Manual (Full Text)</div>
+            <button class="nav-btn" onclick="loadManual('sec1')">1. Purpose & Nature</button>
+            <button class="nav-btn" onclick="loadManual('sec2')">2. Project Context</button>
+            <button class="nav-btn" onclick="loadManual('sec3')">3. Project Definition</button>
+            <button class="nav-btn" onclick="loadManual('sec4')">4. Instructor Expectations</button>
+            <button class="nav-btn" onclick="loadManual('sec5')">5. Key Background Info</button>
+            <button class="nav-btn" onclick="loadManual('sec6')">6. Plan Updates (PUs)</button>
+            <button class="nav-btn" onclick="loadManual('proc')">Procedural Steps</button>
+            <button class="nav-btn" onclick="loadManual('notes')">Working Notes Production</button>
+            
+            <div class="nav-group-title">SSDP Plan Update Builder</div>
+            <div id="puNav"></div>
+        </nav>
+
+        <article id="mainContent"></article>
+    </div>
+</div>
+
+<script>
+    const manualContent = {
+        sec1: {
+            title: "Section 1 - Project Purpose and Nature",
+            body: `<p>Within the EMGT 821 course, the SSDP serves as the primary means of experiencing (simulated) application of all major course concepts and methods, allowing students to demonstrate skill in applying an integrated understanding of SMTP and related knowledge. </p>
+                   <p>The structure of the SSDP is an interlocking progression of very similar, carefully prescribed assignments integrated across all modules of the course. </p>`
+        },
+        sec2: {
+            title: "Section 2 - Project Context",
+            body: `<p>EMGT 821 is intended to address technical managers' need to be capable of assisting in the ongoing, long-term internal development of their organizations and, more particularly, to guide such development within those areas of the organization for which they have direct responsibility. </p>
+                   <p>Essential in facilitating this work, an effective SMTP system should provide the structure through which all related activities are guided, organized, and supported. Organizations will vary in the degree to which needed SMTP systems have been developed and function, thus making it extremely useful for practicing managers to have their own thorough understanding of how a complete effective, efficient SMTP system should be developed. </p>`
+        },
+        sec3: {
+            title: "Section 3 - Project Definition",
+            body: `<p>For EMGT 821's students, the SSDP is a comprehensive experience related to designing a detailed project workplan for bringing a complete business unit-level SMTP system into existence - that is, developing it - within a designated business unit. </p>
+                   <p>Students will be progressively applying evolving skills related to their knowledge and understanding of SMTP in the process of doing their workplan design work. The specifics of their chosen business unit - its specific goods and/or services produced, its organizational structure, etc. - will be reflected in the workplans they design. </p>
+                   <h3>Key simplifying assumptions:</h3>
+                   <ul>
+                    <li>It is assumed Figure 1 in this document and its associated explanation fully define the work involved in every SMTP system. </li>
+                    <li>It is assumed that a student is doing so as the personal representative of the head of the business unit... and therefore will have full authority to require other personnel of the business unit to participate. </li>
+                    <li>It is assumed that any and all work defined by a student... will be done by that student (alone) when the workplan is put into action. </li>
+                    <li>It is assumed there is no SMTP system already in place. </li>
+                   </ul>`
+        },
+        sec4: {
+            title: "Section 4 - Related Instructor Expectations",
+            body: `<p>First, each student will work on the SSDP independently, being allowed to talk with other students about mutual challenges faced in doing related work but not sharing actual related work products. </p>
+                   <p>Second, because students are... going to be both creating new substance... as well as make revisions to the information supplied in previously submitted PUs, it is expected that, as the SSDP concludes, there will be roughly ten pages of content in students' combinations of PUs produced throughout this course. </p>`
+        },
+        sec5: {
+            title: "Section 5 - Key Background Information",
+            body: `<p>In Figure 1, the nine stages of SMTP work are cryptically defined in boxes, and are labelled with the numbers "1" through "9", though both Stages 1 and 2 are shown as broken out into their three related "sub-stages" - and appending the letters "a", "b", and "c" to the related numerals. </p>
+                   <p>The basic content of all the work stages is conveyed through the very brief statements within boxes involving a useful acronym - involving bolded terms. </p>`
+        },
+        sec6: {
+            title: "Section 6 - SSDP Work: Plan Updates (PUs)",
+            body: `<p>PUs will be produced throughout the course, in connection with all modules, with a timing that matches students' ever-expanding SMTP-related knowledge base. The means of submitting PUs will be as SSDP Discussion Board entries. </p>
+                   <p>Successive PUs will be submitted as a series of entries, where Working Notes related to the design of work tasks for newly-addressed SMTP stage(s) are combined with modifications to the substance of prior PUs. </p>
+                   <p>From the outset of the SSDP, each student will need to maintain a Word-format (12-pt. font, "single-spaced") Master SSDP Worksheet (MSSDPW) from which the substance of successive PUs will be drawn. </p>`
+        },
+        proc: {
+            title: "Procedural Work Steps",
+            body: `<p>1. Give concentrated thought regarding what specific types of work will need to be done in achieving needed results for the stage(s), and then proceed to initial design of a sufficient set of work tasks... keep in mind that there are six different aspects of any system that need to be considered. </p>
+                   <p>2. Document whatever initial design substance you produce for work tasks in the MSSDPW by use of required notation. </p>
+                   <p>3. Proceed as far as practical in extending work task design from initial substance toward needed final substance. Constantly be updating the MSSDPW. </p>`
+        },
+        notes: {
+            title: "Working Notes Production",
+            body: `<p>Each student will, in the SSDP, be seeking... to design a workplan whereby all the content of that SMTP system is to be developed, and it is the working ideas that the student is producing about needed (new, and revised) work tasks that will be the main substance of that student's Working Notes. </p>
+                   <p>Specifically, the documenting notation to be used in defining each work task is <b>mTpp-xx[brief task name: key informant(s) involved, if any : brief task explanation: coded task contribution]</b>. </p>`
+        }
+    };
+
+    const stageExcerpts = {
+        1: `<p><b>Stage 1:</b> SMTP work must be integrated into overall operations... three different types of information must be sought out and assimilated. </p>
+            <p><b>1a:</b> Understand overall organizational direction (CBFO-VOS: Corporate, Business, Functional, and Operating). </p>
+            <p><b>1b:</b> Assure that the SMTP system Comply with organizational expectations as to how that system is to link with other key organizational systems. </p>
+            <p><b>1c:</b> Assure that technology project recommendations Comply with funding guidance. </p>`,
+        2: `<p><b>Stage 2:</b> Proceeding from results obtained from Stage 1 work, the work in Stage 2 is to Assess three aspects of ongoing operations: the day-to-day, routine production of goods/services, and both existing and planned project initiatives. </p>`,
+        3: `<p><b>Stage 3:</b> Comparing assessment results from Stage 2 with the directional information understood in Stage 1 work, work must be done to Identify any significant differences, as these differences represent Gaps needing to be eliminated. </p>`,
+        4: `<p><b>Stage 4:</b> For those components of the organization/business unit that are responsible for the SMTP system... Identify any gaps between the level of support... the system is intended to provide and what it is actually providing. </p>`,
+        5: `<p><b>Stage 5:</b> Gaps identified from Stages 3 and 4 must have new gap-eliminating technology projects devised, so the work of Stage 5 is to Gather/generate general ideas for these alternative projects. </p>`,
+        6: `<p><b>Stage 6:</b> Work must be done to Filter the ideas gathered/generated to the point of defining specific new projects which will become alternatives for the organization/business unit to focus on, with their specified scopes, schedules, and budgets. </p>`,
+        7: `<p><b>Stage 7:</b> Because often alternative technology projects come from various areas... the results of Stage 6 have to be scrutinized for possible redundancy, etc., through Comparative Analysis. </p>`,
+        8: `<p><b>Stage 8:</b> The focus of work to Analyze all these alternatives and, ultimately, to determine a final prioritized set of alternative new technology projects. </p>`,
+        9: `<p><b>Stage 9:</b> Working from information regarding funds available... and the results of Stage 8, work is done to both prepare for and Recommend what part of the final prioritized set of new technology projects should be pursued. </p>`
+    };
+
+    let allTasks = [];
+
+    function init() {
+        const puNav = document.getElementById('puNav');
+        for (let i = 1; i <= 10; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'nav-btn';
+            btn.id = `btn-pu-${i}`;
+            btn.innerText = (i === 1) ? `Update 1: Site Info` : `Update ${i}: Stage ${i-1}`;
+            btn.onclick = () => loadPU(i);
+            puNav.appendChild(btn);
+        }
+        loadManual('sec1');
+    }
+
+    function loadManual(key) {
+        setActiveNav(`btn-manual-${key}`);
+        const pg = manualContent[key];
+        document.getElementById('mainContent').innerHTML = `
+            <div class="ref-section">
+                <h1>${pg.title}</h1>
+                <div style="font-size:1.1em; color:#444;">${pg.body}</div>
+            </div>`;
+    }
+
+    function loadPU(id) {
+        setActiveNav(`btn-pu-${id}`);
+        const container = document.getElementById('mainContent');
+        const stageNum = id - 1;
+        const helpText = (id === 1) ? manualContent['sec6'].body : stageExcerpts[stageNum];
+
+        container.innerHTML = `
+            <div class="step-header">
+                <h2>Plan Update ${id} ${id === 1 ? '' : '(SMTP Stage ' + stageNum + ')'}</h2>
+                <div class="help-icon" onclick="openHelp('${helpText.replace(/'/g, "\\'").replace(/\n/g, "")}')">?</div>
+            </div>`;
+
+        if (id === 1) {
+            renderPU1(container);
+        } else {
+            renderTaskBuilder(container, id, stageNum);
+        }
+    }
+
+    function renderPU1(container) {
+        container.innerHTML += `
+            <div class="form-section">
+                <label>Business Unit Name</label><input type="text" id="siteName" placeholder="e.g., Information Security Dept">
+                <label>Organizational Structure </label><textarea id="siteStruct" rows="3" placeholder="Describe reporting hierarchy..."></textarea>
+                <label>Goods and/or Services Produced </label><textarea id="siteServices" rows="3" placeholder="Primary output of the unit..."></textarea>
+                <button class="action-btn" onclick="genPU1()">Generate PU 1 Output</button>
+            </div>
+            <div id="outputArea"></div>`;
+    }
+
+    function renderTaskBuilder(container, puId, stage) {
+        container.innerHTML += `
+            <div class="form-section">
+                <label>Reporting Date</label><input type="text" id="repDate" value="${new Date().toLocaleDateString()}">
+                <label>Narrative Summary </label>
+                <textarea id="narrative" rows="2" placeholder="Brief overview of working notes since last submission..."></textarea>
+            </div>
+            <div class="form-section" style="border: 2px solid var(--secondary);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="margin:0">Task Definition Builder </h3>
+                    <div class="help-icon" onclick="openHelp('${manualContent['notes'].body.replace(/'/g, "\\'").replace(/\n/g, "")}')">?</div>
+                </div>
+                <div class="builder-grid">
+                    <div><label>Task Number (xx)</label><input type="text" id="txx" value="01"></div>
+                    <div><label>Predecessor (pp)</label><input type="text" id="tpp" value="00"></div>
+                </div>
+                <label>Brief Task Name</label><input type="text" id="tname">
+                <label>Key Informants </label><input type="text" id="tinfo" placeholder="e.g., CO-IT">
+                <label>Task Explanation</label><textarea id="texpl" rows="2"></textarea>
+                <label>Coded Contribution </label>
+                <div class="code-choices">
+                    <label title="Function"><input type="checkbox" class="tcode" value="F"> F</label>
+                    <label title="Inputs"><input type="checkbox" class="tcode" value="I"> I</label>
+                    <label title="Outputs"><input type="checkbox" class="tcode" value="O"> O</label>
+                    <label title="Sequence"><input type="checkbox" class="tcode" value="S"> S</label>
+                    <label title="Physical Catalysts"><input type="checkbox" class="tcode" value="P"> P</label>
+                    <label title="Human Agents"><input type="checkbox" class="tcode" value="H"> H</label>
+                </div>
+                <button onclick="addTask(${stage})" style="width:100%; margin-top:15px; padding:12px; cursor:pointer;">Add Task to Update</button>
+            </div>
+            <div id="taskList"></div>
+            <button class="action-btn" onclick="genPU(${puId}, ${stage})">Finalize Plan Update ${puId}</button>
+            <div id="outputArea"></div>`;
+        refreshTasks(stage);
+    }
+
+    function addTask(stage) {
+        const xx = document.getElementById('txx').value.padStart(2, '0');
+        const pp = document.getElementById('tpp').value.padStart(2, '0');
+        let codes = '';
+        document.querySelectorAll('.tcode:checked').forEach(c => codes += c.value);
+        const task = `${stage}T${pp}-${xx} [${document.getElementById('tname').value}: ${document.getElementById('tinfo').value || 'n/a'}: ${document.getElementById('texpl').value}: ${codes}]`;
+        allTasks.push({ stage, task });
+        document.getElementById('txx').value = (parseInt(xx) + 1).toString().padStart(2, '0');
+        document.getElementById('tpp').value = xx;
+        refreshTasks(stage);
+    }
+
+    function refreshTasks(stage) {
+        const list = document.getElementById('taskList');
+        if(!list) return;
+        list.innerHTML = '<h4>Working Notes List:</h4>';
+        allTasks.filter(t => t.stage === stage).forEach(t => {
+            list.innerHTML += `<div class="task-item">${t.task}</div>`;
+        });
+    }
+
+    function genPU1() {
+        const out = `Site:\n    Name: ${document.getElementById('siteName').value}\n    Structure: ${document.getElementById('siteStruct').value}\n    Services: ${document.getElementById('siteServices').value}\n\nPlan Update 1\n    (No working notes per initial assignment instructions)`;
+        renderOutput(out);
+    }
+
+    function genPU(id, stage) {
+        const tasks = allTasks.filter(t => t.stage === stage).map(t => t.task).join('\n');
+        const out = `Plan Update ${id}\nGeneral-\n    Reporting Date: ${document.getElementById('repDate').value}\n    Prior PUs Revised: None\nNarrative-\n    ${document.getElementById('narrative').value}\nSMTP System Stage ${stage} Working Notes - Tasks Content-\n${tasks}\nMSSDPW Link Included.`;
+        renderOutput(out);
+    }
+
+    function renderOutput(text) {
+        document.getElementById('outputArea').innerHTML = `
+            <div class="output-box">
+                <code id="finalResult">${text}</code>
+                <div class="btn-group">
+                    <button class="action-btn" onclick="navigator.clipboard.writeText(document.getElementById('finalResult').innerText).then(() => alert('Copied!'))">Copy to Clipboard</button>
+                    <button class="action-btn" style="background:#198754" onclick="downloadTxt('${text}')">Save to .txt</button>
+                </div>
+            </div>`;
+    }
+
+    function setActiveNav(id) {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        const activeBtn = document.getElementById(id);
+        if(activeBtn) activeBtn.classList.add('active');
+    }
+
+    function openHelp(content) {
+        document.getElementById('modalBody').innerHTML = content;
+        document.getElementById('modalOverlay').style.display = 'flex';
+    }
+
+    function closeHelp() { document.getElementById('modalOverlay').style.display = 'none'; }
+    function downloadTxt(t) {
+        const blob = new Blob([t], {type: 'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'SSDP_Output.txt'; a.click();
+    }
+
+    init();
+</script>
+</body>
+</html>
