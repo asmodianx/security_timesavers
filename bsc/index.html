@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSC Strategy Cascade Builder</title>
+    <style>
+        /* Base Variables & Reset */
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --bg: #f4f7f6;
+            --text: #333;
+            --border: #ccc;
+            --sidebar: #eef2f5;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; }
+
+        /* App Layout - Split Screen */
+        .header { background: #fff; padding: 15px 30px; border-radius: 8px 8px 0 0; border-bottom: 3px solid var(--primary); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+        .main-workspace { display: flex; flex-grow: 1; background: #fff; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* Cascade Reference Sidebar */
+        .sidebar { width: 350px; background: var(--sidebar); border-right: 1px solid var(--border); padding: 20px; overflow-y: auto; }
+        .sidebar h3 { margin-top: 0; color: var(--primary); font-size: 1.1em; border-bottom: 2px solid var(--secondary); padding-bottom: 5px; }
+        .reference-card { background: #fff; border: 1px solid var(--border); padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 0.9em; }
+        .reference-card h4 { margin: 0 0 5px 0; color: var(--secondary); }
+        
+        /* Wizard Area */
+        .wizard-area { flex-grow: 1; padding: 30px; overflow-y: auto; position: relative; }
+        .step { display: none; }
+        .step.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        /* Typography & Forms */
+        h2 { color: var(--primary); margin-top: 0; }
+        h3 { margin-bottom: 10px; color: var(--primary); }
+        .help-text { background: #e8f4f8; border-left: 4px solid var(--secondary); padding: 10px; margin-bottom: 20px; font-size: 0.9em; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid var(--border); border-radius: 4px; }
+        
+        /* Canvas & UI */
+        #strategy-map { border: 1px solid var(--border); background: #fafafa; margin-top: 20px; cursor: crosshair; width: 100%; }
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        .btn:hover { background: var(--secondary); }
+        .btn-sm { padding: 4px 8px; font-size: 0.8em; }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-action { background: #27ae60; }
+        .controls { display: flex; justify-content: space-between; margin-top: 30px; border-top: 1px solid var(--border); padding-top: 20px; }
+
+        /* Library Manager */
+        .library-item { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 1px solid var(--border); padding: 10px; margin-bottom: 5px; border-radius: 4px; }
+
+        /* Dynamic Lists */
+        .dynamic-list-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+        .strat-card { background: #f9f9f9; padding: 15px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 15px; }
+        
+        /* Step 4 Data Table */
+        .data-entry-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .data-entry-table th, .data-entry-table td { border: 1px solid var(--border); padding: 8px; text-align: left; }
+        .data-entry-table th { background-color: var(--sidebar); }
+        .data-entry-table input { margin-top: 0; padding: 6px; }
+
+        /* Print Specifics - The Print Buffer */
+        #print-buffer { display: none; }
+        
+        @media print {
+            html, body { height: auto !important; overflow: visible !important; display: block !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+            .header, .main-workspace, .no-print { display: none !important; }
+            #print-buffer { display: block !important; width: 100%; position: static; }
+            @page { size: letter portrait; margin: 0.5in; }
+            
+            .print-header { text-align: center; border-bottom: 2px solid #000; margin-bottom: 20px; padding-bottom: 10px; page-break-after: avoid; }
+            .print-section { margin-bottom: 20px; }
+            .keep-together { page-break-inside: avoid; }
+            
+            .print-table { width: 100%; border-collapse: collapse; margin-top: 10px; page-break-inside: auto; font-size: 0.9em; }
+            .print-table tr { page-break-inside: avoid; page-break-after: auto; }
+            .print-table thead { display: table-header-group; } 
+            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; text-align: left; vertical-align: top; }
+            .print-table th { background-color: #f0f0f0; }
+            .current-val-col { background-color: #e8f4f8; font-weight: bold; }
+            
+            .print-img { max-width: 100%; height: auto; border: 1px solid #000; margin-top: 10px; }
+            .print-strat-box { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; background: #f9f9f9; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header no-print">
+    <h1>BSC Strategy Cascade Wizard</h1>
+    <div class="wizard-nav">
+        <button class="btn btn-outline" id="btnPrev" disabled>Previous Step</button>
+        <button class="btn" id="btnNext">Next Step</button>
+    </div>
+</div>
+
+<div class="main-workspace no-print">
+    <div class="sidebar" id="cascadeSidebar">
+        <h3>Cascade Context</h3>
+        <p style="font-size: 0.85em; color: #666;">Import a Master Scorecard to view its strategy here for alignment.</p>
+        <div id="parentContextContainer"></div>
+    </div>
+
+    <div class="wizard-area">
+        
+        <div id="step1" class="step active">
+            <h2>Step 1: Data Management & Foundation</h2>
+            
+            <div class="help-text">
+                <strong>Data Management:</strong> Load a previously saved scorecard to resume editing, OR import a parent scorecard into the library to serve as a reference on the left pane.
+            </div>
+            
+            <div style="display: flex; gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9f9f9; border: 1px solid var(--border); border-radius: 4px;">
+                <div>
+                    <strong>Resume Work:</strong><br>
+                    <input type="file" id="loadEditJson" accept=".json" style="display:none;">
+                    <button class="btn btn-action" style="margin-top: 5px;" onclick="document.getElementById('loadEditJson').click()">Load Scorecard to Edit</button>
+                </div>
+                <div style="border-left: 1px solid var(--border); padding-left: 15px;">
+                    <strong>Build Hierarchy:</strong><br>
+                    <input type="file" id="importParentJson" accept=".json" style="display:none;">
+                    <button class="btn btn-outline" style="margin-top: 5px;" onclick="document.getElementById('importParentJson').click()">Import Parent for Context</button>
+                </div>
+            </div>
+            
+            <div id="libraryContainer" style="margin-bottom: 30px;"></div>
+
+            <hr style="border:0; border-top:1px solid var(--border); margin: 30px 0;">
+
+            <h3>Identity & Core Values</h3>
+            <label>Organization / Department Name</label>
+            <input type="text" id="orgName" placeholder="e.g., Enterprise IT Services">
+            
+            <label>Mission (Why we exist)</label>
+            <textarea id="mission" rows="3"></textarea>
+            
+            <label>Vision (Where we are going)</label>
+            <textarea id="vision" rows="3"></textarea>
+
+            <label>Core Values</label>
+            <div id="coreValuesContainer"></div>
+            <button class="btn btn-outline btn-sm" onclick="addCoreValue()">+ Add Core Value</button>
+
+            <hr style="border:0; border-top:1px solid var(--border); margin: 30px 0;">
+
+            <h3>Strategies</h3>
+            <div class="help-text">
+                Define the high-level strategies or pillars for the organization. What are the key themes and what is the desired result for each?
+            </div>
+            <div id="strategiesContainer"></div>
+            <button class="btn btn-outline btn-sm" onclick="addStrategy()">+ Add Strategy</button>
+        </div>
+
+        <div id="step2" class="step">
+            <h2>Step 2: Strategic Objectives by Perspective</h2>
+            <div class="help-text">
+                <strong>Guidance:</strong> Define your objectives. Look at the Cascade Context on the left to ensure your metrics align with the broader organizational goals.
+            </div>
+            <div id="perspectivesContainer"></div>
+        </div>
+
+        <div id="step3" class="step">
+            <h2>Step 3: Strategy Map Links</h2>
+            <div class="help-text">
+                <strong>Guidance:</strong> Click and drag between objectives to establish cause-and-effect linkages.
+            </div>
+            <canvas id="strategy-map" width="800" height="500"></canvas>
+            <div style="margin-top: 10px;">
+                <button class="btn btn-outline btn-sm" id="btnClearLinks">Clear Linkages</button>
+            </div>
+        </div>
+
+        <div id="step4" class="step">
+            <h2>Step 4: Operational Status & Export</h2>
+            <div class="help-text">
+                <strong>Guidance:</strong> Enter the current period and provide a summary of progress. Then, fill in the "Current Value" for your metrics to generate an accurate status update.
+            </div>
+            
+            <label>Operational Period</label>
+            <input type="text" id="opPeriod" placeholder="e.g., Q3 2026">
+            
+            <label>Summary / Progress Notes</label>
+            <textarea id="progressNotes" rows="4"></textarea>
+
+            <div style="margin-top: 20px;">
+                <h3>Current Metric Values</h3>
+                <div id="step4-metrics-container">
+                    </div>
+            </div>
+            
+            <div style="margin-top: 40px; border-top: 2px solid var(--border); padding-top: 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="btn btn-outline" id="btnExportJson" style="border-color: #2c3e50; color: #2c3e50;">💾 Export JSON Data</button>
+                <button class="btn btn-action" id="btnExportFullPdf">📄 Print Full Scorecard</button>
+                <button class="btn" style="background: #e67e22;" id="btnExportStatusPdf">📊 Print Dated Status Update</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="print-buffer"></div>
+
+<script>
+    /* --- State Management & Data Model --- */
+    let currentStep = 1;
+    const totalSteps = 4;
+    
+    let bscData = {
+        meta: { id: crypto.randomUUID(), parentId: null, dateCreated: new Date().toISOString() },
+        foundation: { orgName: "", mission: "", vision: "" },
+        coreValues: [{ id: crypto.randomUUID(), text: "Excellence" }],
+        strategies: [{ id: crypto.randomUUID(), theme: "Operational Efficiency", results: "Streamlined processes reducing overhead by 10%." }],
+        perspectives: {
+            financial: [{ id: crypto.randomUUID(), text: "Improve Efficiency", metric: "Cost", target: "-5%", current: "" }],
+            customer: [], internal: [], learning: []
+        },
+        links: [],
+        progress: { period: "", notes: "" }
+    };
+
+    let scorecardLibrary = []; 
+    let activeParentId = null;
+
+    const perspectiveNames = {
+        financial: "Financial", customer: "Customer / Stakeholder",
+        internal: "Internal Process", learning: "Learning & Growth"
+    };
+
+    /* --- Initialization & Navigation --- */
+    document.getElementById('btnPrev').addEventListener('click', () => changeStep(-1));
+    document.getElementById('btnNext').addEventListener('click', () => changeStep(1));
+
+    function changeStep(direction) {
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        currentStep += direction;
+        document.getElementById(`step${currentStep}`).classList.add('active');
+        
+        document.getElementById('btnPrev').disabled = currentStep === 1;
+        document.getElementById('btnNext').style.display = currentStep === totalSteps ? 'none' : 'block';
+
+        if (currentStep === 2) renderPerspectivesUI();
+        if (currentStep === 3) initCanvas();
+        if (currentStep === 4) renderStep4MetricsUI(); // Renders the current value inputs
+    }
+
+    /* --- Form Binding (Static Fields) --- */
+    document.getElementById('orgName').addEventListener('input', (e) => bscData.foundation.orgName = e.target.value);
+    document.getElementById('mission').addEventListener('input', (e) => bscData.foundation.mission = e.target.value);
+    document.getElementById('vision').addEventListener('input', (e) => bscData.foundation.vision = e.target.value);
+    document.getElementById('opPeriod').addEventListener('input', (e) => bscData.progress.period = e.target.value);
+    document.getElementById('progressNotes').addEventListener('input', (e) => bscData.progress.notes = e.target.value);
+
+    /* --- Core Values UI --- */
+    function renderCoreValuesUI() {
+        const container = document.getElementById('coreValuesContainer');
+        container.innerHTML = '';
+        (bscData.coreValues || []).forEach((cv, index) => {
+            container.innerHTML += `
+            <div class="dynamic-list-item">
+                <input type="text" placeholder="e.g., Integrity, Innovation, etc." value="${cv.text || ''}" oninput="updateCoreValue(${index}, this.value)">
+                <button class="btn btn-outline btn-sm" style="color:red; border-color:red;" onclick="removeCoreValue(${index})">X</button>
+            </div>`;
+        });
+    }
+    function addCoreValue() { 
+        if(!bscData.coreValues) bscData.coreValues = [];
+        bscData.coreValues.push({ id: crypto.randomUUID(), text: "" }); 
+        renderCoreValuesUI(); 
+    }
+    function updateCoreValue(index, val) { bscData.coreValues[index].text = val; }
+    function removeCoreValue(index) { bscData.coreValues.splice(index, 1); renderCoreValuesUI(); }
+
+    /* --- Strategies UI --- */
+    function renderStrategiesUI() {
+        const container = document.getElementById('strategiesContainer');
+        container.innerHTML = '';
+        (bscData.strategies || []).forEach((strat, index) => {
+            container.innerHTML += `
+            <div class="strat-card dynamic-list-item">
+                <div style="flex-grow: 1;">
+                    <input type="text" placeholder="Strategic Theme (e.g., Digital Transformation)" value="${strat.theme || ''}" oninput="updateStrategy(${index}, 'theme', this.value)" style="margin-top:0;">
+                    <textarea placeholder="Theme Results (What does success look like?)" rows="2" oninput="updateStrategy(${index}, 'results', this.value)">${strat.results || ''}</textarea>
+                </div>
+                <button class="btn btn-outline btn-sm" style="color:red; border-color:red;" onclick="removeStrategy(${index})">X</button>
+            </div>`;
+        });
+    }
+    function addStrategy() { 
+        if(!bscData.strategies) bscData.strategies = [];
+        bscData.strategies.push({ id: crypto.randomUUID(), theme: "", results: "" }); 
+        renderStrategiesUI(); 
+    }
+    function updateStrategy(index, field, val) { bscData.strategies[index][field] = val; }
+    function removeStrategy(index) { bscData.strategies.splice(index, 1); renderStrategiesUI(); }
+
+    renderCoreValuesUI();
+    renderStrategiesUI();
+
+    /* --- Step 4 Metrics Data Entry UI --- */
+    function renderStep4MetricsUI() {
+        const container = document.getElementById('step4-metrics-container');
+        let html = `<table class="data-entry-table">
+            <thead>
+                <tr>
+                    <th>Perspective & Objective</th>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th style="background: #e8f4f8; color: var(--secondary);">Current Value</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        let hasObjectives = false;
+
+        Object.keys(perspectiveNames).forEach(key => {
+            const objs = bscData.perspectives[key];
+            if (objs && objs.length > 0) {
+                hasObjectives = true;
+                html += `<tr><td colspan="4" style="background:#f9f9f9; font-weight:bold; color:var(--primary);">${perspectiveNames[key]}</td></tr>`;
+                objs.forEach((obj, index) => {
+                    html += `<tr>
+                        <td>${obj.text}</td>
+                        <td>${obj.metric}</td>
+                        <td>${obj.target}</td>
+                        <td style="background: #fdfdfd;">
+                            <input type="text" placeholder="e.g., 85%, $1.2M..." value="${obj.current || ''}" oninput="updateCurrentValue('${key}', ${index}, this.value)">
+                        </td>
+                    </tr>`;
+                });
+            }
+        });
+
+        html += `</tbody></table>`;
+        if (!hasObjectives) {
+            html = `<p style="color: #666; font-style: italic;">No strategic objectives have been defined in Step 2.</p>`;
+        }
+        container.innerHTML = html;
+    }
+
+    window.updateCurrentValue = function(perspective, index, val) {
+        if (!bscData.perspectives[perspective][index]) return;
+        bscData.perspectives[perspective][index].current = val;
+    }
+
+    /* --- Data Loading Logic --- */
+    document.getElementById('loadEditJson').addEventListener('change', function(event) {
+        const file = event.target.files;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (!imported.meta || !imported.foundation) throw new Error("Invalid structure");
+                
+                bscData = imported;
+                
+                // Polyfill Missing Keys
+                if (!bscData.progress) bscData.progress = { period: "", notes: "" };
+                if (!bscData.coreValues) bscData.coreValues = [];
+                if (!bscData.strategies) bscData.strategies = [];
+                
+                // Migration: Strategies
+                bscData.strategies.forEach(s => {
+                    if (s.result !== undefined && s.results === undefined) { s.results = s.result; delete s.result; }
+                });
+
+                // Migration: Objectives current value
+                Object.keys(perspectiveNames).forEach(key => {
+                    if (bscData.perspectives[key]) {
+                        bscData.perspectives[key].forEach(obj => {
+                            if (obj.current === undefined) obj.current = "";
+                        });
+                    }
+                });
+
+                document.getElementById('orgName').value = bscData.foundation.orgName || "";
+                document.getElementById('mission').value = bscData.foundation.mission || "";
+                document.getElementById('vision').value = bscData.foundation.vision || "";
+                document.getElementById('opPeriod').value = bscData.progress.period || "";
+                document.getElementById('progressNotes').value = bscData.progress.notes || "";
+                
+                renderCoreValuesUI();
+                renderStrategiesUI();
+                renderPerspectivesUI();
+                if(currentStep === 4) renderStep4MetricsUI();
+                if(canvas) initCanvas(); 
+                
+                document.getElementById('loadEditJson').value = ""; 
+                alert(`Successfully loaded '${bscData.foundation.orgName}' into the workspace.`);
+            } catch (err) { alert("Error loading file: " + err.message); }
+        };
+        reader.readAsText(file[0]);
+    });
+
+    document.getElementById('importParentJson').addEventListener('change', function(event) {
+        const file = event.target.files;
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (!imported.meta || !imported.foundation) throw new Error("Invalid structure");
+                
+                if (imported.strategies) {
+                    imported.strategies.forEach(s => {
+                        if (s.result !== undefined && s.results === undefined) { s.results = s.result; delete s.result; }
+                    });
+                }
+
+                scorecardLibrary.push(imported);
+                renderLibrary();
+                document.getElementById('importParentJson').value = ""; 
+            } catch (err) { alert("Error loading file: " + err.message); }
+        };
+        reader.readAsText(file);
+    });
+
+    /* --- Library & Context UI --- */
+    function renderLibrary() {
+        const container = document.getElementById('libraryContainer');
+        if (scorecardLibrary.length === 0) { container.innerHTML = ""; return; }
+
+        let html = `<h4>Imported Context Library</h4>`;
+        scorecardLibrary.forEach(card => {
+            const isParent = activeParentId === card.meta.id;
+            html += `
+            <div class="library-item" style="${isParent ? 'border-left: 4px solid var(--secondary); background: #eaf4fb;' : ''}">
+                <div><strong>${card.foundation.orgName || "Unnamed Org"}</strong> <br> <small>${card.meta.id.split('-')}</small></div>
+                <button class="btn btn-sm ${isParent ? 'btn-outline' : ''}" onclick="setParentContext('${card.meta.id}')">
+                    ${isParent ? 'Active Parent Context' : 'Set as Parent Context'}
+                </button>
+            </div>`;
+        });
+        container.innerHTML = html;
+    }
+
+    function setParentContext(id) {
+        activeParentId = id;
+        bscData.meta.parentId = id;
+        renderLibrary();
+        renderCascadeSidebar();
+    }
+
+    function renderCascadeSidebar() {
+        const container = document.getElementById('parentContextContainer');
+        const parent = scorecardLibrary.find(c => c.meta.id === activeParentId);
+        if (!parent) { container.innerHTML = ""; return; }
+
+        let html = `<div class="reference-card"><h4>Parent Organization</h4><strong>${parent.foundation.orgName}</strong></div>
+                    <div class="reference-card"><h4>Mission</h4>${parent.foundation.mission}</div>`;
+
+        if (parent.strategies && parent.strategies.length > 0) {
+            html += `<div class="reference-card"><h4>Strategic Themes</h4><ul style="margin:0; padding-left: 20px;">`;
+            parent.strategies.forEach(s => {
+                if(s.theme) html += `<li><strong>${s.theme}</strong>: ${s.results || ''}</li>`;
+            });
+            html += `</ul></div>`;
+        }
+
+        Object.keys(perspectiveNames).forEach(key => {
+            if (parent.perspectives[key] && parent.perspectives[key].length > 0) {
+                html += `<div class="reference-card"><h4>${perspectiveNames[key]} Goals</h4><ul style="margin:0; padding-left: 20px;">`;
+                parent.perspectives[key].forEach(obj => {
+                    if(obj.text) html += `<li>${obj.text} (Target: ${obj.target})</li>`;
+                });
+                html += `</ul></div>`;
+            }
+        });
+        container.innerHTML = html;
+    }
+
+    /* --- Dynamic UI Generation (Step 2) --- */
+    function renderPerspectivesUI() {
+        const container = document.getElementById('perspectivesContainer');
+        container.innerHTML = '';
+
+        for (const [key, name] of Object.entries(perspectiveNames)) {
+            let html = `<div style="margin-bottom: 20px; padding: 15px; border: 1px solid var(--border); border-radius: 4px; background: #fff;">
+                <h3 style="margin-top:0; color:var(--primary);">${name}</h3>
+                <div id="list-${key}">`;
+            
+            bscData.perspectives[key].forEach((obj, index) => {
+                html += `
+                <div class="dynamic-list-item">
+                    <input type="text" placeholder="Objective" value="${obj.text}" oninput="updateObj('${key}', ${index}, 'text', this.value)">
+                    <input type="text" placeholder="Metric" value="${obj.metric}" oninput="updateObj('${key}', ${index}, 'metric', this.value)">
+                    <input type="text" placeholder="Target" value="${obj.target}" oninput="updateObj('${key}', ${index}, 'target', this.value)">
+                    <button class="btn btn-outline btn-sm" style="color:red; border-color:red;" onclick="removeObj('${key}', ${index})">X</button>
+                </div>`;
+            });
+
+            html += `</div><button class="btn btn-outline btn-sm" onclick="addObjective('${key}')">+ Add Objective</button></div>`;
+            container.innerHTML += html;
+        }
+    }
+
+    function addObjective(perspective) {
+        bscData.perspectives[perspective].push({ id: crypto.randomUUID(), text: "", metric: "", target: "", current: "" });
+        renderPerspectivesUI();
+    }
+    function updateObj(perspective, index, field, value) { bscData.perspectives[perspective][index][field] = value; }
+    function removeObj(perspective, index) {
+        const removedId = bscData.perspectives[perspective][index].id;
+        bscData.links = bscData.links.filter(l => l.from !== removedId && l.to !== removedId);
+        bscData.perspectives[perspective].splice(index, 1);
+        renderPerspectivesUI();
+        if(currentStep === 3) initCanvas();
+    }
+
+    /* --- HTML5 Canvas Strategy Map (Step 3) --- */
+    let canvas, ctx, nodeMap = {}, isDragging = false, dragStartNode = null, mouseX, mouseY;
+
+    function initCanvas() {
+        canvas = document.getElementById('strategy-map');
+        ctx = canvas.getContext('2d');
+        calculateNodes();
+        drawCanvas();
+        canvas.onmousedown = handleMouseDown; 
+        canvas.onmousemove = handleMouseMove; 
+        canvas.onmouseup = handleMouseUp;
+    }
+
+    function calculateNodes() {
+        nodeMap = {};
+        const persKeys = ['financial', 'customer', 'internal', 'learning'];
+        const rowHeight = canvas.height / 4;
+        const boxWidth = 140; const boxHeight = 60;
+
+        persKeys.forEach((key, rIndex) => {
+            const objs = bscData.perspectives[key].filter(o => o.text.trim() !== "");
+            const spacing = canvas.width / (objs.length + 1);
+            objs.forEach((obj, cIndex) => {
+                nodeMap[obj.id] = { id: obj.id, text: obj.text, x: spacing * (cIndex + 1) - (boxWidth / 2), y: (rowHeight * rIndex) + (rowHeight / 2) - (boxHeight / 2), w: boxWidth, h: boxHeight, perspective: key };
+            });
+        });
+    }
+
+    function drawCanvas() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const rowHeight = canvas.height / 4;
+        const persKeys = ['financial', 'customer', 'internal', 'learning'];
+        
+        ctx.font = "bold 14px sans-serif"; ctx.textAlign = "left";
+        persKeys.forEach((key, rIndex) => {
+            ctx.fillStyle = rIndex % 2 === 0 ? "#f9f9f9" : "#ffffff";
+            ctx.fillRect(0, rIndex * rowHeight, canvas.width, rowHeight);
+            ctx.fillStyle = "#bdc3c7";
+            ctx.fillText(perspectiveNames[key].toUpperCase(), 10, (rIndex * rowHeight) + 25);
+        });
+
+        ctx.strokeStyle = "#3498db"; ctx.lineWidth = 2;
+        bscData.links.forEach(link => {
+            const fromNode = nodeMap[link.from]; const toNode = nodeMap[link.to];
+            if (fromNode && toNode) drawArrow(fromNode, toNode);
+        });
+
+        if (isDragging && dragStartNode) {
+            ctx.beginPath(); ctx.moveTo(dragStartNode.x + dragStartNode.w / 2, dragStartNode.y); ctx.lineTo(mouseX, mouseY); ctx.stroke();
+        }
+
+        ctx.textAlign = "center"; ctx.textBaseline = "middle"; 
+        
+        Object.values(nodeMap).forEach(node => {
+            ctx.fillStyle = "#2c3e50"; 
+            ctx.fillRect(node.x, node.y, node.w, node.h); 
+            ctx.fillStyle = "#fff";
+            
+            let fontSize = 12;
+            ctx.font = `${fontSize}px sans-serif`;
+            
+            let words = node.text.split(' ');
+            let lines = [];
+            let currentLine = words || "";
+
+            for (let i = 1; i < words.length; i++) {
+                let word = words[i];
+                let width = ctx.measureText(currentLine + " " + word).width;
+                if (width < node.w - 10) {
+                    currentLine += " " + word;
+                } else {
+                    lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if(currentLine) lines.push(currentLine);
+
+            if (lines.length > 3) {
+                fontSize = 9;
+                ctx.font = `${fontSize}px sans-serif`;
+                lines = [];
+                currentLine = words || "";
+                for (let i = 1; i < words.length; i++) {
+                    let word = words[i];
+                    let width = ctx.measureText(currentLine + " " + word).width;
+                    if (width < node.w - 10) {
+                        currentLine += " " + word;
+                    } else {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    }
+                }
+                if(currentLine) lines.push(currentLine);
+            }
+
+            let lineHeight = fontSize * 1.2;
+            let totalHeight = lines.length * lineHeight;
+            let startY = node.y + (node.h / 2) - (totalHeight / 2) + (lineHeight / 2);
+
+            lines.forEach((line, index) => {
+                ctx.fillText(line, node.x + node.w / 2, startY + (index * lineHeight));
+            });
+        });
+    }
+
+    function drawArrow(from, to) {
+        ctx.beginPath();
+        let startX = from.x + from.w / 2; let startY = from.y;
+        let endX = to.x + to.w / 2; let endY = to.y + to.h;
+        ctx.moveTo(startX, startY); ctx.lineTo(endX, endY); ctx.stroke();
+        const angle = Math.atan2(endY - startY, endX - startX);
+        ctx.beginPath(); ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - 10 * Math.cos(angle - Math.PI / 6), endY - 10 * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(endX - 10 * Math.cos(angle + Math.PI / 6), endY - 10 * Math.sin(angle + Math.PI / 6));
+        ctx.fillStyle = "#3498db"; ctx.fill();
+    }
+
+    function getMousePos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return { x: (evt.clientX - rect.left) * scaleX, y: (evt.clientY - rect.top) * scaleY };
+    }
+
+    function getNodeAt(x, y) { return Object.values(nodeMap).find(n => x >= n.x && x <= n.x + n.w && y >= n.y && y <= n.y + n.h); }
+    
+    function handleMouseDown(e) { 
+        const pos = getMousePos(canvas, e);
+        mouseX = pos.x; mouseY = pos.y; 
+        dragStartNode = getNodeAt(mouseX, mouseY); 
+        if (dragStartNode) isDragging = true; 
+    }
+    
+    function handleMouseMove(e) { 
+        if (!isDragging) return; 
+        const pos = getMousePos(canvas, e);
+        mouseX = pos.x; mouseY = pos.y; 
+        drawCanvas(); 
+    }
+    
+    function handleMouseUp(e) {
+        if (!isDragging) return;
+        isDragging = false; 
+        const pos = getMousePos(canvas, e);
+        const endNode = getNodeAt(pos.x, pos.y);
+        if (endNode && endNode.id !== dragStartNode.id) {
+            if (!bscData.links.find(l => l.from === dragStartNode.id && l.to === endNode.id)) { 
+                bscData.links.push({ from: dragStartNode.id, to: endNode.id }); 
+            }
+        }
+        dragStartNode = null; 
+        drawCanvas();
+    }
+    
+    document.getElementById('btnClearLinks').addEventListener('click', () => { bscData.links = []; drawCanvas(); });
+
+    /* --- Dual Print Engine & Export --- */
+    document.getElementById('btnExportJson').addEventListener('click', () => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bscData, null, 2));
+        const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", `bsc_${bscData.foundation.orgName.replace(/\s+/g, '_')}.json`); dl.click();
+    });
+
+    document.getElementById('btnExportFullPdf').addEventListener('click', () => printLayout('full'));
+    document.getElementById('btnExportStatusPdf').addEventListener('click', () => printLayout('status'));
+
+    function printLayout(type) {
+        if(!canvas) initCanvas(); 
+        const buffer = document.getElementById('print-buffer');
+        const parent = scorecardLibrary.find(c => c.meta.id === activeParentId);
+        let parentHierarchyStr = parent ? `<p><strong>Cascaded From:</strong> ${parent.foundation.orgName}</p>` : "";
+        let isStatus = (type === 'status');
+
+        let printHTML = "";
+
+        // Layout 1: FULL SCORECARD MASTER PLAN
+        if (!isStatus) {
+            let cvString = (bscData.coreValues || []).filter(c => c && c.text && c.text.trim() !== "").map(c => c.text).join(" • ");
+            let stratHTML = "";
+            let validStrats = (bscData.strategies || []).filter(s => s && s.theme && s.theme.trim() !== "");
+            if (validStrats.length > 0) {
+                stratHTML = `<div class="print-section"><h3>Strategic Themes & Results</h3>`;
+                validStrats.forEach(s => { stratHTML += `<div class="print-strat-box"><strong>${s.theme}</strong>: ${s.results || ''}</div>`; });
+                stratHTML += `</div>`;
+            }
+
+            printHTML += `
+                <div class="print-header keep-together">
+                    <h2>Balanced Scorecard: ${bscData.foundation.orgName || "Unnamed Organization"}</h2>
+                    ${parentHierarchyStr}
+                    <p><strong>Mission:</strong> ${bscData.foundation.mission}</p>
+                    <p><strong>Vision:</strong> ${bscData.foundation.vision}</p>
+                    ${cvString ? `<p><strong>Core Values:</strong> ${cvString}</p>` : ''}
+                </div>
+                ${stratHTML}
+                <div class="print-section keep-together">
+                    <h3>Strategy Map</h3>
+                    <img src="${canvas.toDataURL('image/png')}" class="print-img" alt="Strategy Map">
+                </div>
+            `;
+        } 
+        
+        // Layout 2: DATED STATUS UPDATE
+        else {
+            printHTML += `
+                <div class="print-header keep-together">
+                    <h2>Strategy Status Update: ${bscData.foundation.orgName || "Unnamed Organization"}</h2>
+                    <h3>Operational Period: ${bscData.progress.period || "Current Period"}</h3>
+                    ${parentHierarchyStr}
+                </div>
+                
+                <div class="print-section keep-together" style="background: #f9f9f9; padding: 15px; border-left: 4px solid #3498db; margin-bottom: 20px;">
+                    <h3 style="margin-top:0;">Executive Summary</h3>
+                    <p style="white-space: pre-wrap; margin-bottom:0;">${bscData.progress.notes || "No updates provided for this period."}</p>
+                </div>
+
+                <div class="print-section keep-together">
+                    <h3>Strategy Map Snapshot</h3>
+                    <img src="${canvas.toDataURL('image/png')}" class="print-img" alt="Strategy Map">
+                </div>
+            `;
+        }
+
+        // Table Header setup based on print layout type
+        printHTML += `
+            <div class="print-section">
+                <h3 class="keep-together">Performance Metrics & Objectives</h3>
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th>Perspective</th>
+                            <th>Strategic Objective</th>
+                            <th>Metric</th>
+                            <th>Target</th>
+                            ${isStatus ? '<th class="current-val-col">Current</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+        // Generate Table Rows
+        Object.keys(perspectiveNames).forEach(key => {
+            const objs = bscData.perspectives[key];
+            if(!objs || objs.length === 0) return;
+            objs.forEach((obj, index) => {
+                printHTML += `<tr>
+                    ${index === 0 ? `<td rowspan="${objs.length}"><strong>${perspectiveNames[key]}</strong></td>` : ''}
+                    <td>${obj.text || ''}</td>
+                    <td>${obj.metric || ''}</td>
+                    <td>${obj.target || ''}</td>
+                    ${isStatus ? `<td class="current-val-col">${obj.current || ''}</td>` : ''}
+                </tr>`;
+            });
+        });
+
+        printHTML += `</tbody></table></div>`;
+        
+        buffer.innerHTML = printHTML;
+        setTimeout(() => window.print(), 300);
+    }
+</script>
+</body>
+</html>
