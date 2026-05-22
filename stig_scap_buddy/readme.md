@@ -280,10 +280,4 @@ You must:
 Intended for internal operational and compliance use.  
 No external dependencies or licensing requirements.
 
-***
 
-If you want, I can next extend this into:
-
-* A KU ITSO-branded version
-* A compliance reporting/export mode
-* Or add structured mapping (CCI ↔ NIST ↔ STIG IDs)
