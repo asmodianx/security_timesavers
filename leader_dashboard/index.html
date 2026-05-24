@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#121212">
+    <title>Tactical Operations Logger</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">CERT TOL</div>
+        <div class="status-indicator" id="top-status-indicator">
+            <span class="status-dot"></span> Checking System...
+        </div>
+    </header>
+
+    <main id="app-container">
+        <section id="tab-init" class="tab-pane active">
+            <h2>Incident Initialization</h2>
+            <div class="form-group">
+                <label for="inc-name">Incident Name / Event</label>
+                <input type="text" id="inc-name" placeholder="e.g., Olathe SAR Op">
+            </div>
+            <div class="form-group">
+                <label for="inc-period">Operational Period</label>
+                <input type="text" id="inc-period" placeholder="e.g., 24-May 0800-2000">
+            </div>
+            <div class="form-group">
+                <label for="inc-comms">Primary Comms Plan</label>
+                <input type="text" id="inc-comms" placeholder="e.g., FRS Ch 4 / Tac 146.520">
+            </div>
+            <button id="btn-save-init" class="btn primary-btn">Save Incident Details</button>
+            <div id="init-status" class="status-msg"></div>
+        </section>
+
+        <section id="tab-personnel" class="tab-pane">
+            <h2>Personnel & Check-In</h2>
+            
+            <button id="btn-camera-scan" class="btn secondary-btn" style="margin-bottom: 20px; border-color: var(--accent-color); color: var(--accent-color);">
+                📷 Scan ID Badge (Camera API)
+            </button>
+            
+            <h3 class="section-subhead">Manual Check-In</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="manual-lname">Last Name *</label>
+                    <input type="text" id="manual-lname" placeholder="Doe">
+                </div>
+                <div class="form-group">
+                    <label for="manual-fname">First Name *</label>
+                    <input type="text" id="manual-fname" placeholder="John">
+                </div>
+                <div class="form-group">
+                    <label for="manual-role">Role</label>
+                    <input type="text" id="manual-role" placeholder="Responder">
+                </div>
+                <div class="form-group">
+                    <label for="manual-team">Team</label>
+                    <input type="text" id="manual-team" placeholder="Unassigned">
+                </div>
+            </div>
+            <button id="btn-add-manual" class="btn primary-btn" style="margin-bottom: 25px;">Add to Roster</button>
+            
+            <h3 class="section-subhead" style="margin-bottom: 5px;">Active Roster (<span id="roster-count">0</span>)</h3>
+            <div id="team-summary" class="team-summary-badge">Active Teams: None</div>
+            <div id="roster-list" class="roster-list"></div>
+        </section>
+
+        <section id="tab-log" class="tab-pane">
+            <h2>Activity & Triage</h2>
+            
+            <div class="triage-grid">
+                <div class="triage-card triage-red">
+                    <div class="t-label">Immediate</div>
+                    <div class="t-controls">
+                        <button class="t-btn" data-color="red" data-val="-1">-</button>
+                        <span class="t-count" id="t-count-red">0</span>
+                        <button class="t-btn" data-color="red" data-val="1">+</button>
+                    </div>
+                </div>
+                <div class="triage-card triage-yellow">
+                    <div class="t-label">Delayed</div>
+                    <div class="t-controls">
+                        <button class="t-btn" data-color="yellow" data-val="-1">-</button>
+                        <span class="t-count" id="t-count-yellow">0</span>
+                        <button class="t-btn" data-color="yellow" data-val="1">+</button>
+                    </div>
+                </div>
+                <div class="triage-card triage-green">
+                    <div class="t-label">Minor</div>
+                    <div class="t-controls">
+                        <button class="t-btn" data-color="green" data-val="-1">-</button>
+                        <span class="t-count" id="t-count-green">0</span>
+                        <button class="t-btn" data-color="green" data-val="1">+</button>
+                    </div>
+                </div>
+                <div class="triage-card triage-black">
+                    <div class="t-label">Deceased</div>
+                    <div class="t-controls">
+                        <button class="t-btn" data-color="black" data-val="-1">-</button>
+                        <span class="t-count" id="t-count-black">0</span>
+                        <button class="t-btn" data-color="black" data-val="1">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="section-subhead">Tactical Narrative (ICS-214)</h3>
+            <div class="macro-bar">
+                <button class="macro-btn">[ASSIGNMENT]</button>
+                <button class="macro-btn">[COMPLETED]</button>
+                <button class="macro-btn">[SITREP]</button>
+                <button class="macro-btn">[RADIO TRAFFIC]</button>
+                <button class="macro-btn">[COMMS CHECK]</button>
+                <button class="macro-btn">[RE-ROUTE]</button>
+                <button class="macro-btn" style="color:var(--danger-color); border-color:var(--danger-color);">[MAYDAY/URGENT]</button>
+                <button class="macro-btn">[VICTIM LOCATED]</button>
+                <button class="macro-btn">[MED ALERT]</button>
+            </div>
+            <div class="log-input-group">
+                <input type="text" id="log-input" placeholder="Enter activity log...">
+                <button id="btn-submit-log" class="btn primary-btn">Log</button>
+            </div>
+
+            <div id="log-feed" class="log-feed"></div>
+        </section>
+
+        <section id="tab-logistics" class="tab-pane">
+            <h2>Resource Ledger (ICS-213RR)</h2>
+            <div class="form-group">
+                <label for="res-name">Resource Requested (Type/Item)</label>
+                <input type="text" id="res-name" placeholder="e.g., 5kW Generator, Bottled Water">
+            </div>
+            <div class="form-group">
+                <label for="res-qty">Quantity</label>
+                <input type="number" id="res-qty" placeholder="e.g., 2" min="1">
+            </div>
+            <button id="btn-req-resource" class="btn secondary-btn">Submit Request</button>
+
+            <h3 class="section-subhead">Active Ledger (<span id="resource-count">0</span>)</h3>
+            <div id="resource-list" class="resource-list"></div>
+        </section>
+
+        <section id="tab-export" class="tab-pane">
+            <h2>SitRep & Export Engine</h2>
+            <p class="helper-text">Generate transmission-ready payloads for off-grid comms or desktop archiving.</p>
+            
+            <button id="btn-generate-md" class="btn primary-btn" style="margin-top: 15px;">Generate Markdown Brief</button>
+            <div class="form-group" style="margin-top: 15px;">
+                <textarea id="export-md-output" rows="10" readonly placeholder="Markdown brief will appear here..."></textarea>
+            </div>
+            <button id="btn-copy-md" class="btn secondary-btn">Copy to Clipboard</button>
+
+            <h3 class="section-subhead" style="margin-top: 30px;">Desktop Archival & Sync</h3>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-export-json" class="btn secondary-btn" style="border-color: #2196F3; color: #2196F3; flex: 1;">Download JSON</button>
+                <input type="file" id="import-json-file" accept=".json" style="display: none;">
+                <button id="btn-import-trigger" class="btn secondary-btn" style="border-color: var(--accent-color); color: var(--accent-color); flex: 1;">Import JSON</button>
+            </div>
+
+            <button id="btn-clear-data" class="btn" style="background-color: var(--danger-color); color: #FFF; margin-top: 40px; border: 1px solid #FF0000;">End Incident & Wipe Device</button>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="tab-init">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Init</span>
+        </button>
+        <button class="nav-btn" data-target="tab-personnel">
+            <span class="nav-icon">👥</span>
+            <span class="nav-label">Roster</span>
+        </button>
+        <button class="nav-btn" data-target="tab-log">
+            <span class="nav-icon">📝</span>
+            <span class="nav-label">Log</span>
+        </button>
+        <button class="nav-btn" data-target="tab-logistics">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Resrc</span>
+        </button>
+        <button class="nav-btn" data-target="tab-export">
+            <span class="nav-icon">📡</span>
+            <span class="nav-label">Export</span>
+        </button>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+/* --- Core Variables: Tactical Dark Theme --- */
+:root {
+    --bg-base: #121212;
+    --bg-surface: #1E1E1E;
+    --bg-input: #2C2C2C;
+    --text-primary: #FFFFFF;
+    --text-secondary: #AAAAAA;
+    --accent-color: #FFB300; 
+    --success-color: #4CAF50;
+    --danger-color: #F44336;
+    --border-color: #333333;
+    --nav-height: 70px;
+    --header-height: 50px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-user-select: none; user-select: none; }
+input, textarea { -webkit-user-select: auto; user-select: auto; }
+
+body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg-base); color: var(--text-primary); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+/* --- Header Structure --- */
+.app-header { height: var(--header-height); background-color: var(--bg-surface); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 1px solid var(--border-color); }
+.brand { font-weight: 700; font-size: 1.1rem; color: var(--accent-color); }
+.status-indicator { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
+.status-dot { width: 8px; height: 8px; background-color: #888; border-radius: 50%; }
+
+/* --- Main Content Area --- */
+#app-container { flex: 1; overflow-y: auto; padding: 15px; padding-bottom: 20px; }
+.tab-pane { display: none; animation: fadeIn 0.2s ease-in-out; }
+.tab-pane.active { display: block; }
+h2 { font-size: 1.2rem; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+h3.section-subhead { font-size: 1rem; color: var(--text-secondary); margin: 20px 0 10px 0; }
+.placeholder-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.4; margin-top: 15px; }
+.helper-text { font-size: 0.75rem; color: var(--text-secondary); margin-top: 5px; }
+.status-msg { font-size: 0.85rem; color: var(--success-color); margin-top: 10px; min-height: 1rem; }
+
+/* --- Forms & Inputs --- */
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 5px; }
+.form-group input, .form-group textarea { width: 100%; padding: 12px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); font-size: 1rem; font-family: inherit; }
+.form-group input:focus, .form-group textarea:focus { outline: 1px solid var(--accent-color); border-color: var(--accent-color); }
+textarea[readonly] { background-color: #1a1a1a; color: var(--text-secondary); border-color: #444; font-family: monospace; font-size: 0.85rem;}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.form-grid .form-group { margin-bottom: 5px; }
+
+/* --- Buttons --- */
+.btn { width: 100%; padding: 14px; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.1s; }
+.btn:active { opacity: 0.8; }
+.primary-btn { background-color: var(--accent-color); color: #000; }
+.secondary-btn { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
+
+/* --- Triage Counter Widget --- */
+.triage-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+.triage-card { border-radius: 6px; padding: 10px; display: flex; flex-direction: column; align-items: center; }
+.t-label { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
+.t-controls { display: flex; align-items: center; gap: 15px; }
+.t-btn { background: rgba(0,0,0,0.3); border: none; color: inherit; width: 35px; height: 35px; border-radius: 50%; font-size: 1.2rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.t-btn:active { background: rgba(0,0,0,0.6); }
+.t-count { font-size: 1.5rem; font-weight: bold; min-width: 30px; text-align: center; }
+.triage-red { background-color: #F44336; color: #FFF; }
+.triage-yellow { background-color: #FFC107; color: #000; }
+.triage-green { background-color: #4CAF50; color: #FFF; }
+.triage-black { background-color: #212121; color: #FFF; border: 1px solid #444; }
+
+/* --- Tactical Log Feed --- */
+.macro-bar { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 10px; padding-bottom: 10px; scrollbar-width: none; }
+.macro-bar::-webkit-scrollbar { display: none; }
+.macro-btn { flex-shrink: 0; background-color: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+.macro-btn:active { background-color: var(--border-color); }
+.log-input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+.log-input-group input { flex: 1; padding: 12px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); }
+.log-input-group .btn { width: auto; padding: 0 20px; }
+.log-feed { display: flex; flex-direction: column; gap: 8px; }
+.log-item { background-color: var(--bg-surface); padding: 12px; border-radius: 6px; border-left: 4px solid var(--border-color); font-size: 0.9rem; line-height: 1.4; }
+.log-meta { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.log-cat-triage { border-left-color: var(--danger-color); }
+.log-cat-personnel { border-left-color: var(--success-color); }
+.log-cat-logistics { border-left-color: #2196F3; } 
+
+/* --- Lists (Roster/Resource) --- */
+.roster-list, .resource-list { display: flex; flex-direction: column; gap: 10px; }
+.roster-item, .resource-item { background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.res-header { display: flex; justify-content: space-between; align-items: center; }
+.res-name { color: var(--accent-color); font-weight: 600; font-size: 1rem; }
+.res-meta { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 6px; }
+
+/* --- Roster Dynamic Editing Grid --- */
+.roster-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border-color); }
+.roster-del-btn { background: transparent; color: var(--danger-color); border: none; font-size: 1.2rem; cursor: pointer; padding: 0 5px; opacity: 0.7; transition: opacity 0.2s;}
+.roster-del-btn:hover, .roster-del-btn:active { opacity: 1; }
+
+.roster-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.r-edit-group { display: flex; flex-direction: column; }
+.r-edit-group label { font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; }
+.r-edit-input { width: 100%; padding: 6px 8px; background-color: var(--bg-input); border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-primary); font-size: 0.9rem; font-weight: bold; transition: border-color 0.2s; }
+.r-edit-input:focus { outline: none; border-color: var(--accent-color); }
+.r-edit-input[data-field="team"] { color: var(--accent-color); } /* Highlight Team input */
+
+/* Team Summary */
+.team-summary-badge { font-size: 0.8rem; color: var(--accent-color); margin-bottom: 15px; font-weight: 600; background: rgba(255, 179, 0, 0.1); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(255, 179, 0, 0.3); }
+
+/* Roster Segmented Controls */
+.roster-status-group { display: flex; gap: 5px; }
+.roster-btn { flex: 1; padding: 8px 2px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.2s;}
+.roster-btn.active-avl { background-color: var(--success-color); color: #000; border-color: var(--success-color); }
+.roster-btn.active-dep { background-color: var(--accent-color); color: #000; border-color: var(--accent-color); }
+.roster-btn.active-rst { background-color: #2196F3; color: #FFF; border-color: #2196F3; }
+.roster-btn.active-dmb { background-color: #555555; color: #FFF; border-color: #555555; }
+
+/* Logistics Segmented Controls */
+.res-status-group { display: flex; gap: 5px; }
+.res-status-btn { flex: 1; padding: 8px 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--border-color); background: transparent; color: var(--text-secondary); border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.2s;}
+.res-status-btn.active-req { background-color: var(--danger-color); color: #FFF; border-color: var(--danger-color); }
+.res-status-btn.active-enr { background-color: #FFC107; color: #000; border-color: #FFC107; }
+.res-status-btn.active-rcv { background-color: var(--success-color); color: #000; border-color: var(--success-color); }
+
+/* --- Bottom Navigation Bar --- */
+.bottom-nav { height: var(--nav-height); background-color: var(--bg-surface); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; padding-bottom: env(safe-area-inset-bottom); }
+.nav-btn { flex: 1; height: 100%; background: none; border: none; color: var(--text-secondary); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; cursor: pointer; }
+.nav-icon { font-size: 1.4rem; }
+.nav-label { font-size: 0.75rem; font-weight: 500; }
+.nav-btn.active { color: var(--accent-color); }
+.nav-btn:active { opacity: 0.7; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
