@@ -45,6 +45,11 @@
         .evidence-preview img { width: 100px; height: 100px; object-fit: cover; border: 1px solid var(--border); border-radius: 4px; }
         .file-tag { font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 3px; border: 1px solid var(--border); }
 
+        /* AI DISCLOSURE BANNER */
+        .ai-disclosure { background: #fffbeb; border: 1px solid #f59e0b; border-left: 4px solid #f59e0b; padding: 12px 16px; margin: 1rem 1.5rem; border-radius: 4px; font-size: 13px; color: #78350f; display: flex; gap: 10px; align-items: flex-start; }
+        .ai-disclosure svg { flex-shrink: 0; margin-top: 1px; }
+        .ai-disclosure strong { display: block; margin-bottom: 2px; }
+
         /* PRINT STYLES */
         @media print {
             body { background: white; padding: 0; }
@@ -52,6 +57,7 @@
             .no-print { display: none !important; }
             .question-card { border: 1px solid #eee; margin-bottom: 20px; }
             textarea { border: none; height: auto; font-style: italic; }
+            .ai-disclosure { border: 1px solid #ccc; background: #fafafa; color: #333; }
         }
     </style>
 </head>
@@ -60,7 +66,7 @@
 <div class="container">
     <header class="no-print">
         <h1 style="margin:0">Audit Buddy</h1>
-        <p style="margin:5px 0 0; opacity: 0.8; font-size: 14px;">Offline Security Assessment Tool (For Testing Purposes Only - check templates for completeness before use)</p>
+        <p style="margin:5px 0 0; opacity: 0.8; font-size: 14px;">Offline Security Assessment Tool &mdash; Verify all control content against official publications before formal audit use.</p>
         
         <div class="controls">
             <button class="btn-blue" onclick="document.getElementById('fileIn').click()">Import Template / Progress</button>
@@ -74,6 +80,14 @@
 		</div>
         </div>
     </header>
+
+    <div class="ai-disclosure" id="aiDisclosure">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+            <strong>AI-Drafted Content &mdash; SME Review Required Before Formal Use</strong>
+            Control IDs, safeguard categorizations, and requirement text in the bundled templates were AI-drafted from public standards (NIST SP 800-171r3, PCI DSS v4.0.1, HIPAA). LLMs can drift on control numbering, &ldquo;required vs. addressable&rdquo; distinctions, and paraphrased requirement language. <strong>Verify all content against the official published standard before using this tool for real audit prep or evidence tracking.</strong> Each template file includes <code>sourceStandard</code>, <code>reviewedBy</code>, and <code>reviewedDate</code> fields to record when an SME pass has been completed.
+        </div>
+    </div>
 
     <div class="meta-grid">
         <div class="input-group">
@@ -137,6 +151,20 @@
             document.getElementById('auditTitle').value = data.title || "";
             const area = document.getElementById('questions-area');
             area.innerHTML = "";
+
+            // Inject per-template source metadata if present
+            if (data.sourceStandard || data.reviewedBy) {
+                const reviewed = data.reviewedBy
+                    ? `Reviewed by <strong>${data.reviewedBy}</strong> on ${data.reviewedDate}`
+                    : `<em>No SME review on record &mdash; treat content as a starting draft only.</em>`;
+                const meta = document.createElement('div');
+                meta.className = 'ai-disclosure';
+                meta.style.margin = '0 0 1rem';
+                meta.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    <div><strong>Source:</strong> ${data.sourceStandard || ''}${data.sourceVersion ? ' &mdash; ' + data.sourceVersion : ''} &nbsp;|&nbsp; ${reviewed}</div>`;
+                area.appendChild(meta);
+            }
 
             data.sections.forEach(sec => {
                 const secEl = document.createElement('div');
