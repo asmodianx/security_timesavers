@@ -40,6 +40,12 @@
 </div>
 
 <script>
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+    );
+}
+
 const dropArea = document.getElementById('dropArea');
 const fileIn = document.getElementById('fileIn');
 const results = document.getElementById('results');
@@ -146,7 +152,7 @@ function displayResults(raw, type) {
             const val = parsedMap[key] || parsedMap[key.toLowerCase()];
             mainHeaders.innerHTML += `
                 <div class="meta-label">${key}</div>
-                <div class="meta-value">${val}</div>
+                <div class="meta-value">${escapeHtml(val)}</div>
             `;
         }
     });
