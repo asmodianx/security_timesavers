@@ -82,6 +82,12 @@
 </main>
 
 <script>
+    function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, c =>
+            ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])
+        );
+    }
+
     /**
      * SCHEMA LIBRARIES
      */
@@ -189,7 +195,7 @@
      */
     function updateUI(event, errors) {
         const flds = Object.keys(event);
-        document.getElementById('f-list').innerHTML = flds.map(f => `<span class="f-tag">${f}</span>`).join('');
+        document.getElementById('f-list').innerHTML = flds.map(f => `<span class="f-tag">${escapeHtml(f)}</span>`).join('');
         const meta = { tags, adm: document.getElementById('admR').value + document.getElementById('admC').value, schema: currentSchema };
         document.getElementById('jsonOut').innerText = JSON.stringify({ _meta: meta, event }, null, 2);
         document.getElementById('repOut').innerText = `Fields: ${flds.length - 1} | Errors: ${errors.join(' | ') || 'None'}`;
@@ -203,12 +209,12 @@
             div.className = `step ${['cef','json','xml','regex'].includes(s.t)?'ext':s.t==='map'?'map':''}`;
             let h = `<button class="rm-btn" data-id="${s.id}">×</button><span class="lbl">${s.t}</span><div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">`;
             
-            if(s.t === 'regex') h += `<input type="text" class="cfg" data-id="${s.id}" data-k="p" value="${s.config.p||''}" placeholder="Regex Pattern">`;
+            if(s.t === 'regex') h += `<input type="text" class="cfg" data-id="${s.id}" data-k="p" value="${escapeHtml(s.config.p||'')}" placeholder="Regex Pattern">`;
             else if(s.t === 'map') {
                 const opt = SCHEMAS[currentSchema].map(f => `<option ${s.config.to===f?'selected':''}>${f}</option>`).join('');
-                h += `<div style="display:flex; gap:5px;"><input type="text" class="cfg" data-id="${s.id}" data-k="f" value="${s.config.f||''}" placeholder="From"> → <select class="cfg" data-id="${s.id}" data-k="to">${opt}</select></div>`;
+                h += `<div style="display:flex; gap:5px;"><input type="text" class="cfg" data-id="${s.id}" data-k="f" value="${escapeHtml(s.config.f||'')}" placeholder="From"> → <select class="cfg" data-id="${s.id}" data-k="to">${opt}</select></div>`;
             } else if(['lower','int','del'].includes(s.t)) {
-                h += `<input type="text" class="cfg" data-id="${s.id}" data-k="f" value="${s.config.f||''}" placeholder="Target Field">`;
+                h += `<input type="text" class="cfg" data-id="${s.id}" data-k="f" value="${escapeHtml(s.config.f||'')}" placeholder="Target Field">`;
             } else h += `<span style="font-size:0.7rem; color:#565f89;">Auto-Parsing Mode</span>`;
             
             div.innerHTML = h + `</div>`;
@@ -238,7 +244,7 @@
     });
 
     function renderTags() {
-        document.getElementById('active-tags').innerHTML = tags.map(t => `<div class="tag">${t} <span data-t="${t}">×</span></div>`).join('');
+        document.getElementById('active-tags').innerHTML = tags.map(t => `<div class="tag">${escapeHtml(t)} <span data-t="${escapeHtml(t)}">×</span></div>`).join('');
         document.querySelectorAll('.tag span').forEach(el => el.onclick = () => { tags = tags.filter(x => x != el.dataset.t); renderTags(); run(); });
     }
 </script>
