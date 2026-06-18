@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Standalone Task Checklist</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --text: #172033;
+      --muted: #667085;
+      --border: #d0d7e2;
+      --accent: #2457c5;
+      --accent-2: #173b8f;
+      --danger: #b42318;
+      --danger-bg: #fff1f0;
+      --ok: #067647;
+      --warn: #b54708;
+      --shadow: 0 8px 24px rgba(16, 24, 40, .08);
+      --radius: 14px;
+      --focus: 0 0 0 3px rgba(36, 87, 197, .25);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --panel: #111827;
+        --text: #e5e7eb;
+        --muted: #a3aab7;
+        --border: #334155;
+        --accent: #7aa2ff;
+        --accent-2: #a9c1ff;
+        --danger: #ff9b91;
+        --danger-bg: #3f1717;
+        --ok: #75d6a5;
+        --warn: #ffc878;
+        --shadow: 0 8px 24px rgba(0, 0, 0, .35);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    header {
+      padding: 24px clamp(16px, 4vw, 48px) 12px;
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(1.6rem, 3vw, 2.4rem); }
+    .subtitle { color: var(--muted); max-width: 980px; margin: 0; }
+    main { padding: 12px clamp(16px, 4vw, 48px) 48px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: minmax(300px, 420px) 1fr; align-items: start; }
+    @media (max-width: 980px) { .grid { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .card h2 { margin: 0 0 12px; font-size: 1.1rem; }
+    label { display: block; font-weight: 650; margin: 10px 0 6px; }
+    input, textarea, select, button {
+      font: inherit;
+    }
+    input[type="text"], input[type="datetime-local"], textarea, select, input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 18%);
+      color: var(--text);
+    }
+    textarea { min-height: 88px; resize: vertical; }
+    input:focus, textarea:focus, select:focus, button:focus { outline: none; box-shadow: var(--focus); }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .row > * { flex: 1 1 auto; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    button, .file-button {
+      border: 1px solid var(--border);
+      background: color-mix(in srgb, var(--panel), var(--bg) 12%);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 12px;
+      cursor: pointer;
+      min-height: 40px;
+    }
+    button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    button.primary:hover { background: var(--accent-2); }
+    button.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger), var(--border) 55%); }
+    button.small { padding: 5px 8px; min-height: 32px; font-size: .9rem; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .file-button input { display: none; }
+    .notice { border-left: 4px solid var(--accent); padding: 10px 12px; background: color-mix(in srgb, var(--accent), transparent 90%); border-radius: 8px; color: var(--text); }
+    .warning { border-left-color: var(--warn); background: color-mix(in srgb, var(--warn), transparent 88%); }
+    .danger-box { border-left-color: var(--danger); background: var(--danger-bg); }
+    .muted { color: var(--muted); }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .search { min-width: min(100%, 320px); flex: 1 1 320px; }
+    .task-list { list-style: none; padding-left: 0; margin: 0; }
+    .task-list .task-list { margin-left: 28px; padding-left: 14px; border-left: 1px dashed var(--border); }
+    .task-item { margin: 8px 0; }
+    .task-box {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: color-mix(in srgb, var(--panel), var(--bg) 8%);
+    }
+    .task-title { font-weight: 700; word-break: break-word; }
+    .task-details { margin-top: 4px; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+    .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: .88rem; color: var(--muted); }
+    .pill { border: 1px solid var(--border); border-radius: 999px; padding: 2px 8px; }
+    .completed .task-title { text-decoration: line-through; color: var(--muted); }
+    .empty { padding: 32px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 12px; }
+    .compact-field { display: inline-flex; gap: 6px; align-items: center; flex: 0 0 auto; }
+    .compact-field input { width: auto; }
+    dialog {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      color: var(--text);
+      width: min(680px, calc(100vw - 24px));
+      box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(15, 23, 42, .55); }
+    .print-only { display: none; }
+    @media print {
+      body { background: white; color: black; }
+      header, .controls, .no-print, dialog { display: none !important; }
+      main { padding: 0; }
+      .grid { display: block; }
+      .card { box-shadow: none; border: none; padding: 0; }
+      .print-only { display: block; }
+      .task-box { break-inside: avoid; border-color: #999; background: white; grid-template-columns: auto 1fr; }
+      .task-box .actions { display: none; }
+      .task-list .task-list { border-left: 1px solid #aaa; }
+      .pill { border-color: #999; color: #111; }
+      input[type="checkbox"] { width: 16px; height: 16px; appearance: none; border: 1.5px solid #111; border-radius: 2px; }
+      input[type="checkbox"]:checked::after { content: "✓"; display: block; text-align: center; line-height: 13px; font-weight: bold; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Standalone Task Checklist</h1>
+    <p class="subtitle">Local-only HTML/JavaScript task checklist with unlimited nested subtasks, due dates, JSON import/export, printable PDF output via browser print, and controlled iCalendar export.</p>
+  </header>
+  <main>
+    <section class="grid">
+      <aside class="card controls">
+        <h2>Add / Edit Task</h2>
+        <form id="taskForm" autocomplete="off">
+          <input type="hidden" id="editingId">
+          <input type="hidden" id="parentId">
+          <label for="title">Task title</label>
+          <input id="title" type="text" maxlength="180" required placeholder="Example: Review incident report">
+          <label for="details">Details</label>
+          <textarea id="details" maxlength="5000" placeholder="Optional notes, owner, context, links, etc."></textarea>
+          <label for="due">Due date and time</label>
+          <input id="due" type="datetime-local">
+          <div class="actions">
+            <button class="primary" type="submit" id="saveTask">Add Task</button>
+            <button type="button" id="cancelEdit">Cancel</button>
+          </div>
+          <p class="muted" id="formHint">Add a top-level task, or use “Add subtask” on an existing task.</p>
+        </form>
+        <hr>
+        <h2>Import / Export</h2>
+        <div class="actions">
+          <button type="button" id="exportJson">Export JSON</button>
+          <label class="file-button">Import JSON<input id="importJson" type="file" accept="application/json,.json"></label>
+          <button type="button" id="printPdf">Print / Save PDF</button>
+          <button type="button" id="openIcalDialog">Export iCal</button>
+        </div>
+        <p class="notice warning"><strong>PDF note:</strong> this standalone file uses your browser print dialog. Choose “Save as PDF” to create a PDF with printable checkboxes and task details.</p>
+        <div class="actions">
+          <button type="button" class="danger" id="clearAll">Clear All Tasks</button>
+        </div>
+      </aside>
+
+      <section class="card">
+        <div class="print-only">
+          <h1>Task Checklist</h1>
+          <p id="printGenerated"></p>
+        </div>
+        <div class="toolbar no-print">
+          <input class="search" id="search" type="text" placeholder="Search tasks and details">
+          <div class="row" style="flex: 0 1 390px;">
+            <select id="filterStatus" aria-label="Filter by status">
+              <option value="all">All tasks</option>
+              <option value="open">Open only</option>
+              <option value="completed">Completed only</option>
+              <option value="dated">With due date</option>
+              <option value="overdue">Overdue</option>
+            </select>
+            <button type="button" id="expandAll">Expand All</button>
+            <button type="button" id="collapseAll">Collapse All</button>
+          </div>
+        </div>
+        <div id="stats" class="muted no-print"></div>
+        <div id="taskContainer"></div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="icalDialog">
+    <form method="dialog" id="icalForm">
+      <h2>Controlled iCalendar Export</h2>
+      <p class="notice">Only tasks with due dates are eligible. Guardrails below help prevent generating excessive calendar events.</p>
+      <div class="row">
+        <div>
+          <label for="maxEvents">Maximum events</label>
+          <input id="maxEvents" type="number" min="1" max="500" value="100">
+        </div>
+        <div>
+          <label for="maxDepth">Maximum task depth</label>
+          <input id="maxDepth" type="number" min="1" max="25" value="10">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="rangeStart">Start date</label>
+          <input id="rangeStart" type="datetime-local">
+        </div>
+        <div>
+          <label for="rangeEnd">End date</label>
+          <input id="rangeEnd" type="datetime-local">
+        </div>
+      </div>
+      <label class="compact-field"><input id="includeCompleted" type="checkbox"> Include completed tasks</label>
+      <label class="compact-field"><input id="confirmLarge" type="checkbox"> I understand this may create many calendar events</label>
+      <p id="icalPreview" class="muted"></p>
+      <div id="icalWarning" class="notice warning" hidden></div>
+      <div class="actions">
+        <button type="button" class="primary" id="downloadIcal">Download .ics</button>
+        <button type="submit">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    'use strict';
+    const STORAGE_KEY = 'standalone-task-checklist-v1';
+    const state = { tasks: [], collapsed: new Set() };
+    const $ = (id) => document.getElementById(id);
+
+    function makeId() {
+      if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+      return 'task-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.tasks)) state.tasks = sanitizeTasks(parsed.tasks);
+      } catch (e) { console.warn('Unable to load saved checklist', e); }
+    }
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), tasks: state.tasks })); }
+    function sanitizeTasks(tasks) {
+      return tasks.map(t => ({
+        id: typeof t.id === 'string' ? t.id : makeId(),
+        title: String(t.title || '').slice(0, 180),
+        details: String(t.details || '').slice(0, 5000),
+        due: typeof t.due === 'string' ? t.due : '',
+        completed: Boolean(t.completed),
+        createdAt: typeof t.createdAt === 'string' ? t.createdAt : new Date().toISOString(),
+        updatedAt: typeof t.updatedAt === 'string' ? t.updatedAt : new Date().toISOString(),
+        children: Array.isArray(t.children) ? sanitizeTasks(t.children) : []
+      })).filter(t => t.title.trim());
+    }
+    function walk(tasks, cb, depth = 1, parent = null, path = []) {
+      for (const task of tasks) {
+        const currentPath = path.concat(task.title);
+        cb(task, depth, parent, currentPath);
+        if (task.children && task.children.length) walk(task.children, cb, depth + 1, task, currentPath);
+      }
+    }
+    function findTask(id, tasks = state.tasks, parent = null) {
+      for (const task of tasks) {
+        if (task.id === id) return { task, parent, siblings: tasks };
+        const found = findTask(id, task.children || [], task);
+        if (found) return found;
+      }
+      return null;
+    }
+    function deleteTask(id) {
+      const found = findTask(id);
+      if (!found) return;
+      found.siblings.splice(found.siblings.indexOf(found.task), 1);
+      save(); render();
+    }
+    function setCompletedRecursive(task, completed) {
+      task.completed = completed;
+      task.updatedAt = new Date().toISOString();
+      for (const child of task.children || []) setCompletedRecursive(child, completed);
+    }
+    function matchesFilters(task, query, status) {
+      const q = query.trim().toLowerCase();
+      const searchable = (task.title + ' ' + task.details).toLowerCase();
+      const textOk = !q || searchable.includes(q);
+      const now = new Date();
+      const dueDate = task.due ? new Date(task.due) : null;
+      let statusOk = true;
+      if (status === 'open') statusOk = !task.completed;
+      if (status === 'completed') statusOk = task.completed;
+      if (status === 'dated') statusOk = Boolean(task.due);
+      if (status === 'overdue') statusOk = Boolean(dueDate && dueDate < now && !task.completed);
+      return textOk && statusOk;
+    }
+    function render() {
+      const container = $('taskContainer');
+      container.replaceChildren();
+      const query = $('search').value || '';
+      const status = $('filterStatus').value;
+      let total = 0, open = 0, completed = 0, dated = 0, overdue = 0;
+      walk(state.tasks, (task) => {
+        total++; if (task.completed) completed++; else open++; if (task.due) dated++;
+        if (task.due && new Date(task.due) < new Date() && !task.completed) overdue++;
+      });
+      $('stats').textContent = `${total} total task(s) • ${open} open • ${completed} completed • ${dated} with due dates • ${overdue} overdue`;
+      const list = renderList(state.tasks, query, status);
+      if (list.childElementCount) container.appendChild(list); else {
+        const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'No matching tasks. Add a task to get started.'; container.appendChild(empty);
+      }
+    }
+    function taskOrDescendantMatches(task, query, status) {
+      if (matchesFilters(task, query, status)) return true;
+      return (task.children || []).some(c => taskOrDescendantMatches(c, query, status));
+    }
+    function renderList(tasks, query, status) {
+      const ul = document.createElement('ul'); ul.className = 'task-list';
+      for (const task of tasks) {
+        if (!taskOrDescendantMatches(task, query, status)) continue;
+        const li = document.createElement('li'); li.className = 'task-item' + (task.completed ? ' completed' : '');
+        const box = document.createElement('div'); box.className = 'task-box';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = task.completed; cb.setAttribute('aria-label', 'Mark task complete');
+        cb.addEventListener('change', () => { setCompletedRecursive(task, cb.checked); save(); render(); });
+        const content = document.createElement('div');
+        const title = document.createElement('div'); title.className = 'task-title'; title.textContent = task.title; content.appendChild(title);
+        if (task.details) { const details = document.createElement('div'); details.className = 'task-details'; details.textContent = task.details; content.appendChild(details); }
+        const meta = document.createElement('div'); meta.className = 'meta';
+        if (task.due) { const pill = document.createElement('span'); pill.className = 'pill'; pill.textContent = 'Due: ' + formatDateTime(task.due); meta.appendChild(pill); }
+        if (task.children && task.children.length) { const pill = document.createElement('span'); pill.className = 'pill'; pill.textContent = `${task.children.length} subtask(s)`; meta.appendChild(pill); }
+        content.appendChild(meta);
+        const actions = document.createElement('div'); actions.className = 'actions no-print';
+        const add = smallButton('Add subtask', () => startAddSubtask(task.id));
+        const edit = smallButton('Edit', () => startEdit(task.id));
+        const del = smallButton('Delete', () => { if (confirm('Delete this task and all subtasks?')) deleteTask(task.id); }, 'danger');
+        actions.append(add, edit, del);
+        if (task.children && task.children.length) {
+          const toggle = smallButton(state.collapsed.has(task.id) ? 'Expand' : 'Collapse', () => { state.collapsed.has(task.id) ? state.collapsed.delete(task.id) : state.collapsed.add(task.id); render(); });
+          actions.prepend(toggle);
+        }
+        box.append(cb, content, actions); li.appendChild(box);
+        if (task.children && task.children.length && !state.collapsed.has(task.id)) li.appendChild(renderList(task.children, query, status));
+        ul.appendChild(li);
+      }
+      return ul;
+    }
+    function smallButton(text, handler, extraClass) { const b = document.createElement('button'); b.type = 'button'; b.className = 'small' + (extraClass ? ' ' + extraClass : ''); b.textContent = text; b.addEventListener('click', handler); return b; }
+    function formatDateTime(value) { try { return new Date(value).toLocaleString(); } catch { return value; } }
+    function resetForm() { $('editingId').value = ''; $('parentId').value = ''; $('title').value = ''; $('details').value = ''; $('due').value = ''; $('saveTask').textContent = 'Add Task'; $('formHint').textContent = 'Add a top-level task, or use “Add subtask” on an existing task.'; }
+    function startAddSubtask(parentId) { resetForm(); $('parentId').value = parentId; const p = findTask(parentId).task; $('formHint').textContent = 'Adding subtask under: ' + p.title; $('title').focus(); }
+    function startEdit(id) { const found = findTask(id); if (!found) return; const t = found.task; $('editingId').value = t.id; $('parentId').value = found.parent ? found.parent.id : ''; $('title').value = t.title; $('details').value = t.details; $('due').value = t.due || ''; $('saveTask').textContent = 'Save Changes'; $('formHint').textContent = 'Editing task: ' + t.title; $('title').focus(); }
+    function download(filename, content, mime) {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+    function escapeIcal(text) { return String(text || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+    function toIcalDate(value) {
+      const d = new Date(value);
+      const pad = n => String(n).padStart(2, '0');
+      return d.getUTCFullYear() + pad(d.getUTCMonth()+1) + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + pad(d.getUTCSeconds()) + 'Z';
+    }
+    function collectIcalCandidates() {
+      const maxDepth = Math.max(1, Math.min(25, Number($('maxDepth').value || 10)));
+      const includeCompleted = $('includeCompleted').checked;
+      const start = $('rangeStart').value ? new Date($('rangeStart').value) : null;
+      const end = $('rangeEnd').value ? new Date($('rangeEnd').value) : null;
+      const candidates = [];
+      walk(state.tasks, (task, depth, parent, path) => {
+        if (depth > maxDepth || !task.due) return;
+        if (!includeCompleted && task.completed) return;
+        const due = new Date(task.due);
+        if (start && due < start) return;
+        if (end && due > end) return;
+        candidates.push({ task, depth, path });
+      });
+      return candidates.sort((a,b) => new Date(a.task.due) - new Date(b.task.due));
+    }
+    function updateIcalPreview() {
+      const candidates = collectIcalCandidates();
+      const maxEvents = Math.max(1, Math.min(500, Number($('maxEvents').value || 100)));
+      $('icalPreview').textContent = `${candidates.length} eligible due-date task(s). Export limit is ${maxEvents} event(s).`;
+      const warn = $('icalWarning');
+      if (candidates.length > maxEvents) { warn.hidden = false; warn.textContent = `Export is blocked because eligible tasks exceed the configured maximum. Increase the maximum up to 500, narrow the date range/depth, or confirm large export.`; }
+      else { warn.hidden = true; warn.textContent = ''; }
+    }
+    function buildIcs(candidates) {
+      const lines = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Standalone Task Checklist//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH'];
+      const stamp = toIcalDate(new Date().toISOString());
+      for (const item of candidates) {
+        const t = item.task;
+        const due = new Date(t.due);
+        const end = new Date(due.getTime() + 30 * 60000);
+        lines.push('BEGIN:VEVENT');
+        lines.push('UID:' + escapeIcal(t.id) + '@standalone-task-checklist');
+        lines.push('DTSTAMP:' + stamp);
+        lines.push('DTSTART:' + toIcalDate(t.due));
+        lines.push('DTEND:' + toIcalDate(end.toISOString()));
+        lines.push('SUMMARY:' + escapeIcal(t.title));
+        const description = ['Checklist task', 'Path: ' + item.path.join(' > '), t.details || '', 'Completed: ' + (t.completed ? 'yes' : 'no')].filter(Boolean).join('\n');
+        lines.push('DESCRIPTION:' + escapeIcal(description));
+        lines.push('STATUS:' + (t.completed ? 'COMPLETED' : 'CONFIRMED'));
+        lines.push('END:VEVENT');
+      }
+      lines.push('END:VCALENDAR');
+      return lines.join('\r\n') + '\r\n';
+    }
+
+    $('taskForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = $('title').value.trim(); if (!title) return;
+      const id = $('editingId').value;
+      const parentId = $('parentId').value;
+      if (id) {
+        const found = findTask(id); if (!found) return;
+        Object.assign(found.task, { title, details: $('details').value, due: $('due').value, updatedAt: new Date().toISOString() });
+      } else {
+        const task = { id: makeId(), title, details: $('details').value, due: $('due').value, completed: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), children: [] };
+        if (parentId) { const parent = findTask(parentId); parent ? parent.task.children.push(task) : state.tasks.push(task); }
+        else state.tasks.push(task);
+      }
+      save(); resetForm(); render();
+    });
+    $('cancelEdit').addEventListener('click', resetForm);
+    $('search').addEventListener('input', render);
+    $('filterStatus').addEventListener('change', render);
+    $('expandAll').addEventListener('click', () => { state.collapsed.clear(); render(); });
+    $('collapseAll').addEventListener('click', () => { walk(state.tasks, t => { if (t.children && t.children.length) state.collapsed.add(t.id); }); render(); });
+    $('exportJson').addEventListener('click', () => download('task-checklist.json', JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), tasks: state.tasks }, null, 2), 'application/json'));
+    $('importJson').addEventListener('change', async (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        const parsed = JSON.parse(await file.text());
+        const imported = Array.isArray(parsed) ? parsed : parsed.tasks;
+        if (!Array.isArray(imported)) throw new Error('JSON must contain a tasks array.');
+        if (!confirm('Import will replace the current checklist. Continue?')) return;
+        state.tasks = sanitizeTasks(imported); state.collapsed.clear(); save(); render(); resetForm();
+      } catch (err) { alert('Import failed: ' + err.message); }
+      finally { e.target.value = ''; }
+    });
+    $('printPdf').addEventListener('click', () => { $('printGenerated').textContent = 'Generated: ' + new Date().toLocaleString(); window.print(); });
+    $('clearAll').addEventListener('click', () => { if (confirm('Clear all tasks from this browser?')) { state.tasks = []; state.collapsed.clear(); save(); render(); resetForm(); } });
+    $('openIcalDialog').addEventListener('click', () => { updateIcalPreview(); $('icalDialog').showModal(); });
+    ['maxEvents','maxDepth','rangeStart','rangeEnd','includeCompleted','confirmLarge'].forEach(id => $(id).addEventListener('input', updateIcalPreview));
+    $('downloadIcal').addEventListener('click', () => {
+      const candidates = collectIcalCandidates();
+      const maxEvents = Math.max(1, Math.min(500, Number($('maxEvents').value || 100)));
+      if (candidates.length === 0) { alert('No eligible due-date tasks to export.'); return; }
+      if (candidates.length > maxEvents && !$('confirmLarge').checked) { alert('Export blocked by excessive event controls. Narrow the export, raise the max, or check the confirmation box.'); return; }
+      const exportItems = candidates.slice(0, maxEvents);
+      download('task-due-dates.ics', buildIcs(exportItems), 'text/calendar');
+    });
+
+    load(); render();
+  </script>
+</body>
+</html>
