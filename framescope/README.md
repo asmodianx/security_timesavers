@@ -301,6 +301,3 @@ FrameScope v7 OWASP Hardened
 
 ---
 
-## License / Use
-
-No license is embedded in the script. Add an appropriate project license before publishing or redistributing.
