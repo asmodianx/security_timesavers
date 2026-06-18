@@ -1,6 +1,6 @@
 # NIST Documentation Wizard v7
 
-This version removes the editable **Example** field from the section editor. Examples remain as static guidance from the selected template, but they are not user data-entry fields.
+This version removes the editable **Example** field from the section editor. Examples remain as static guidance from the selected template, but they are not user data-entry fields.  This hasn't been vetted against NIST standards, use with caution and review the product for accuracy.
 
 ## Data Entry
 
