@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standalone Media Recorder (Auto-Release)</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .container {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h2 { margin-top: 0; }
+        
+        video, audio {
+            width: 100%;
+            max-height: 400px;
+            background: #000;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        button, select {
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        select {
+            border: 1px solid #cbd5e1;
+            background-color: white;
+            color: var(--text);
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+        }
+        button:hover:not(:disabled) { background-color: var(--primary-hover); }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        
+        #btnStopRecord { background-color: var(--danger); }
+        #btnStopRecord:hover:not(:disabled) { background-color: var(--danger-hover); }
+        
+        #statusText {
+            font-size: 14px;
+            color: #64748b;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Media Recorder</h2>
+    
+    <video id="mediaPlayer" autoplay playsinline></video>
+    
+    <div class="controls">
+        <select id="mediaType">
+            <option value="video">Webcam + Audio</option>
+            <option value="audio">Microphone Only</option>
+        </select>
+        <button id="btnInit">1. Access Camera/Mic</button>
+        <button id="btnStartRecord" disabled>2. Start</button>
+        <button id="btnStopRecord" disabled>3. Stop & Release</button>
+        <button id="btnDownload" disabled>4. Download</button>
+    </div>
+    
+    <div id="statusText">Status: Waiting for permissions...</div>
+</div>
+
+<script>
+    // UI Elements
+    const mediaPlayer = document.getElementById('mediaPlayer');
+    const mediaTypeSelect = document.getElementById('mediaType');
+    const btnInit = document.getElementById('btnInit');
+    const btnStartRecord = document.getElementById('btnStartRecord');
+    const btnStopRecord = document.getElementById('btnStopRecord');
+    const btnDownload = document.getElementById('btnDownload');
+    const statusText = document.getElementById('statusText');
+
+    // State Variables
+    let mediaStream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let blobUrl = null;
+
+    // Helper: Release Hardware
+    function releaseHardware() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+    }
+
+    // 1. Initialize and request permissions
+    btnInit.addEventListener('click', async () => {
+        try {
+            // Clean up any existing streams first
+            releaseHardware();
+            
+            const isVideo = mediaTypeSelect.value === 'video';
+            const constraints = {
+                audio: true,
+                video: isVideo ? { width: 1280, height: 720 } : false
+            };
+
+            mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            mediaPlayer.srcObject = mediaStream;
+            mediaPlayer.muted = true; 
+            mediaPlayer.controls = false;
+            mediaPlayer.play();
+            
+            btnInit.disabled = true;
+            mediaTypeSelect.disabled = true;
+            btnStartRecord.disabled = false;
+            btnDownload.disabled = true;
+            
+            statusText.innerText = "Status: Hardware connected. Ready to record.";
+            statusText.style.color = "#16a34a";
+        } catch (err) {
+            console.error("Error accessing media devices.", err);
+            statusText.innerText = "Status: Error accessing camera/mic. Please check permissions.";
+            statusText.style.color = "#dc2626";
+        }
+    });
+
+    // 2. Start Recording
+    btnStartRecord.addEventListener('click', () => {
+        recordedChunks = [];
+        const isVideo = mediaTypeSelect.value === 'video';
+        let options = { mimeType: isVideo ? 'video/webm' : 'audio/webm' };
+        
+        try {
+            mediaRecorder = new MediaRecorder(mediaStream, options);
+        } catch (e) {
+            mediaRecorder = new MediaRecorder(mediaStream);
+        }
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data && event.data.size > 0) {
+                recordedChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            // Compile the recording
+            const mimeType = isVideo ? 'video/webm' : 'audio/webm';
+            const blob = new Blob(recordedChunks, { type: mimeType });
+            
+            if (blobUrl) URL.revokeObjectURL(blobUrl);
+            blobUrl = URL.createObjectURL(blob);
+            
+            // Switch video element from LIVE view to PLAYBACK view
+            mediaPlayer.srcObject = null; 
+            mediaPlayer.src = blobUrl;
+            mediaPlayer.controls = true;
+            mediaPlayer.muted = false; 
+            
+            // CRITICAL ADDITION: Turn off the camera/mic now that recording is done
+            releaseHardware();
+            
+            // Reset UI allowing the user to download, or start over from step 1
+            btnInit.disabled = false;
+            mediaTypeSelect.disabled = false;
+            btnStartRecord.disabled = true;
+            btnDownload.disabled = false;
+            
+            statusText.innerText = "Status: Hardware released. Recording saved to memory. You can now play or download.";
+            statusText.style.color = "#2563eb";
+        };
+
+        mediaRecorder.start();
+        
+        btnStartRecord.disabled = true;
+        btnStopRecord.disabled = false;
+        btnDownload.disabled = true;
+
+        statusText.innerText = "Status: Recording in progress... (Camera/Mic LIVE)";
+        statusText.style.color = "#dc2626";
+    });
+
+    // 3. Stop Recording
+    btnStopRecord.addEventListener('click', () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop(); // This triggers mediaRecorder.onstop above
+            btnStopRecord.disabled = true;
+        }
+    });
+
+    // 4. Download File
+    btnDownload.addEventListener('click', () => {
+        if (!blobUrl) return;
+        
+        const extension = 'webm'; 
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = blobUrl;
+        a.download = `recording-${timestamp}.${extension}`;
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(a);
+        }, 100);
+    });
+</script>
+
+</body>
+</html>
