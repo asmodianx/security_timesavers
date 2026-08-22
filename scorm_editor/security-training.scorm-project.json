@@ -1,0 +1,200 @@
+{
+  "title": "security training",
+  "version": "1.2",
+  "id": "Security training 101",
+  "pages": [
+    {
+      "id": "111e0ee4-be24-4b30-ac99-7f8293c36dfc",
+      "title": "Introduction",
+      "type": "text",
+      "body": "Welcome to this course, in this course we will be showing you how to spot security risks in your organization.",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "ced8f99a-5064-4504-93f5-584feac44b8c",
+      "title": "Identity and Access Hygene",
+      "type": "text",
+      "body": "<html>\n<head>\n    <title>Identity and Access Hygiene</title>\n</head>\n<body style=\"font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px;\">\n\n    <h1 style=\"color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;\">Module 1: Identity and Access Hygiene</h1>\n\n    <p>Think of your digital identity as the \"keys\" to your personal and professional life. <strong>Identity and Access Hygiene</strong> is the set of habits you practice to ensure that only the right people have access to the right information at the right time.</p>\n\n    <p>Just as we wash our hands to prevent the spread of germs, we must practice good \"digital hygiene\" to prevent the spread of cyberattacks.</p>\n\n    <h2 style=\"color: #2980b9;\">1. Master the Art of the Passphrase</h2>\n    <p>The old rule of \"using a complex password with symbols and numbers\" is being replaced by a better standard: <em>The Passphrase</em>.</p>\n    <p>Instead of a short, complex password like <em>P@ssw0rd!</em>, use a long string of random words. A passphrase is easier for you to remember but much harder for a computer to crack.</p>\n    <ul>\n        <li style=\"margin-bottom: 10px;\"><strong>Example of a weak password:</strong> Summer2024</li>\n        <li style=\"margin-bottom: 10px;\"><strong>Example of a strong passphrase:</strong> Purple-Mountain-Coffee-Running-99</li>\n    </ul>\n    <p><em>Key Rule: Never reuse the same passphrase for more than one account. If one site gets hacked, your other accounts stay safe.</em></p>\n\n    <h2 style=\"color: #2980b9;\">2. Enable Multi-Factor Authentication (MFA)</h2>\n    <p>MFA is your most powerful line of defense. It requires <strong>two different ways</strong> to prove who you are before logging in. Even if a hacker steals your password, they still won't be able to get into your account without the second \"key.\"</p>\n    <p>Common types of MFA include:</p>\n    <ul>\n        <li><strong>Authenticator Apps:</strong> (e.g., Google Authenticator, Microsoft Authenticator) — <em>Highly Recommended.</em></li>\n        <li><strong>SMS Codes:</strong> Codes sent via text message — <em>Better than nothing, but less secure than apps.</em></li>\n        <li><strong>Security Keys:</strong> Physical USB devices you must plug into your computer.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">3. Use a Password Manager</h2>\n    <p>It is impossible (and dangerous) to remember 50 unique, complex passphrases. A <strong>Password Manager</strong> is a secure \"digital vault\" that:</p>\n    <ul>\n        <li>Stores all your passwords in an encrypted format.</li>\n        <li>Generates strong, random passwords for every new site you join.</li>\n        <li>Allows you to only remember <em>one</em> master passphrase.</li>\n    </ul>\n    <p><em>Recommendation: Look for reputable tools like Bitwarden, 1Password, or Dashlane.</em></p>\n\n    <h2 style=\"color: #2980b9;\">4. The Principle of Least Privilege</h2>\n    <p>In a workplace setting, \"Hygiene\" also means being careful with how you share access. Follow the <strong>Principle of Least Privilege</strong>:</p>\n    <ul style=\"list-style-type: square;\">\n        <li>Only share files with people who <em>need</em> to see them to do their jobs.</li>\n        <li>Don't share your login credentials with coworkers, even if they say it's \"just for a minute.\"</li>\n        <li>Revoke access to shared folders or apps as soon as a project is finished.</li>\n    </ul>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #e67e22;\">Quick Checklist for Success</h2>\n    <p>Complete these four steps today to improve your security immediately:</p>\n    <ol>\n        <li><strong>Audit:</strong> Identify which accounts you use most frequently.</li>\n        <li><strong>Update:</strong> Change those passwords to unique, long passphrases.</li>\n        <li><strong>Activate:</strong> Turn on Multi-Factor Authentication (MFA) on your email and primary work accounts.</li>\n        <li><strong>Store:</strong> Download a reputable password manager to keep everything organized.</li>\n    </ol>\n\n    <p style=\"margin-top: 30px; font-style: italic; font-size: 0.9em; color: #7f8c8d;\">\n        <em>Need help setting up a password manager or MFA? Contact your IT Support department for a guided walkthrough.</em>\n    </p>\n\n</body>\n</html>",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "8288ecec-d988-4250-9998-70fcf2484b51",
+      "title": "Identity and Access Knowledge Check",
+      "type": "quiz",
+      "body": "",
+      "alt": "",
+      "asset": "",
+      "question": "What is the \"Principle of Least Privilege\" (PoLP)?",
+      "choices": [
+        "Giving every employee \"Administrator\" access so they can do their jobs faster.",
+        "Ensuring that users are granted only the minimum level of access required to perform their specific job functions.",
+        "Restricting access to the building only during specific hours.",
+        "A rule that says only the IT department is allowed to handle any data."
+      ],
+      "correct": 2,
+      "feedback": "Over provisioning access to employees can lead to increased risk as that persons account now has access to more than they should and can potentially cause more harm if they become compromised."
+    },
+    {
+      "id": "df496b15-a45f-4861-90a4-23588eff9fe2",
+      "title": "How to spot Social Engineering",
+      "type": "text",
+      "body": "<html>\n<head>\n    <title>Social Engineering Training</title>\n</head>\n<body style=\"font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px;\">\n\n    <h1 style=\"color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;\">Module 2: Social Engineering (The \"Tricks\")</h1>\n\n    <p>Cybersecurity isn't just about strong passwords and firewalls; it's about <strong>human behavior</strong>. Social Engineering is the art of manipulating people into giving up confidential information, granting access to systems, or performing actions that compromise security.</p>\n    \n    <p>In these attacks, the hacker doesn't \"break in\" to your computer—they <em>trick you into opening the door.</em></p>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #2980b9;\">Common Tactics to Watch For</h2>\n    <p>Attackers use different \"channels\" to reach you. Be aware of these three primary methods:</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Phishing (Email):</strong> The most common method. You receive an email that looks like it's from a trusted source (your bank, Netflix, your boss, or a shipping company) asking you to click a link or download a file.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Smishing (SMS):</strong> Phishing conducted via text message. These often claim there is a \"problem with your delivery\" or a \"suspicious login\" and provide a link to a fake website.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Vishing (Voice):</strong> Phishing conducted over a phone call. The caller may use \"caller ID spoofing\" to make it look like they are calling from a government agency or your company's IT department.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">How They Trick You: The Psychological Triggers</h2>\n    <p>Scammers rely on human emotions to stop you from thinking logically. They usually try to trigger one of the following three feelings:</p>\n    <ul style=\"list-style-type: none; padding-left: 0;\">\n        <li style=\"margin-bottom: 15px; padding-left: 20px; border-left: 3px solid #e67e22;\"><strong>Sense of Urgency:</strong> \"Your account will be deleted in 1 hour!\" They want you to act before you have time to verify the facts.</li>\n        <li style=\"margin-bottom: 15px; padding-left: 20px; border-left: 3px solid #e67e22;\"><strong>Authority:</strong> They pretend to be a high-level executive, a police officer, or an IT administrator. People are naturally inclined to follow instructions from \"superiors.\"</li>\n        <li style=\"margin-bottom: 15px; padding-left: 20px; border-left: 3px solid #e67e22;\"><strong>Fear or Curiosity:</strong> \"Unauthorized login detected!\" (Fear) or \"Click here to see your private photos.\" (Curiosity).</li>\n    </ul>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #2980b9;\">Your Defense Strategy: Stop, Look, Think</h2>\n    <p>When you receive a communication that feels urgent, unexpected, or slightly \"off,\" follow this three-step process:</p>\n    \n    <p><strong>1. STOP:</strong> Do not click any links, do not open any attachments, and do not reply to the message. Take a deep breath and step away from the \"urgency.\"</p>\n    \n    <p><strong>2. LOOK:</strong> Check the details. \n        <ul style=\"list-style-type: circle;\">\n            <li>Does the sender's email address match the company name exactly?</li>\n            <li>Are there spelling errors or strange phrasing?</li>\n            <li>Does the link, when hovered over, point to a weird website?</li>\n        </ul>\n    </p>\n\n    <p><strong>3. THINK:</strong> Verify through a <em>different channel</em>. If your \"boss\" emails you asking for gift cards, call them on their known work phone. If your \"bank\" sends a text, log into your bank's official website directly rather than clicking the link in the text.</p>\n\n    <div style=\"background-color: #f9f9f9; border: 1px solid #ddd; padding: 20px; border-radius: 8px; margin-top: 30px;\">\n        <h3 style=\"margin-top: 0; color: #c0392b;\">What to do if you make a mistake?</h3>\n        <p>Everyone can be tricked eventually. If you click a link, enter your password, or download a file you shouldn't have:</p>\n        <ol>\n            <li><strong>Report it immediately</strong> to the IT department or your security officer.</li>\n            <li style=\"margin-bottom: 5px;\">Do not try to hide it; the faster we know, the faster we can contain the damage.</li>\n            <li style=\"margin-bottom: 0;\">Change your passwords from a known-clean device.</li>\n        </ol>\n    </div>\n\n    <p style=\"margin-top: 30px; font-size: 0.9em; color: #7f8c8d; text-align: center;\">\n        <em>Remember: Security is a team effort. Your awareness is our strongest defense.</em>\n    </p>\n\n</body>\n</html>\n",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "de1e586f-6494-491a-a23c-ba4fb305d3fc",
+      "title": "How to spot a malicious email",
+      "type": "text",
+      "body": "<html>\n<head>\n    <title>Email Safety Guide</title>\n</head>\n<body style=\"font-family: Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 20px; color: #333;\">\n\n    <h1>Module 2.1: How to Spot a Malicious Email</h1>\n    \n    <p>Cybercriminals often use <strong>phishing</strong>—sending fake emails—to trick you into sharing passwords, credit card numbers, or downloading harmful software. Use this guide to identify the most common \"red flags.\"</p>\n\n    <hr>\n\n    <h2>1. Check the Sender's Address</h2>\n    <p>Don't just look at the name displayed in your inbox. Hover your mouse over the sender's name to see the <em>actual email address</em>.</p>\n    <ul>\n        <li><strong>Look for typos:</strong> A legitimate company like \"Amazon\" will never email you from <em>amazon-support@gmail.com</em> or <em>security@amaz0n.com</em>.</li>\n        <li><strong>Generic Domains:</strong> Be wary of emails coming from public providers (like @outlook.com or @gmail.com) if they claim to be from a large corporation.</li>\n    </ul>\n\n    <h2>2. Look for a Sense of Urgency</h2>\n    <p>Malicious emails almost always try to make you <strong>panic</strong> so that you act without thinking. Common tactics include:</p>\n    <ul>\n        <li>\"Your account will be deleted in 24 hours!\"</li>\n        <li>\"Unauthorized login detected! Click here to secure your account immediately.\"</li>\n        <li>\"You have an unpaid invoice; pay now to avoid legal action.\"</li>\n    </ul>\n\n    <h2>3. Inspect Links Before Clicking</h2>\n    <p>Before clicking any link, <strong>hover your mouse cursor over it</strong> (without clicking!). A small box will appear in the corner of your browser showing you where the link actually goes.</p>\n    <p>If the text says <em>\"Click here to login to your bank,\"</em> but the hover link points to a strange website like <em>www.bit.ly/xyz123</em> or <em>secure-login-update.net</em>, <strong>do not click it.</strong></p>\n\n    <h2>4. Be Wary of Unexpected Attachments</h2>\n    <p>Never open an attachment you weren't expecting, even if it looks like a standard PDF or Word document. Malicious files can:</p>\n    <ul>\n        <li>Install <strong>malware</strong> or <strong>ransomware</strong> on your computer.</li>\n        <li>Steal your saved passwords.</li>\n        <li>Record your keystrokes.</li>\n    </ul>\n    <p><em>Rule of thumb: If you weren't expecting a file, don't open it.</em></p>\n\n    <hr>\n\n    <h2>What to do if you suspect an email is fake?</h2>\n    <p>If something feels \"off,\" follow these three steps:</p>\n    <ol>\n        <li><strong>Do not click</strong> any links, buttons, or attachments.</li>\n        <li><strong>Do not reply</strong> to the email (this tells the scammer your email address is active).</li>\n        <li><strong>Go to the source:</strong> Instead of clicking the link in the email, open your browser and manually type in the official website address (e.g., www.paypal.com) to check your account status.</li>\n    </ol>\n\n    <p>For more information on staying safe online, visit the \n        <a href=\"https://www.staysafeonline.org\" target=\"_blank\">StaySafeOnline.org</a> website.\n    </p>\n\n</body>\n</html>",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "0b5cdc33-c8c9-450c-92db-7630b9e5fd94",
+      "title": "Social Engineering Knowledge Check",
+      "type": "quiz",
+      "body": "",
+      "alt": "",
+      "asset": "",
+      "question": "You receive an email from an \"executive\" asking you to urgently wire a payment or provide a password to \"fix a technical issue.\" What is the most important first step?",
+      "choices": [
+        "Reply immediately to ensure the executive's deadline is met.",
+        "Forward the email to your entire team so they are aware of the situation.",
+        "Stop, do not click any links, and verify the request through a separate, trusted communication channel (like a phone call or internal chat).",
+        "Delete the email and ignore it, as it is likely a test."
+      ],
+      "correct": 3,
+      "feedback": "Don't ignore suspicious messages but always question urgent calls to action, always consult an authority such as your IT security team before consulting co-workers.  "
+    },
+    {
+      "id": "34afe89e-cdd6-426b-add1-ff7b4e3c9e43",
+      "title": "Devices and Networking",
+      "type": "text",
+      "body": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Device and Network Hygiene Training</title>\n</head>\n<body style=\"font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px;\">\n\n    <h1 style=\"color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;\">Module 3: Device and Network Hygiene</h1>\n\n    <p>Your devices (phones, laptops, tablets) are the gateways to our company's data. If a device is stolen or compromised, the data on it is at risk. \"Hygiene\" in this context means ensuring your hardware is locked down, your software is protected, and your connection to the internet is secure.</p>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #2980b9;\">1. Securing Your Mobile & Portable Devices</h2>\n    <p>If you lose your phone or laptop, the first line of defense is the lock screen. Never leave a device \"unlocked\" even for a few seconds.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Enable a Strong PIN or Password:</strong> Every mobile device should have a complex PIN, a strong password, or biometric security (like FaceID or Fingerprint). A simple 4-digit code is easy for a thief to guess.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Turn on Full Disk Encryption:</strong> Most modern devices have encryption built-in, but it must be <em style=\"background-color: #eee; padding: 2px 4px;\">enabled</em>. Encryption \"scrambles\" your data so that if a thief pulls the hard drive out or tries to bypass your password, the information remains unreadable and useless to them.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">2. Antivirus and Malware Protection</h2>\n    <p>Think of Antivirus (AV) software as the \"immune system\" for your computer. It actively scans for, detects, and blocks malicious software like viruses, worms, and ransomware.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Real-Time Scanning:</strong> Ensure your AV software is active and running in the background. It should be set to \"Real-Time Protection\" to stop threats the moment they try to enter your system.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Automatic Updates:</strong> Hackers create new threats every day. For your AV to stay effective, it must be set to <em style=\"background-color: #eee; padding: 2px 4px;\">automatically update</em> its virus definitions.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Layered Defense:</strong> While AV is essential, it is not a \"magic shield.\" It works best when combined with common sense (like not clicking suspicious links) and strong passwords.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">3. Safe Web Transactions (SSL/TLS)</h2>\n    <p>When you enter sensitive information—like credit card numbers, social security numbers, or company login credentials—you must ensure the connection between your computer and the website is encrypted.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Look for HTTPS:</strong> Always check that the website URL begins with <em style=\"background-color: #eee; padding: 2px 4px;\">https://</em>. The \"S\" stands for <strong>Secure</strong>. This means the data traveling between you and the site is encrypted via SSL/TLS.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Verify the Domain Name:</strong> Scammers often create \"look-alike\" websites. \n            <br><em style=\"background-color: #eee; padding: 2px 4px;\">Example:</em> A scammer might create <em style=\"color: #c0392b;\">www.paypa1-support.com</em> instead of the real <em style=\"color: #c0392b;\">www.paypal.com</em>. \n            <br><strong>Always double-check the actual spelling</strong> of the domain name in the address bar before entering any information.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">4. Network Safety</h2>\n    <p>The network you use to access the internet can be a major vulnerability. Follow these rules to keep your connection private:</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Avoid Public Wi-Fi for Work:</strong> Public Wi-Fi (like at airports or coffee shops) is often unencrypted. Hackers can \"sniff\" the traffic on these networks to see what you are doing.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Use a VPN:</strong> If you must work away from the office, use the company-approved Virtual Private Network (VPN). A VPN creates a \"secure tunnel\" for your data, protecting it from outsiders.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Secure Your Home Router:</strong> Ensure your home Wi-Fi has a strong password and that the router’s firmware is kept up to date.</li\n    </ul>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #e67e22;\">Summary Checklist</h2>\n    <p>Do these five things today to secure your workspace:</p>\n    <ol>\n        <li><strong style=\"color: #c0392b;\">Lock:</strong> Ensure your phone and laptop require a PIN/Password to wake up.</li>\n        <li><strong style=\"color: #c0392b;\">Encrypt:</strong> Verify that \"Full Disk Encryption\" is turned on in your device settings.</li>\n        <li><strong style=\"color: #c0392b;\">Scan:</strong> Confirm your Antivirus software is active and set to auto-update.</li>\n        <li><strong style=\"color: #c0392b;\">Check:</strong> Before shopping or logging in, verify the URL starts with <em style=\"background-color: #eee; padding: 2px 4px;\">HTTPS</em> and the domain name is spelled correctly.</li>\n        <li><strong style=\"color: #c0392b;\">Connect:</strong> Only use a VPN when accessing company data from an outside location.</li>\n    </ol>\n\n    <p style=\"margin-top: 30px; font-style: italic; font-size: 0.9em; color: #7f8c8d; text-align: center;\">\n        <em style=\"color: #333;\">Questions about how to enable encryption, set up your VPN, or check your Antivirus status? Contact the IT Help Desk for a step-by-step guide.</em>\n    </p>\n\n</body>\n</html>\n",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "4cff8178-aa71-43f1-b06d-25b766031653",
+      "title": "Devices and Network Knowledge Check",
+      "type": "quiz",
+      "body": "",
+      "alt": "",
+      "asset": "",
+      "question": "You suspect that your company laptop has been infected with malware or is being accessed by an unauthorized user. What is your immediate first action?",
+      "choices": [
+        "Power the laptop off completely and put it in a drawer.",
+        "Run a virus scan and try to delete the suspicious files yourself.",
+        "Disconnect the device from the Wi-Fi/network and notify the IT Department immediately.",
+        "Call your personal friend to see if they can help you \"hack back\" into the account."
+      ],
+      "correct": 3,
+      "feedback": "Modern malware has many ways to hide itself, consult your IT security team and isolate your device."
+    },
+    {
+      "id": "7e23afdc-4c8b-4112-8b81-a394c2683d94",
+      "title": "Data Handeling and Privacy",
+      "type": "text",
+      "body": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Data Handling and Privacy Training</title>\n</head>\n<body style=\"font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px;\">\n\n    <h1 style=\"color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;\">Module 4: Data Handling and Privacy</h1>\n\n    <p>Data is one of our company's most valuable assets. Protecting it isn't just an IT responsibility—it is a shared duty. This module covers how to handle information safely, who should have access to it, and how to prevent \"data leaks\" before they happen.</p>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #2980b9;\">1. The Principle of Least Privilege (PoLP)</h2>\n    <p>The \"Principle of Least Privilege\" is a security concept where users are given only the minimum levels of access—or permissions—needed to perform their job functions.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Why it matters:</strong> If everyone has access to everything, a single compromised account can put the entire company at risk. If a marketing coordinator doesn't need to see payroll data, they shouldn't have access to it.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Your Responsibility:</strong> Only request access to the folders, software, and databases necessary for your specific role. Likewise, do not share your login credentials with colleagues to \"help them out\"—this bypasses all security controls.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">2. Encryption: Storing and Sharing Sensitive Data</h2>\n    <p>Encryption turns readable information into a \"scrambled\" code that can only be unlocked with a specific key. We must ensure data is protected in two states:</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Data at Rest (Storage):</strong> Any sensitive data saved on your hard drive, USB sticks, or cloud storage must be encrypted. Use company-approved secure folders rather than saving files to your personal desktop.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Data in Transit (Sharing):</strong> Never send sensitive information (like passwords, social security numbers, or private company secrets) via standard, unencrypted email. Use secure file-sharing links or encrypted messaging platforms approved by the company.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">3. Backups: Protecting Against Loss</h2>\n    <p>Data loss can happen due to hardware failure, human error (accidental deletion), or malicious attacks like ransomware. A robust backup strategy is your safety net.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Regularity is Key:</strong> Ensure that your work is being saved to company-synced drives that perform automatic backups.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">The \"3-2-1\" Rule:</strong> A gold standard in data protection is to have <em>3</em> copies of your data, on <em>2</em> different types of media, with <em>1</em> copy kept off-site (or in a secure cloud).</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">4. OPSEC and Personal Privacy</h2>\n    <p><strong>OPSEC (Operations Security)</strong> is the process of identifying and protecting \"soft\" information that could be used by an adversary to cause harm.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Need to Know:</strong> Avoid discussing sensitive project details in public places (cafes, airplanes, trains) or in social settings where others might overhear.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Social Media Awareness:</strong> Be careful what you post online. Photos of your desk, your ID badge, or even \"work-from-home\" selfies can inadvertently reveal office layouts, software used, or confidential documents on your screen.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Physical Privacy:</strong> Practice a \"Clean Desk\" policy. When you step away from your workstation, lock your screen and ensure no sensitive documents are left out in the open.</li>\n    </ul>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #e67e22;\">Summary Checklist</h2>\n    <p>Follow these four rules to keep our data safe:</p>\n    <ol>\n        <li><strong style=\"color: #c0392b;\">Limit Access:</strong> Only ask for the permissions you actually need for your daily tasks.</li>\n        <li><strong style=\"color: #c0392b;\">Encrypt Always:</strong> Never send \"plain text\" sensitive data; use approved secure sharing tools.</li>\n        <li><strong style=\"color: #c0392b;\">Verify Backups:</strong> Confirm your files are saving to the company's synced/cloud environment.</li>\n        <li><strong style=\"color: #c0392b;\">Think Before You Share:</strong> Practice OPSEC by being mindful of who can see your screen, your workspace, and your conversations.</li>\n    </ol>\n\n    <p style=\"margin-top: 30px; font-style: italic; font-size: 0.9em; color: #7f8c8d; text-align: center;\">\n        <em style=\"color: #333;\">For guidance on which file-sharing tools are approved or how to request specific data access, please contact the IT Department.</em>\n    </p>\n\n</body\n</html>\n",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "522e70fb-df90-440a-ba3e-af9593db0de5",
+      "title": "Data Handeling and Privacy Knowledge Check",
+      "type": "quiz",
+      "body": "",
+      "alt": "",
+      "asset": "",
+      "question": "When sharing highly sensitive company data (like payroll information) with a remote contractor, which method is the most secure?",
+      "choices": [
+        "Sending the file as an attachment in a standard, unencrypted email.",
+        "Uploading the file to a public cloud folder so they can access it easily.",
+        "Using a company-approved, encrypted file-sharing link or a secure messaging platform.",
+        "Putting the file on a thumb drive and mailing it via standard post."
+      ],
+      "correct": 3,
+      "feedback": "Standard US mail isnt a guarantee of privacy, and using unencrypted tools risks exposure."
+    },
+    {
+      "id": "68a5f5ee-ae27-424d-9705-fecb0c71e5c8",
+      "title": "Incident response",
+      "type": "text",
+      "body": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Incident Response Training</title>\n</head>\n<body style=\"font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: auto; padding: 20px;\">\n\n    <h1 style=\"color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 10px;\">Module 5: Incident Response</h1>\n\n    <p>In cybersecurity, an \"incident\" is any event that threatens the confidentiality, integrity, or availability of our data. This could be a phishing link clicked, a lost laptop, a suspicious \"pop-up,\" or a notification that your account has been accessed from another country. This module teaches you how to react when things go wrong.</p>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #2980b9;\">1. How to Report an Incident</h2>\n    <p>Speed is the most important factor in incident response. The faster the IT team knows, the faster they can \"quarantine\" the threat to prevent it from spreading to the rest of the company.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Who to Notify:</strong> Immediately contact the IT Help Desk or the designated Security Team via the official emergency line or email.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">What to Tell Them:</strong> Provide as much detail as possible, including:\n            <ul>\n                <li>What happened? (e.g., \"I clicked a link,\" \"My laptop is acting strangely,\" or \"I lost my phone.\")</li>\n                <li>When did it happen?</li>\n                <li>What information was involved? (e.g., \"I entered my password into a website.\")</li>\n            </ul>\n        </li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Do Not Wait:</strong> Even if you aren't sure if something was \"malicious,\" it is always better to report a false alarm than to ignore a real breach.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">2. Handling a Report (For Managers & Leads)</h2>\n    <p>If a team member reports a potential security issue to you, your role is to facilitate a calm and rapid response. Do not try to \"fix\" the technical problem yourself.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Stay Calm:</strong> Reassure the employee. They should not feel \"in trouble\" for reporting a mistake. A fast report is the best way to help the company.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Preserve the Evidence:</strong> Instruct the employee <em>not</em> to delete any emails, files, or browser history related to the incident. IT may need these to investigate.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Escalate Immediately:</strong> Do not wait until the end of the day. Notify IT/Security as soon as you receive the report.</li>\n    </ul>\n\n    <h2 style=\"color: #2980b9;\">3. Immediate Actions: If You Believe You Are Compromised</h2>\n    <p>If you suspect your account, computer, or mobile device has been hacked, follow these steps <strong>immediately</strong>. Do not wait for instructions if the threat is active.</p>\n    <ul style=\"margin-bottom: 20px;\">\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Disconnect from the Network:</strong> \n            <br>— If on a laptop: Turn off the Wi-Fi or unplug the Ethernet cable. \n            <br>— If on a mobile device: Turn on Airplane Mode. \n            <br><em>(Note: Do not power the device off unless instructed, as this may delete evidence in the computer's memory.)</em>\n        </li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Stop Using the Account:</strong> Immediately stop using the compromised account to send emails, access files, or conduct business.</li>\n        <li style=\"margin-bottom: 10px;\"><strong style=\"color: #c0392b;\">Change Passwords Elsewhere:</strong> If you believe your primary password was stolen, use a <em>different, clean device</em> (like your personal phone) to change your passwords for other major accounts (e.g., personal banking, personal email).</li>\n    </ul>\n\n    <hr style=\"margin: 40px 0; border: 0; border-top: 1px solid #eee;\">\n\n    <h2 style=\"color: #e67e22;\">Summary Checklist</h2>\n    <p>In a security emergency, remember these four steps:</p>\n    <ol>\n        <li><strong style=\"color: #c0392b;\">Isolate:</strong> Disconnect the device from the internet/network.</li>\n        <li><strong style=\"color: #c0392b;\">Report:</strong> Notify the IT Help Desk immediately via the emergency contact.</li>\n        <li><strong style=\"color: #c0392b;\">Preserve:</strong> Do not delete anything; let the security team handle the \"cleanup.\"</li>\n        <li><strong style=\"color: #c0392b;\">Communicate:</strong> If you are a manager, get your team to report issues quickly and without fear of reprimand.</li>\n    </ol>\n\n    <p style=\"margin-top: 30px; font-style: italic; font-size: 0.9em; color: #7f8c8d; text-align: center;\">\n        <em style=\"color: #333;\">Important: Never try to \"hack back\" or investigate a threat yourself. Leave the technical investigation to the trained Security Professionals.</em>\n    </p>\n\n</body>\n</html>\n",
+      "alt": "",
+      "asset": "",
+      "question": "",
+      "choices": [
+        "Option 1",
+        "Option 2"
+      ],
+      "correct": 1,
+      "feedback": ""
+    },
+    {
+      "id": "3aa65c91-0d4a-48e4-b55b-3abaa51209c7",
+      "title": "Incident Responce Knowledge Check",
+      "type": "quiz",
+      "body": "",
+      "alt": "",
+      "asset": "",
+      "question": "A team member comes to you (their manager) and says they accidentally clicked a link in a suspicious email. What should you do?",
+      "choices": [
+        "Tell them not to worry about it and keep it a secret to avoid getting in trouble.",
+        "Try to fix the computer yourself before reporting it to IT.",
+        "Instruct them not to delete any emails or files related to the incident and notify the IT/Security team immediately.",
+        "Ask them to delete all the files on the computer to \"wipe\" the evidence."
+      ],
+      "correct": 3,
+      "feedback": "Dont punish the messenger, you want to inspire people to keep you in the loop."
+    }
+  ],
+  "assets": {},
+  "active": "3aa65c91-0d4a-48e4-b55b-3abaa51209c7",
+  "format": "LocalSCORMEditorProject"
+}
