@@ -1,0 +1,139 @@
+
+
+<!doctype html><html lang="en"><head>
+<style media="print">
+@page {
+  size: landscape;
+  margin: 0.35in;
+}
+
+
+html,
+body {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  background: #fff !important;
+}
+
+
+body > *:not(#certDialog) {
+  display: none !important;
+}
+
+
+#certDialog {
+  display: block !important;
+  position: static !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: #fff !important;
+  overflow: visible !important;
+}
+
+
+#certDialog::backdrop {
+  display: none !important;
+}
+
+
+#certDialog .dialogBody {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+
+#certDialog .certificate {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  height: 7in !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0.4in !important;
+  aspect-ratio: auto !important;
+  box-sizing: border-box !important;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  color: #111 !important;
+  background: #fff !important;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+
+
+#certDialog .toolbar {
+  display: none !important;
+}
+</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob: data:; media-src blob: data:; font-src blob: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline' blob:; frame-src blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Standalone SCORM Archive Player</title>
+<style>
+:root{color-scheme:light dark;--bg:#f4f7fb;--panel:#fff;--text:#182230;--muted:#5b6878;--accent:#075ea8;--border:#c8d2df;--ok:#18794e;--warn:#8a4b00;--bad:#b42318}*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}header{padding:16px 20px;background:#052f4f;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:16px}h1{font-size:20px;margin:0}.small{font-size:12px;color:var(--muted)}main{display:grid;grid-template-columns:320px 1fr;height:calc(100vh - 64px)}aside{padding:16px;background:var(--panel);border-right:1px solid var(--border);overflow:auto}.viewer{display:grid;grid-template-rows:auto 1fr;min-width:0}.toolbar{padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap}button,.fileLabel,input{font:inherit}button,.fileLabel{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:8px 12px;border-radius:8px;cursor:pointer}.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button:disabled{opacity:.5;cursor:not-allowed}.fileLabel input{display:none}iframe{width:100%;height:100%;border:0;background:white}.card{border:1px solid var(--border);border-radius:10px;padding:12px;margin:12px 0}.status{font-weight:700}.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}#courseTree{list-style:none;padding:0}#courseTree button{width:100%;text-align:left;margin:3px 0}label{display:block;margin:8px 0 3px}input[type=text]{width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--panel);color:var(--text)}dialog{border:0;border-radius:12px;max-width:760px;width:calc(100% - 30px);padding:0;box-shadow:0 20px 80px #0006}dialog::backdrop{background:#0008}.dialogBody{padding:20px}.certificate{background:#fff;color:#111;border:12px double #174b73;padding:44px;text-align:center;aspect-ratio:1.414/1}.certificate h2{font:700 34px Georgia,serif;color:#174b73}.certificate .name{font:italic 28px Georgia,serif;border-bottom:1px solid #444;display:inline-block;min-width:65%;padding:8px}@media(max-width:760px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr}aside{max-height:42vh;border-right:0;border-bottom:1px solid var(--border)}}@media(prefers-color-scheme:dark){:root{--bg:#111820;--panel:#17212b;--text:#edf3f8;--muted:#b5c0cb;--border:#43505d}}
+</style>
+</head>
+<body>
+<header><h1>Standalone SCORM ZIP Archive Player</h1><span class="small" style="color:#dcecff">Local processing only</span></header>
+<main><aside>
+<label class="fileLabel primary">Open SCORM ZIP<input id="zipInput" type="file" accept=".zip,application/zip"></label>
+<div id="dropZone" class="card" tabindex="0">Drop a SCORM ZIP here. Files remain in this browser session.</div>
+<div class="card"><div>Package: <strong id="packageName">None</strong></div><div>Standard: <strong id="standard">-</strong></div><div>Status: <strong id="status" class="status">not attempted</strong></div><div>Score: <strong id="score">-</strong></div></div>
+<label for="learnerName">Learner name</label><input id="learnerName" type="text" maxlength="100" autocomplete="name" placeholder="Required for certificate">
+<ul id="courseTree" aria-label="Course materials"></ul><button id="clearBtn" disabled>Unload package</button>
+</aside><section class="viewer"><div class="toolbar"><button id="prevBtn" disabled>Previous</button><button id="nextBtn" disabled>Next</button><button id="completeBtn" disabled>Mark complete</button><button id="certBtn" disabled>Certificate</button><span id="message" role="status" aria-live="polite"></span></div><iframe id="contentFrame" title="SCORM course content" sandbox="allow-scripts allow-forms allow-modals allow-popups" referrerpolicy="no-referrer"></iframe></section></main>
+<dialog id="certDialog"><div class="dialogBody"><div class="certificate"><h2>Certificate of Completion</h2><p>This certifies that</p><div id="certName" class="name"></div><p>successfully completed</p><h3 id="certCourse"></h3><p id="certDate"></p><p class="small">Certificate ID: <span id="certId"></span></p></div><div class="toolbar"><button id="printCert" class="primary">Print / Save as PDF</button><button id="closeCert">Close</button></div></div></dialog>
+<script>
+'use strict';
+(()=>{
+const $=id=>document.getElementById(id),MAX_ARCHIVE=100*1024*1024,MAX_FILE=25*1024*1024,MAX_TOTAL=250*1024*1024,MAX_ENTRIES=5000;
+let files=new Map(),urls=new Map(),items=[],current=-1,packageTitle='',state={status:'not attempted',score:'',location:'',suspendData:''};
+const dec=new TextDecoder(),setMsg=(text,bad=false)=>{$('message').textContent=text;$('message').className=bad?'bad':''};
+const cleanPath=value=>{let path=value.replaceAll('\\','/').replace(/^\/+/,''),out=[];if(!path||path.includes('\0'))throw Error('Unsafe path in archive.');for(const part of path.split('/')){if(!part||part==='.')continue;if(part==='..')throw Error('Unsafe path in archive.');out.push(part)}return out.join('/')};
+const resolvePath=(base,reference)=>{if(/^(?:[a-z]+:|\/\/|#)/i.test(reference))return reference;let parts=(base.includes('/')?base.slice(0,base.lastIndexOf('/')+1):'').split('/').concat(reference.split('/')),out=[];for(const part of parts){if(!part||part==='.')continue;if(part==='..')out.pop();else out.push(part)}return out.join('/')};
+function u16(a,o){return a[o]|a[o+1]<<8}function u32(a,o){return(a[o]|a[o+1]<<8|a[o+2]<<16|a[o+3]<<24)>>>0}
+async function inflate(data){if(!('DecompressionStream'in self))throw Error('ZIP deflate is not supported by this browser.');return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer())}
+async function readZip(file){if(file.size>MAX_ARCHIVE)throw Error('Archive exceeds 100 MB.');let a=new Uint8Array(await file.arrayBuffer()),e=-1;for(let i=Math.max(0,a.length-65557);i<=a.length-22;i++)if(u32(a,i)===0x06054b50)e=i;if(e<0)throw Error('ZIP central directory not found.');let count=u16(a,e+10),off=u32(a,e+16),out=new Map(),total=0;if(count>MAX_ENTRIES)throw Error('Archive has too many entries.');for(let n=0;n<count;n++){if(u32(a,off)!==0x02014b50)throw Error('Invalid ZIP directory.');let method=u16(a,off+10),cs=u32(a,off+20),us=u32(a,off+24),nl=u16(a,off+28),xl=u16(a,off+30),cl=u16(a,off+32),lo=u32(a,off+42),rawName=dec.decode(a.slice(off+46,off+46+nl));off+=46+nl+xl+cl;if(rawName.replaceAll('\\','/').endsWith('/'))continue;let name=cleanPath(rawName);if(us>MAX_FILE)throw Error('A package file exceeds 25 MB.');total+=us;if(total>MAX_TOTAL)throw Error('Expanded package exceeds 250 MB.');if(u32(a,lo)!==0x04034b50)throw Error('Invalid ZIP entry.');let lnl=u16(a,lo+26),lxl=u16(a,lo+28),raw=a.slice(lo+30+lnl+lxl,lo+30+lnl+lxl+cs),body=method===0?raw:method===8?await inflate(raw):null;if(!body)throw Error('Unsupported ZIP compression method.');if(body.length!==us)throw Error('ZIP entry size mismatch.');out.set(name,body)}return out}
+function mime(path){let ext=path.toLowerCase().split('.').pop();return({html:'text/html',htm:'text/html',css:'text/css',js:'text/javascript',mjs:'text/javascript',json:'application/json',xml:'application/xml',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',svg:'image/svg+xml',mp3:'audio/mpeg',mp4:'video/mp4',webm:'video/webm',pdf:'application/pdf',txt:'text/plain',woff:'font/woff',woff2:'font/woff2'}[ext]||'application/octet-stream')}
+function b64(bytes){let result='',size=0x8000;for(let i=0;i<bytes.length;i+=size)result+=String.fromCharCode(...bytes.subarray(i,i+size));return btoa(result)}
+function localResponse(path,reference){let resolved=resolvePath(path,reference.split(/[?#]/)[0]),body=files.get(resolved);if(!body)return null;return `__scormLocalResponse(${JSON.stringify(b64(body))},${JSON.stringify(mime(resolved))})`}
+function rewrite(path,text){
+ const asset=ref=>{let resolved=resolvePath(path,ref.split(/[?#]/)[0]);return urls.get(resolved)||ref};
+ text=text.replace(/\b(src|href|poster)\s*=\s*(["'])([^"']+)\2/gi,(m,a,q,v)=>{let value=asset(v);return value===v?m:`${a}=${q}${value}${q}`}).replace(/url\(\s*(["']?)([^)'"\s]+)\1\s*\)/gi,(m,q,v)=>{let value=asset(v);return value===v?m:`url(${q}${value}${q})`});
+ text=text.replace(/\bfetch\s*\(\s*(["'])([^"']+)\1\s*\)/gi,(m,q,v)=>localResponse(path,v)||m);
+ const helper=`const __scormLocalResponse=(encoded,type)=>{const binary=atob(encoded),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);return Promise.resolve(new Response(bytes,{status:200,headers:{'Content-Type':type}}));};
+`;
+ if(/\.m?js$/i.test(path))return helper+text;
+ if(/\.html?$/i.test(path)){if(/<head(?:\s[^>]*)?>/i.test(text))return text.replace(/<head(\s[^>]*)?>/i,m=>`${m}<script>${helper}<\/script>`);return `<script>${helper}<\/script>${text}`}
+ return text;
+}
+function buildUrls(){for(const[path,body]of files)if(!/\.(?:html?|css|m?js)$/i.test(path))urls.set(path,URL.createObjectURL(new Blob([body],{type:mime(path)})));for(let pass=0;pass<3;pass++)for(const[path,body]of files)if(/\.(?:html?|css|m?js)$/i.test(path)){let old=urls.get(path),url=URL.createObjectURL(new Blob([rewrite(path,dec.decode(body))],{type:mime(path)}));urls.set(path,url);if(old)URL.revokeObjectURL(old)}}
+function parseManifest(){let key=[...files.keys()].find(path=>path.toLowerCase()==='imsmanifest.xml');if(!key)throw Error('imsmanifest.xml was not found at the archive root.');let xml=new DOMParser().parseFromString(dec.decode(files.get(key)),'application/xml');if(xml.querySelector('parsererror'))throw Error('Invalid SCORM manifest XML.');let all=(node,name)=>[...node.getElementsByTagName('*')].filter(el=>el.localName===name),direct=(node,name)=>node?[...node.children].filter(el=>el.localName===name):[],child=(node,name)=>direct(node,name)[0],resources=new Map();for(const r of all(xml,'resource'))resources.set(r.getAttribute('identifier'),r.getAttribute('href')||'');let org=all(xml,'organization')[0];packageTitle=child(org,'title')?.textContent.trim()||'SCORM Course';items=[];let inherited={flow:true,choice:true,forwardOnly:false};function add(el,parentId,depth,control){let seq=child(el,'sequencing'),cm=child(seq,'controlMode'),local={...control};if(cm)for(const[a,k]of[['flow','flow'],['choice','choice'],['forwardOnly','forwardOnly']])if(cm.hasAttribute(a))local[k]=cm.getAttribute(a)==='true';let id=el.getAttribute('identifier')||`activity-${items.length+1}`,href=resources.get(el.getAttribute('identifierref'))||'',activity={id,parentId,depth,title:child(el,'title')?.textContent.trim()||id,href:href?cleanPath(href.split(/[?#]/)[0]):'',control:local,visible:el.getAttribute('isvisible')!=='false',rules:[],attempted:false,completed:false};if(seq)for(const rule of all(seq,'preConditionRule')){let action=child(rule,'ruleAction')?.getAttribute('action'),group=child(rule,'ruleConditions');if(action&&group)activity.rules.push({action,combination:group.getAttribute('conditionCombination')||'all',conditions:direct(group,'ruleCondition').map(c=>({condition:c.getAttribute('condition'),operator:c.getAttribute('operator')||'noOp'}))})}items.push(activity);for(const nested of direct(el,'item'))add(nested,id,depth+1,local)}if(org)for(const top of direct(org,'item'))add(top,null,0,inherited);if(!items.some(x=>x.href))for(const[id,href]of resources)if(href)items.push({id,parentId:null,depth:0,title:id,href:cleanPath(href.split(/[?#]/)[0]),control:{...inherited},visible:true,rules:[],attempted:false,completed:false});let schema=all(xml,'schemaversion')[0]?.textContent||'';$('standard').textContent=/2004/i.test(schema)?'SCORM 2004 with basic sequencing':/1\.2/.test(schema)?'SCORM 1.2':'SCORM-compatible'}
+function actionFor(item){for(const rule of item.rules){let findings=rule.conditions.map(c=>{let result=c.condition==='always'||c.condition==='attempted'&&item.attempted||c.condition==='completed'&&item.completed||c.condition==='satisfied'&&state.status==='passed'||c.condition==='objectiveStatusKnown'&&/passed|failed/.test(state.status);return c.operator==='not'?!result:result});if(rule.combination==='any'?findings.some(Boolean):findings.every(Boolean))return rule.action}return''}
+function available(){return items.map((item,index)=>({item,index})).filter(x=>x.item.href&&!['skip','disabled','hiddenFromChoice','stopForwardTraversal'].includes(actionFor(x.item))).map(x=>x.index)}
+function valid(request){let choices=available();if(request==='continue')return items[current]?.control.flow!==false&&choices.some(i=>i>current);if(request==='previous')return items[current]?.control.flow!==false&&!items[current]?.control.forwardOnly&&choices.some(i=>i<current);let match=request.match(/^choice\{(.+)\}$/);if(match){let i=items.findIndex(x=>x.id===match[1]);return i>=0&&choices.includes(i)&&items[i].visible&&items[i].control.choice!==false&&!(items[i].control.forwardOnly&&i<current)}return['_none_','exit','exitAll','suspendAll','abandon','abandonAll'].includes(request)}
+function sequence(request){let choices=available(),target=-1;if(request==='continue')target=choices.find(i=>i>current)??-1;else if(request==='previous')target=[...choices].reverse().find(i=>i<current)??-1;else{let match=request.match(/^choice\{(.+)\}$/);if(match)target=items.findIndex(x=>x.id===match[1])}if(target>=0&&valid(request)){launch(target);return true}if(['exit','exitAll','suspendAll','abandon','abandonAll'].includes(request)){$('contentFrame').removeAttribute('src');setMsg(`Sequencing request processed: ${request}`);return true}return request==='_none_'}
+function api(){let pending='_none_';const get=key=>{if(key==='adl.nav.request')return pending;if(key.startsWith('adl.nav.request_valid.'))return valid(key.slice(22))?'true':'false';return({'cmi.core.lesson_status':state.status,'cmi.completion_status':state.status==='completed'?'completed':state.status,'cmi.success_status':state.status==='passed'?'passed':'unknown','cmi.core.score.raw':state.score,'cmi.score.raw':state.score,'cmi.core.lesson_location':state.location,'cmi.location':state.location,'cmi.suspend_data':state.suspendData,'cmi.core.student_name':$('learnerName').value,'cmi.learner_name':$('learnerName').value}[key]??'')},set=(key,value)=>{value=String(value).slice(0,64000);if(key==='adl.nav.request'){if(!valid(value))return'false';pending=value;return'true'}if(/lesson_status|completion_status/.test(key))state.status=value;if(/score\.raw/.test(key))state.score=value;if(/lesson_location|cmi\.location/.test(key))state.location=value;if(key==='cmi.suspend_data')state.suspendData=value;if(items[current]&&/completed|passed/.test(state.status))items[current].completed=true;renderState();return'true'},finish=()=>{let request=pending;pending='_none_';sequence(request);return'true'};return{Initialize:()=>'true',Terminate:finish,GetValue:get,SetValue:set,Commit:()=>'true',GetLastError:()=>'0',GetErrorString:()=>'No error',GetDiagnostic:()=>'',LMSInitialize:()=>'true',LMSFinish:finish,LMSGetValue:get,LMSSetValue:set,LMSCommit:()=>'true',LMSGetLastError:()=>'0',LMSGetErrorString:()=>'No error',LMSGetDiagnostic:()=>''}}
+let A=api();window.API={LMSInitialize:A.LMSInitialize,LMSFinish:A.LMSFinish,LMSGetValue:A.LMSGetValue,LMSSetValue:A.LMSSetValue,LMSCommit:A.LMSCommit,LMSGetLastError:A.LMSGetLastError,LMSGetErrorString:A.LMSGetErrorString,LMSGetDiagnostic:A.LMSGetDiagnostic};window.API_1484_11={Initialize:A.Initialize,Terminate:A.Terminate,GetValue:A.GetValue,SetValue:A.SetValue,Commit:A.Commit,GetLastError:A.GetLastError,GetErrorString:A.GetErrorString,GetDiagnostic:A.GetDiagnostic};
+function renderState(){$('status').textContent=state.status;$('score').textContent=state.score||'-';let done=/completed|passed/.test(state.status);$('certBtn').disabled=!done;$('status').className='status '+(done?'ok':'warn')}
+function renderItems(){$('courseTree').replaceChildren(...items.map((item,index)=>{let li=document.createElement('li'),button=document.createElement('button'),request=`choice{${item.id}}`;button.textContent=item.title;button.style.paddingLeft=`${12+item.depth*18}px`;button.disabled=!item.href||!valid(request);button.onclick=()=>sequence(request);li.append(button);return li}));$('clearBtn').disabled=false;updateNav()}
+function updateNav(){$('prevBtn').disabled=!valid('previous');$('nextBtn').disabled=!valid('continue');$('completeBtn').disabled=current<0}
+function launch(index){let item=items[index],url=item&&urls.get(item.href);if(!url){setMsg('Referenced course file is missing.',true);return}current=index;item.attempted=true;$('contentFrame').src=url;state.location=item.href;renderItems();setMsg(`Opened: ${item.title}`)}
+async function load(file){try{clear();setMsg('Validating and expanding package...');files=await readZip(file);parseManifest();buildUrls();$('packageName').textContent=packageTitle;renderItems();renderState();let first=available()[0];if(first===undefined)throw Error('No launchable activity was found.');launch(first);setMsg('Package loaded. Static data files are parsed from memory; no server or network request is used.')}catch(error){clear();setMsg(error.message||'Unable to load package.',true)}}
+function clear(){for(const url of urls.values())URL.revokeObjectURL(url);files.clear();urls.clear();items=[];current=-1;state={status:'not attempted',score:'',location:'',suspendData:''};$('contentFrame').removeAttribute('src');$('courseTree').replaceChildren();$('packageName').textContent='None';$('standard').textContent='-';$('clearBtn').disabled=$('completeBtn').disabled=$('certBtn').disabled=$('prevBtn').disabled=$('nextBtn').disabled=true;renderState()}
+$('zipInput').onchange=e=>e.target.files[0]&&load(e.target.files[0]);$('prevBtn').onclick=()=>sequence('previous');$('nextBtn').onclick=()=>sequence('continue');$('completeBtn').onclick=()=>{state.status='completed';if(items[current])items[current].completed=true;renderState();renderItems();setMsg('Current activity marked complete.')};$('clearBtn').onclick=clear;
+let dz=$('dropZone');for(const eventName of['dragenter','dragover'])dz.addEventListener(eventName,e=>{e.preventDefault();dz.classList.add('ok')});for(const eventName of['dragleave','drop'])dz.addEventListener(eventName,e=>{e.preventDefault();dz.classList.remove('ok')});dz.addEventListener('drop',e=>e.dataTransfer.files[0]&&load(e.dataTransfer.files[0]));
+$('certBtn').onclick=async()=>{let name=$('learnerName').value.trim();if(!name){setMsg('Enter the learner name first.',true);return}$('certName').textContent=name;$('certCourse').textContent=packageTitle;$('certDate').textContent='Completed '+new Intl.DateTimeFormat(undefined,{dateStyle:'long'}).format(new Date());let hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(`${name}|${packageTitle}|${Date.now()}`));$('certId').textContent=[...new Uint8Array(hash)].slice(0,8).map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();$('certDialog').showModal()};$('closeCert').onclick=()=>$('certDialog').close();$('printCert').onclick=()=>window.print();window.addEventListener('beforeunload',()=>{for(const url of urls.values())URL.revokeObjectURL(url)});
+})();
+</script>
+</body></html>
