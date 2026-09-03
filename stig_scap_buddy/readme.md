@@ -1,5 +1,3 @@
-Here is a clean, professional **README.md** tailored to your tool and your typical KU/SOC use case:
-
 ***
 
 # STIG / SCAP Editor & Implementation Script Builder
