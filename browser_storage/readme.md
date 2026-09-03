@@ -1,37 +1,37 @@
-# SentinelFlow (Browser Storage Edition)
+# Browser Storage Inspector & Manager
 
-A standalone, browser-based workflow modeling and persistence utility designed to help security engineers and SOC teams map, document, and validate Microsoft Sentinel detection pipelines and SOAR automation flows with client-side local storage support.
+A lightweight, client-side utility designed to inspect, manipulate, test, and manage client-side web storage mechanisms directly within your browser.
 
-Part of the **[browser_storage](https://github.com/asmodianx/browser_storage)** collection of persistent, zero-backend web utilities.
+Part of the **[security_timesavers](https://github.com/asmodianx/security_timesavers)** utility toolkit.
 
 ---
 
 ## 📌 Overview
 
-Architecting detections and automation in Microsoft Sentinel requires linking multiple moving pieces: ingestion connectors, Log Analytics tables, KQL analytic rules, entity mapping, and Azure Logic App playbooks. 
+Client-side storage—encompassing `localStorage`, `sessionStorage`, `IndexedDB`, and cookies—is central to modern single-page applications and web architectures. However, security analysts, web application testers, and developers frequently need to inspect stored values, audit persistence behavior, test quota boundaries, or clear sensitive session artifacts without digging through complex developer tools sub-menus.
 
-While lightweight single-page utilities make modeling these flows easy, losing your layout or configuration on an accidental browser refresh is a major pain point. **SentinelFlow (Browser Storage Edition)** (`index.html`) couples interactive pipeline modeling with native browser storage APIs (`localStorage` / `IndexedDB`), allowing you to build, customize, and maintain end-to-end detection and orchestration runbooks across browser sessions without needing a database or cloud account.
+The **Browser Storage** utility (`index.html`) provides a focused, single-pane interface to view, parse, add, modify, and purge local storage data directly in the viewport.
 
 ---
 
-## 🔄 Pipeline Lifecycle
+## ✨ Features
 
-```text
-  [ Ingestion Connectors ]
-  (Syslog, AMA, CEF, Graph API, CloudTrail)
-                 │
-                 ▼
-  [ Log Analytics Tables & Parsing ]
-  (CommonSecurityLog, SigninLogs, DeviceProcessEvents)
-                 │
-                 ▼
-  [ KQL Analytics Rule & Entity Mapping ]
-  (Frequency, Thresholds, Account / Host / IP Entities)
-                 │
-                 ▼
-  [ Incident Creation & Alert Grouping ]
-  (Severity, ATT&CK Tactics, Alert Aggregation)
-                 │
-                 ▼
-  [ Automated Response / SOAR Playbook ]
-  (Logic Apps -> Account Revocation, Firewall Drop, Ticket Update)
+- **Storage Type Coverage:** Inspect and manage keys across browser storage mechanisms:
+  - **Local Storage (`localStorage`):** View, edit, add, or flush persistent origin data.
+  - **Session Storage (`sessionStorage`):** Monitor tab-scoped ephemeral session states.
+  - **IndexedDB & Cookie Inspection:** Check client-side database schemas and origin cookies where supported.
+- **Key/Value Manipulation:** Quickly search, filter, decode, and update key-value pairs in place.
+- **Quota & Boundary Testing:** Monitor origin storage utilization, payload sizing, and storage limit thresholds.
+- **Zero External Dependencies:** Built entirely with vanilla HTML, CSS, and JavaScript. No build pipelines, runtime frameworks, or external CDNs required.
+- **Privacy & Security Focused:** Runs 100% client-side. No stored tokens, session keys, or application payloads are sent to external analytics or third-party servers.
+
+---
+
+## 🚀 Getting Started
+
+### Option 1: Direct File Access (Fastest)
+
+1. Clone the repository:
+   ```bash
+   git clone [https://github.com/asmodianx/security_timesavers.git](https://github.com/asmodianx/security_timesavers.git)
+   cd security_timesavers/browser_storage
