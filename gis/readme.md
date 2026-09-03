@@ -19,7 +19,7 @@ The **GIS tool** (`index.html`) provides a lightweight, client-side interface to
 - **Rapid Geolocation Lookup:** Quickly query location metadata (Country, Region, City, ISP, ASN, Coordinates) for indicators of compromise (IoCs).
 - **Interactive Mapping Interface:** Visualizes point data and geographic clusters to help spot suspicious login patterns or unusual traffic paths.
 - **Zero Dependencies:** Fully self-contained single-page application (`HTML/CSS/JS`). Runs completely client-side in any modern web browser.
-- **Privacy-First / Local Operation:** Designed for security analysts who need a quick, offline-capable or local utility tool during triage without leaking sensitive telemetry to third-party web apps.
+- **Privacy-First / Local Operation:** Designed for security analysts who need a quick, offline-capable or local utility tool during triage without leaking sensitive telemetry to third-party web apps. (this does use external libraries for map layer access)
 
 ---
 
