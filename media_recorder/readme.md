@@ -1,6 +1,6 @@
 # Media Recorder Tool
 
-A lightweight, browser-based utility designed to capture audio, video, or screen recordings directly within your web browser—handy for incident response documentation, capture-the-flag (CTF) walkthroughs, and security demonstration recordings.
+A lightweight, browser-based audio and video recording utility designed to capture camera feeds and microphone input directly inside your web browser.
 
 Part of the **[security_timesavers](https://github.com/asmodianx/security_timesavers)** utility toolkit.
 
@@ -8,18 +8,18 @@ Part of the **[security_timesavers](https://github.com/asmodianx/security_timesa
 
 ## 📌 Overview
 
-During security audits, incident recreations, or internal training sessions, security professionals often need a quick, no-fuss way to record evidence, proof-of-concept (PoC) exploits, or bug bounty walkthroughs without installing heavyweight third-party screen-recording software.
+Whether recording verbal incident debriefs, logging spoken forensic walkthroughs, or capturing webcam footage for identity verification checks, having a direct recording tool without third-party bloat is essential.
 
-The **Media Recorder** tool (`index.html`) leverages native browser MediaRecorder APIs to let you record audio, video, or your screen instantly with zero installation required.
+The **Media Recorder** tool (`index.html`) relies on native HTML5 and browser MediaStream/MediaRecorder APIs to record audio and video streams locally without sending data to any external cloud platform.
 
 ---
 
 ## ✨ Features
 
-- **Multi-Source Capture:** Record audio, webcam video, or full screen/window captures directly from your browser.
-- **Zero Dependencies:** Fully self-contained single-page application (`HTML/CSS/JS`) requiring no external backend servers, browser extensions, or binary installations.
-- **Privacy & Local Processing:** Recordings are processed and stored locally in your browser session via Blob APIs, ensuring sensitive data doesn't leak to external third-party recording services.
-- **Instant Export:** Download captured recordings immediately in standard browser-supported media formats (e.g., WebM/MP4).
+- **Audio & Video Capture:** Record webcam video, standalone microphone audio, or synchronized audio/video streams.
+- **Client-Side Processing:** All streams and media blobs are processed entirely within the local browser memory—no recording data leaves your machine.
+- **Zero Dependencies:** Pure single-page implementation (`HTML/CSS/JS`) with no plugins, extensions, or server backends required.
+- **Direct Playback & Export:** Preview recordings immediately after stopping and export them directly to disk in standard browser media formats (e.g., WebM).
 
 ---
 
