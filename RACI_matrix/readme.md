@@ -21,3 +21,6 @@ The **RACI Matrix Tool** (`index.html`) provides an interactive, client-side mat
   [ Accountable (A) ] ──► The sole "Owner" who holds ultimate veto/decision authority.
   [ Consulted (C)   ] ──► The subject matter expert looped in for two-way input.
   [ Informed (I)    ] ──► The stakeholder kept updated with one-way progress reports.
+```
+
+Other frameworks are included such as DID
