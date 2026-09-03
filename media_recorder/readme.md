@@ -5,7 +5,6 @@ A lightweight, browser-based audio and video recording utility designed to captu
 Part of the **[security_timesavers](https://github.com/asmodianx/security_timesavers)** utility toolkit.
 
 ---
-
 ## 📌 Overview
 
 Whether recording verbal incident debriefs, logging spoken forensic walkthroughs, or capturing webcam footage for identity verification checks, having a direct recording tool without third-party bloat is essential.
