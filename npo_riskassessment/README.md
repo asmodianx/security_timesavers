@@ -1,284 +1,367 @@
-# Nonprofit Risk Assessment Wizard
+# Nonprofit Security and Threat Intelligence Requirements Wizard
 
-A standalone, browser-based application that guides a general-purpose nonprofit organization through a structured cybersecurity risk assessment and engagement workflow.
+A standalone, offline-capable browser application for helping nonprofit and nongovernmental organizations assess foundational cybersecurity risks and produce a structured cyber threat intelligence collection profile.
 
-The wizard combines intake, threat modeling, attack-surface discovery, control assessment, exposure scoring, action planning, engagement tracking, and report generation in one portable HTML file. It can be opened locally, hosted as a static webpage, or embedded in an iframe. No server, build process, CDN, external library, or network connection is required.
+The wizard is designed for organizations with limited budgets, low cybersecurity maturity, volunteer or outsourced technology support, and little or no dedicated threat intelligence capability. It moves complexity into the application rather than requiring users to understand formal intelligence terminology or operate an enterprise threat intelligence platform.
+
+## Revision
+
+**Current model:** 3.0, corrected CTI-enhanced OWASP revision
+
+This revision retains the expanded threat intelligence functionality and applies the Priority 1 OWASP hardening changes. Model 3.0 uses a separate browser storage key and does not automatically import assessments from earlier model versions.
 
 ## Purpose
 
-The application is designed to help a nonprofit organization:
+The application supports two related outcomes:
 
-- Identify likely threat actors and failure scenarios.
-- Determine which information, systems, and capabilities are most important to protect.
-- Inventory domains, systems, vendors, accounts, administrators, and publicly exposed information.
-- Assess the implementation of 20 foundational security controls.
-- Calculate a relative exposure index across 16 modeled attack paths.
-- Determine the organization's current maturity tier.
-- Identify three prioritized, practical remediation actions.
-- Assign action owners and target dates.
-- Produce a concise assessment report for leadership or board review.
-- Save progress manually, export results, and reassess using the same model later.
+1. **Nonprofit security risk assessment**
+   - Identify important information, services, accounts, systems, and vendors.
+   - Describe plausible financial, data-loss, and operational outage scenarios.
+   - Assess a focused set of foundational security controls.
+   - Produce prioritized actions based on modeled risk reduction, effort, and cost.
 
-## Application Sections
+2. **Threat intelligence requirements development**
+   - Identify relevant sectors, missions, geographies, technologies, dependencies, and previous incident types.
+   - Determine who should receive cyber warnings and what those recipients can realistically do.
+   - Define suitable delivery methods and intelligence product types.
+   - Derive Priority Intelligence Requirements and collection filters without requiring the user to understand CTI-specific terminology.
 
-1. **Start or Resume**
-   - Begin a new assessment.
-   - Resume a manually saved browser copy.
-   - Import a previous JSON export.
-   - Review privacy and assessment-scope notices.
+## Key Features
 
-2. **Intake**
-   - Record the organization's mission, size, internal owner, technology support model, assessment trigger, and 90-day objective.
-   - Identify conditions that may require referral, specialized assessment, or incident response.
+### Organizational intake
 
-3. **Threat Model**
-   - Rate five potential sources of harm.
-   - Identify sensitive or mission-critical assets.
-   - Select organizational “crown jewels.”
-   - Develop realistic money, data-loss, and system-outage scenarios.
-   - Document the most likely, most damaging, and least-prepared-for outcomes.
+- Organization name and mission
+- Staff and volunteer counts
+- Internal assessment owner
+- Owner authority and technology support model
+- Primary country and additional operating regions
+- Mission and sector classification
+- Identification of missions that may attract ideological, political, criminal, or state-linked attention
+- Referral conditions for active compromise, physical-safety concerns, or lack of an actionable owner
 
-4. **Attack Surface**
-   - Review domains, registrars, expiration risks, email hosting, and email authentication.
-   - Inventory systems, vendors, users, administrators, and access.
-   - Review publicly available organizational information.
-   - Identify shared credentials, incomplete offboarding, excessive administrator access, and single-person dependencies.
-   - Provide private security checklists for leadership and other personnel who can move money.
+### Threat model
 
-5. **Controls and Exposure Score**
-   - Assess 20 controls using **Yes**, **No**, **Not sure**, or **Not applicable**.
-   - Apply organizational context adjustments.
-   - Calculate the exposure index and path status.
-   - Determine the highest fully completed maturity tier.
+- Five broadly understandable sources of adverse events
+- Critical information and service inventory
+- Confidentiality and availability consequences
+- Crown-jewel selection
+- Financial-fraud, data-disclosure, and operational-outage scenarios
+- Most likely, most damaging, and least-prepared-for events
+- Prior incident experience and continuing concerns
 
-6. **Results and Action Plan**
-   - Display the exposure index, paths closed, and maturity tier.
-   - Generate three prioritized remediation recommendations.
-   - List questions requiring follow-up with an IT provider or internal owner.
-   - Assign owners, 90-day review dates, and six-month reassessment dates.
+### Attack-surface discovery
 
-7. **Engagement Runbook**
-   - Track intake, kickoff, self-assessment, advisor review, readout, 90-day follow-up, and six-month reassessment.
-   - Reinforce scope boundaries for an advisory engagement.
-   - Provide review and pre-engagement checklists.
+- Organization domains, registrar, expiration, email hosting, and spoofing posture
+- Systems and technology inventory
+- Vendor and service-provider inventory
+- Professional account and administrator review
+- Review of publicly available organizational information
+- Leadership and personal-account safety prompts
+- Travel, device, and home-network considerations
 
-8. **Report and Export**
-   - Generate a structured assessment report.
-   - Export the complete assessment as JSON.
-   - Print the report or save it as a PDF through the browser.
-   - Copy report text for use in another document.
-   - Erase the locally saved browser copy.
+### Security control assessment
 
-## Exposure Model
+- Foundational account, authentication, backup, payment, access, endpoint, web, file-sharing, training, retention, vendor, and governance controls
+- Tiered maturity model
+- Modeled exposure index
+- Attack-path status
+- Top three recommended actions
+- Named owners and target dates
+- Follow-up questions for uncertain answers
 
-The application implements model version **1.0**, containing:
+### Threat intelligence capability
 
-- 16 attack paths.
-- 20 security controls.
-- Four maturity tiers, from **Tier 0 — Survive** through **Tier 3 — Sustain**.
-- Context adjustments for online donations, client records, large payments, account count, and personal or mixed email use.
-- Multiplicative control reductions to account for overlapping protections.
-- A residual-risk floor of 8 percent for each attack path.
-- Path classifications of **Open**, **Reduced**, or **Closed**.
-- Priority ranking based on modeled exposure reduction, implementation time, and cost.
+- Intended cyber-warning recipients
+- Realistic response capabilities
+- Preferred delivery methods
+- Preferred intelligence product types
+- Primary warning and escalation roles
+- Operational constraints responders should understand
 
-The exposure index is relative to the assessed organization's own unmitigated baseline. It is not a breach probability, audit grade, certification, or valid basis for comparing one organization with another.
+### Derived CTI output
 
-## Manual Progress Saving
+The application derives an organizational collection profile that can include:
 
-The application does **not** autosave.
+- Critical assets
+- Relevant technologies
+- Mission and sector interests
+- Operating geographies
+- Critical vendors and dependencies
+- Previous incident interests
+- Priority Intelligence Requirements
+- Intended recipients
+- Available response capabilities
+- Delivery preferences
+- Suitable intelligence product formats
 
-Responses remain in memory while the page is open. To store the current assessment in the browser, select:
+## Files
 
-> **Save my progress so far**
+Keep these files together in the same directory:
 
-This button is the only application action that writes the assessment to browser local storage.
-
-Additional behavior:
-
-- Moving between sections does not save automatically.
-- Typing does not write to browser storage.
-- Exporting JSON does not create or update the browser's saved copy.
-- Importing JSON loads the assessment into memory but does not save it locally.
-- Closing or refreshing the page before manually saving may discard changes made since the last save.
-- Only one saved browser copy is maintained for the application and browser profile.
-
-## Running the Application
-
-### Run Locally
-
-1. Download `nonprofit-risk-assessment-wizard-manual-save-final.html`.
-2. Open the file in a current web browser.
-3. Complete the assessment.
-4. Select **Save my progress so far** periodically.
-5. Export a JSON copy for backup or transfer.
-
-No installation or internet connection is required.
-
-### Host as a Static Webpage
-
-Place the HTML file on a static web server and open it through its URL. No server-side application logic is required.
-
-When hosted, use HTTPS and configure appropriate HTTP response headers at the web server or hosting platform. The HTML file includes a restrictive Content Security Policy, but server-delivered security headers provide stronger and more consistent protection.
-
-### Embed in an iframe
-
-The responsive interface can be embedded in an iframe. The containing site must allow the application to run scripts and use browser storage if manual save and resume are required.
-
-Example:
-
-```html
-<iframe
-  src="nonprofit-risk-assessment-wizard-manual-save-final.html"
-  title="Nonprofit Risk Assessment Wizard"
-  width="100%"
-  height="900"
-  loading="lazy">
-</iframe>
+```text
+NPO_CTI_Requirements_Wizard_v3_corrected/
+├── index.html
+├── styles.css
+├── app.js
+└── README.md
 ```
 
-If the iframe uses a `sandbox` attribute, test storage, download, printing, and clipboard behavior in the target browsers. Restrictive sandbox settings may disable one or more of these features.
+No installation, build process, package manager, web server, or external library is required for local use.
 
-## Import and Export
+## Running Locally
 
-### JSON Export
+1. Extract the application folder.
+2. Keep `index.html`, `styles.css`, and `app.js` in the same folder.
+3. Open `index.html` in a current desktop browser.
+4. Complete the wizard.
+5. Use the report and export functions as needed.
 
-The exported JSON file contains:
+The application is intended to work directly from a local folder. Browser security settings or organizational endpoint policies may restrict local JavaScript or local storage in some environments.
 
-- Model version and assessment metadata.
-- All recorded responses.
-- Systems, vendor, and account tables.
-- Control answers.
-- Context selections.
-- Action owners and target dates.
-- Engagement-checklist status.
+## Data Storage
 
-Treat the JSON export as a potentially sensitive document.
+The application does not automatically transmit information to a server.
 
-### JSON Import
+Assessment data remains in browser memory unless the user explicitly saves progress. When saved, the assessment is stored in the browser's local storage for the current browser profile.
 
-The wizard validates imported files before loading them. Imports must:
+Browser local storage is **not encrypted**. Anyone with access to the same browser profile or device may be able to access saved information.
 
-- Use model version 1.0.
-- Contain the expected response and table structures.
-- Keep supported tables within the defined row limit.
-- Contain text values within the defined size limits.
-- Be no larger than 5 MB.
+Do not enter:
 
-Importing a file does not overwrite browser storage until the user selects **Save my progress so far**.
+- Passwords
+- Authentication tokens
+- Recovery codes
+- Complete Social Security numbers
+- Complete payment-card or bank-account numbers
+- Protected client case details
+- Home addresses
+- Information whose disclosure could create immediate physical danger
 
-## Printing and PDF Output
+Use the application's erase function when locally saved information is no longer needed.
 
-Use **Print / Save as PDF** to open the browser's print interface. The print layout:
+## Exports
 
-- Removes navigation and interactive controls.
-- Expands the assessment sections for printing.
-- Formats tables for paper or PDF output.
-- Omits fields marked as sensitive from the printed version.
+### Full assessment JSON
 
-Review the print preview before saving or distributing the report.
+Contains the recorded assessment responses and tables. This file may include sensitive information about organizational assets, technologies, vendors, accounts, control gaps, and prior incidents.
 
-## Privacy and Data Handling
+### CTI collection profile JSON
 
-Assessment answers may reveal sensitive information about organizational systems, personnel, vendors, security gaps, and incident readiness.
+Contains the information needed to guide threat-intelligence collection and packaging, such as relevant technologies, sectors, assets, dependencies, recipients, and derived intelligence requirements.
 
-- Browser local storage is not encrypted by this application.
-- Anyone with access to the same browser profile may be able to retrieve saved data.
-- Do not enter passwords, authentication codes, credentials, bank account numbers, full Social Security numbers, private recovery details, or detailed protected-client information.
-- Store exported JSON files only in an approved location.
-- Delete browser data and exported files according to the organization's retention requirements.
-- Avoid completing sensitive portions on public or shared devices.
-- Private leadership checklists should be shared only when appropriate.
+### Printable report
 
-## Security Design
+Provides the risk-assessment summary, control results, recommended actions, follow-up items, and derived intelligence requirements.
 
-The application is designed to limit unnecessary attack surface:
+Review every export before sharing it. Treat exports as sensitive organizational security information and provide them only to authorized personnel or designated service providers.
 
-- No third-party JavaScript or CSS libraries.
-- No CDN dependencies.
-- No external fonts, images, analytics, or tracking.
-- No network requests.
-- Restrictive Content Security Policy.
-- No use of `eval` or dynamic code execution.
-- Untrusted values are escaped before insertion into generated HTML.
-- JSON imports are validated and size-limited.
-- Text fields and dynamic tables have length and row limits.
-- Browser-storage writes occur only after an explicit user action.
-- The application does not request or transmit credentials.
+## OWASP-Oriented Security Design
 
-When hosting the file, security also depends on the configuration of the web server, parent website, browser, and iframe policy.
+This revision applies the project's Priority 1 browser-security improvements.
 
-## Accessibility and Browser Support
+### Content Security Policy
 
-The wizard includes:
+The application uses a restrictive Content Security Policy intended to:
 
-- Semantic headings, sections, tables, labels, and fieldsets.
-- Keyboard-accessible controls.
-- Visible focus indicators.
-- Screen-reader status messages.
-- Responsive layouts for desktop and mobile browsers.
-- High-contrast light and dark color schemes.
-- Accessible names for dynamic table controls.
-- Print-specific formatting.
+- Deny resources by default
+- Load JavaScript and CSS only from the same local folder or origin
+- Prevent outbound application connections
+- Disable plugins and embedded objects
+- Prevent base-URL modification
+- Prevent form submission
 
-The application is intended for current versions of Microsoft Edge, Google Chrome, Mozilla Firefox, and Safari. Browser privacy modes, storage restrictions, iframe policies, and managed-device settings may affect local storage, clipboard, printing, or file downloads.
+Inline JavaScript and inline CSS are not required. The policy does not use `unsafe-inline` for scripts or styles.
+
+### Safe DOM handling
+
+User-controlled and imported values should be rendered through safe browser APIs, including:
+
+- `textContent`
+- `document.createElement()`
+- `append()`
+- `replaceChildren()`
+- Direct assignment to an input element's `value`
+
+User-supplied values must not be interpreted as executable HTML.
+
+### JSON import validation
+
+Imported assessments are subject to defensive limits, including:
+
+- Model-version validation
+- Expected root-object validation
+- Maximum nesting depth
+- Maximum property count
+- Maximum array length
+- Maximum string length
+- Finite-number checks
+- Required table validation
+- Table and field allowlists
+- Rejection of prototype-pollution property names
+- Imported file-size limit
+
+An imported file must still be treated as untrusted input. Do not weaken or bypass these checks when extending the application.
+
+### Dependency and network controls
+
+The application has:
+
+- No CDN dependencies
+- No third-party JavaScript libraries
+- No external fonts
+- No package-manager dependencies
+- No analytics or telemetry
+- No application API calls
+- No normal outbound network requests
+- No use of `eval()` or `new Function()`
+
+## Hosted Deployment
+
+The application can be hosted as static files, but production hosting should add server-side controls that a locally opened file cannot provide.
+
+Recommended deployment practices include:
+
+- HTTPS only
+- Restrictive `Content-Security-Policy` response header
+- `frame-ancestors 'none'` unless trusted framing is explicitly required
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: no-referrer`
+- Restrictive `Permissions-Policy`
+- Appropriate cache controls for sensitive shared workstations
+- Access restrictions when assessments are not intended for public use
+
+If framing is required, allow only explicitly trusted origins. Do not permit arbitrary third-party websites to frame the assessment.
+
+## Security Testing
+
+Before publishing a modified revision, verify that representative hostile values remain inert when typed, imported, displayed, reported, saved, and exported.
+
+Suggested test values:
+
+```text
+<script>alert(1)</script>
+"><img src=x onerror=alert(1)>
+</textarea><script>alert(1)</script>
+javascript:alert(1)
+&<>"'
+__proto__
+constructor
+prototype
+```
+
+Expected behavior:
+
+- Permitted text is displayed as text.
+- No new executable element is created.
+- No script executes.
+- Forbidden object property names are rejected when used as imported JSON keys.
+- Ordinary text values containing words such as `prototype` are not treated as property names.
+- Excessively deep, large, or malformed imports are rejected.
+
+Also verify:
+
+```bash
+node --check app.js
+```
+
+Search the codebase for prohibited patterns:
+
+```bash
+grep -RInE "eval\(|new Function|document\.write|unsafe-inline" .
+```
+
+Any remaining `innerHTML` use should be reviewed to confirm it handles only static, developer-controlled templates and never includes assessment or imported data.
+
+## Threat Intelligence Design Notes
+
+The application treats the assessment as an organizational requirements compiler:
+
+```text
+Organizational answers
+        ↓
+Organization profile
+        ↓
+Threat interests
+        ↓
+Priority Intelligence Requirements
+        ↓
+Collection filters
+        ↓
+Appropriate recipient and product format
+```
+
+The nonprofit user is not expected to define formal PIRs, understand STIX/TAXII, identify named threat actors, map ATT&CK techniques, or operate a threat intelligence platform. The tool derives useful requirements from questions that organizational leaders and general IT personnel can reasonably answer.
+
+The derived profile is intended to help a separate collection or analysis workflow determine:
+
+- Whether incoming information applies to the organization
+- Which technologies and vendors should receive additional attention
+- Which threats are relevant to the mission and operating environment
+- Whether the organization has the capability to act
+- How the resulting intelligence should be packaged
 
 ## Assessment Boundaries
 
-This application supports a self-reported advisory assessment. It does not perform:
+This application is:
 
-- Vulnerability scanning.
-- Penetration testing.
-- Configuration verification.
-- Credential validation.
-- Malware analysis.
-- Incident response.
-- Legal or regulatory interpretation.
-- Certification or compliance attestation.
+- A self-assessment aid
+- A structured discovery tool
+- A prioritization model
+- A threat-intelligence requirements generator
 
-If the organization believes it is currently compromised, stop the assessment and follow an appropriate incident-response process. Organizations facing targeted, state-level, or physical-safety threats require a threat model and engagement scope appropriate to those risks.
+It is not:
 
-## Known Limitations
+- A security audit
+- A compliance certification
+- A vulnerability scanner
+- A penetration test
+- An incident-response service
+- A legal opinion
+- A breach-probability calculator
+- A tool for comparing organizations against one another
 
-- Results depend on the accuracy and completeness of self-reported answers.
-- A **Yes** answer indicates that a control is reported as present; the application does not verify implementation quality.
-- Impact, likelihood, and control-reduction factors are professional-judgment estimates for general-purpose nonprofits.
-- The model does not comprehensively assess deliberate abuse by a trusted current insider.
-- Some risks remain partly outside the organization's control and cannot be fully closed by the modeled controls.
-- A score is meaningful primarily when the same organization is reassessed using the same model version.
+If an active compromise is suspected, stop the assessment and follow the organization's incident-response and escalation process.
 
-## Recommended Workflow
+## Scoring Limitations
 
-1. Confirm that the engagement is appropriate during intake.
-2. Complete the threat model with organizational leadership.
-3. Complete the attack-surface inventory with the person who knows the systems.
-4. Answer each control question using the strict “done looks like” description.
-5. Review contradictions, unknown answers, administrator concentration, domain ownership, and single-person dependencies.
-6. Select and assign the three recommended actions.
-7. Export the assessment JSON and create the report.
-8. Conduct a 90-day follow-up.
-9. Reassess after six months using the same model version.
-10. Compare the organization with its own previous result rather than with another organization.
+The exposure index represents modeled residual risk relative to the organization's own unmitigated baseline. It does not predict whether a breach will occur and should not be interpreted as an audit grade.
 
-## File
+Use the same model version for reassessments. Do not use the result to rank or compare separate organizations.
 
-Primary application file:
+## Accessibility and Usability
 
-```text
-nonprofit-risk-assessment-wizard-manual-save-final.html
-```
+The interface is designed to support:
 
-The entire application is contained in this single file.
+- Keyboard navigation
+- Visible focus indicators
+- Semantic headings and fieldsets
+- Explicit labels
+- Responsive layouts
+- Screen-reader status updates
+- Print-friendly reporting
+- Light and dark browser color schemes
 
-## Version Information
+Accessibility should be retested whenever fields, dynamic controls, navigation, or report structures are changed.
 
-- **Application save model:** Manual save
-- **Exposure model:** 1.0
-- **Attack paths:** 16
-- **Controls:** 20
-- **External dependencies:** None
-- **Network access required:** No
+## Extending the Application
+
+When adding functionality:
+
+1. Preserve offline operation.
+2. Do not add CDN or runtime dependencies.
+3. Do not add telemetry or network calls without an explicit architectural review.
+4. Use safe DOM creation instead of HTML-string assembly for untrusted values.
+5. Add new fields to import validation and export handling.
+6. Enforce field-specific type and length limits.
+7. Update `MODEL_VERSION` and the storage key when the saved schema changes.
+8. Document migration behavior between model versions.
+9. Test malicious input in every new rendering path.
+10. Review whether new fields create additional privacy or physical-safety concerns.
+
+## License
+
+No license is specified in this revision. Add an explicit repository license before distributing, modifying, or accepting external contributions if the project is intended for public reuse.
 
 ## Disclaimer
 
-This application and its output are provided for informational and advisory purposes only. They do not constitute legal advice, a security audit, a warranty, a compliance determination, or a prediction of whether a security incident will occur. Organizations remain responsible for validating findings, selecting appropriate safeguards, protecting assessment data, and obtaining qualified professional assistance when needed.
+This tool provides general cybersecurity assessment and threat-intelligence planning assistance. Results depend on the accuracy and completeness of self-reported information. The tool does not verify configurations or replace qualified technical, legal, compliance, privacy, safety, or incident-response advice.
