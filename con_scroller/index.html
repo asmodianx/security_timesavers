@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'self'; connect-src 'none'">
+<title>Conference Schedule</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="light">
+<div class="toolbar" aria-label="Display controls">
+<button id="followBtn" type="button" aria-pressed="false">Follow now</button>
+<button id="summaryBtn" type="button" aria-pressed="false">Summary mode</button>
+<button id="adminBtn" type="button" aria-expanded="false" aria-controls="adminPanel">Settings</button>
+</div>
+<section id="adminPanel" class="admin-panel" hidden aria-label="Schedule management">
+<h2>Management</h2>
+<form id="eventForm" autocomplete="off">
+<label>Date<input type="date" id="inDate" required></label>
+<div class="row"><label>Start<input type="time" id="inStart" required></label><label>End<input type="time" id="inEnd" required></label></div>
+<label>Event name<input type="text" id="inName" maxlength="160" required></label>
+<label>Location<input type="text" id="inLoc" maxlength="120"></label>
+<label>Type<select id="inCat"></select></label>
+<label>Track / village<input type="text" id="inTrack" maxlength="80" placeholder="Example: Track 1 or Hardware Village"></label>
+<label>Description<textarea id="inDesc" maxlength="1500" rows="3"></textarea></label>
+<button class="primary" type="submit">Add event</button>
+</form>
+<div class="admin-actions">
+<button id="themeBtn" type="button">Toggle theme</button><button id="exportBtn" type="button">Export JSON</button>
+<button id="importBtn" type="button">Import JSON</button><input id="importFile" type="file" accept="application/json,.json" hidden>
+<button id="clearSavedBtn" type="button">Clear browser override</button>
+</div>
+<p class="help">Right-click an event to delete it. Browser edits are saved locally and override config.js until cleared.</p>
+<output id="status" role="status" aria-live="polite"></output>
+</section>
+<div class="main-layout">
+<main class="viewport" id="scrollBox" tabindex="0"><div id="timelineRoot"></div><div id="summaryRoot" hidden></div></main>
+<aside class="sidebar">
+<div class="logo-container" id="logoFrame"><img id="logoDisplay" alt="Conference logo" hidden></div>
+<label class="logo-picker">Choose local logo<input id="logoInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp"></label>
+<h1 id="confName" tabindex="0"></h1><div id="liveClock">00:00:00</div><div id="liveDate"></div><div class="legend" id="legend"></div>
+</aside>
+</div>
+<script src="config.js"></script><script src="app.js"></script>
+</body>
+</html>
