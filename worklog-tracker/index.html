@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--
+    Content-Security-Policy:
+      script-src 'self';
+      style-src 'self';
+      object-src 'none';
+    Serve with the above CSP header for full OWASP compliance.
+    When opened as a local file (file://) browsers relax some CSP rules,
+    which is acceptable for a local-only tool.
+  -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+  <title>InfoSec WorkLog Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────────── -->
+<header class="app-header" role="banner">
+  <div class="header-left">
+    <span class="app-logo" aria-hidden="true">🛡️</span>
+    <div class="app-title-group">
+      <h1 id="appTitle">InfoSec WorkLog Tracker</h1>
+      <div class="subtitle" id="orgName">O*NET 15-1212.00 &amp; 15-1299.05</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="live-clock" id="liveClock" aria-label="Current time" aria-live="off">--:--:--</div>
+    <div class="header-analyst">
+      <label for="analystNameInput">Analyst:</label>
+      <input
+        type="text"
+        id="analystNameInput"
+        placeholder="Your name"
+        maxlength="100"
+        autocomplete="name"
+        spellcheck="false"
+        aria-label="Analyst name"
+      >
+    </div>
+  </div>
+</header>
+
+<!-- ── Toolbar ────────────────────────────────────────────────────────────── -->
+<div class="toolbar" role="toolbar" aria-label="Main actions">
+  <span class="toolbar-date">📅 Date: <strong id="reportDate"></strong></span>
+  <button class="btn" id="btnImport" type="button" title="Import a previously exported WorkLog JSON file">
+    ⬆️ Import JSON
+  </button>
+  <button class="btn" id="btnExport" type="button" title="Export current log to JSON">
+    ⬇️ Export JSON
+  </button>
+  <button class="btn btn-primary" id="btnReport" type="button" title="Generate a printable end-of-day PDF report">
+    🖨️ Print Report
+  </button>
+</div>
+
+<!-- ── Main Layout ────────────────────────────────────────────────────────── -->
+<main class="app-main" role="main">
+
+  <!-- Left: Task Picker -->
+  <aside class="task-panel" aria-label="Task picker">
+    <div class="task-panel-header">
+      <h2>CLICK A TASK TO LOG IT</h2>
+      <div class="task-search-row">
+        <input
+          type="search"
+          id="taskSearch"
+          placeholder="🔍 Search tasks…"
+          aria-label="Search tasks"
+          maxlength="80"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <select id="filterCategory" aria-label="Filter by category">
+          <option value="all">All</option>
+          <option value="general">General</option>
+          <option value="analyst">Analyst</option>
+          <option value="engineer">Engineer</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Color Legend -->
+    <div class="cat-legend" aria-label="Category color legend">
+      <span class="cat-pill cat-general">General</span>
+      <span class="cat-pill cat-analyst">Analyst 15-1212</span>
+      <span class="cat-pill cat-engineer">Engineer 15-1299</span>
+      <span class="cat-pill cat-custom">Custom</span>
+    </div>
+
+    <div class="task-list-container" id="taskListContainer" role="list" aria-label="Available tasks">
+      <!-- Populated by app.js -->
+    </div>
+  </aside>
+
+  <!-- Right: Tabs -->
+  <section class="content-panel" aria-label="Work log and summary">
+
+    <!-- Tab bar -->
+    <nav class="tab-bar" role="tablist" aria-label="Log views">
+      <button class="tab-btn active" data-tab="log" role="tab" aria-selected="true" aria-controls="panel-log">
+        📋 Work Log
+      </button>
+      <button class="tab-btn" data-tab="summary" role="tab" aria-selected="false" aria-controls="panel-summary">
+        📊 Summary
+      </button>
+      <button class="tab-btn" data-tab="custom" role="tab" aria-selected="false" aria-controls="panel-custom">
+        ➕ Custom Tasks
+      </button>
+      <button class="tab-btn" data-tab="info" role="tab" aria-selected="false" aria-controls="panel-info">
+        ℹ️ About
+      </button>
+    </nav>
+
+    <!-- ── Tab: Work Log ─────────────────────────────────────────────────── -->
+    <div class="tab-panel active" data-panel="log" id="panel-log" role="tabpanel" aria-labelledby="">
+      <div class="log-table-wrap">
+        <table class="log-table" aria-label="Work log entries">
+          <thead>
+            <tr>
+              <th scope="col">Time</th>
+              <th scope="col">Task</th>
+              <th scope="col">Category</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Notes</th>
+              <th scope="col">Ticket</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <!-- Populated by app.js -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Tab: Summary ──────────────────────────────────────────────────── -->
+    <div class="tab-panel" data-panel="summary" id="panel-summary" role="tabpanel">
+      <div class="summary-cards" aria-label="Summary statistics">
+        <div class="sum-card">
+          <span class="val" id="sumEntries">0</span>
+          <div class="lbl">Total Entries</div>
+        </div>
+        <div class="sum-card sum-card-punch">
+          <span class="val" id="sumWorkTime">—</span>
+          <div class="lbl" id="sumWorkTimeLabel">Work Time</div>
+        </div>
+        <div class="sum-card">
+          <span class="val" id="sumLogged">0m</span>
+          <div class="lbl">Task Time Logged</div>
+        </div>
+        <div class="sum-card">
+          <span class="val" id="sumRemaining">8h 00m</span>
+          <div class="lbl" id="sumRemainingLabel">Remaining</div>
+        </div>
+        <div class="sum-card">
+          <span class="val" id="sumTickets">0</span>
+          <div class="lbl">Ticket Items</div>
+        </div>
+      </div>
+
+      <div class="section-title">Category Breakdown</div>
+      <div id="catBreakdown" aria-label="Time breakdown by category">
+        <!-- Populated by app.js -->
+      </div>
+    </div>
+
+    <!-- ── Tab: Custom Tasks ─────────────────────────────────────────────── -->
+    <div class="tab-panel" data-panel="custom" id="panel-custom" role="tabpanel">
+      <div class="custom-task-form">
+        <h3>➕ Add Custom Task</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customTaskIcon">Icon (emoji)</label>
+            <input
+              type="text"
+              id="customTaskIcon"
+              placeholder="🔧"
+              maxlength="8"
+              style="width:72px"
+              aria-label="Task icon emoji"
+              autocomplete="off"
+            >
+          </div>
+          <div class="form-group" style="flex:1">
+            <label for="customTaskLabel">Task Name <span style="color:var(--danger)">*</span></label>
+            <input
+              type="text"
+              id="customTaskLabel"
+              placeholder="e.g. R&amp;D, Bench Time, Multitasking…"
+              maxlength="100"
+              aria-label="Custom task name"
+              autocomplete="off"
+            >
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <label class="checkbox-row" title="Allow this task to be flagged as needing a ticket">
+              <input type="checkbox" id="customTaskTicketable">
+              Ticketable
+            </label>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" id="btnAddCustom" type="button">Add Task</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">Custom Tasks (from config.js + user-added)</div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:12px">
+        Tasks pre-loaded from <code>config.js</code> appear here. Use the task list on the left to
+        star favorites or click any task to log it. Custom tasks are exported with your session JSON.
+      </p>
+      <div id="customTaskList" style="font-size:.83rem;color:var(--text-muted);font-style:italic">
+        No custom tasks yet. Add one above or pre-load via config.js.
+      </div>
+    </div>
+
+    <!-- ── Tab: About ────────────────────────────────────────────────────── -->
+    <div class="tab-panel" data-panel="info" id="panel-info" role="tabpanel">
+      <div class="info-section">
+        <h3>WorkLog Tracker</h3>
+        <p>A standalone, offline-capable daily work-log tool for information security professionals.
+          No CDN dependencies. No external calls. All data stays in your browser session.</p>
+        <p>Built following OWASP secure coding practices: textContent-only DOM writes, input
+           validation, sanitized imports, CSP-compatible, no eval().</p>
+      </div>
+
+      <div class="info-section">
+        <h3>O*NET Coverage</h3>
+        <span class="onet-badge cat-analyst">15-1212.00 Information Security Analysts</span>
+        <span class="onet-badge cat-engineer">15-1299.05 Information Security Engineers</span>
+        <p>Task categories are drawn directly from O*NET task lists (updated 2025–2026).
+           General workday tasks (clock-in, meetings, admin, etc.) are included as a separate
+           category for complete daily coverage.</p>
+      </div>
+
+      <div class="info-section">
+        <h3>How to Use</h3>
+        <ul>
+          <li>Click any task in the left panel to open the log entry dialog.</li>
+          <li>Set the time (defaults to now), an optional duration via slider, and notes.</li>
+          <li>Flag tasks needing documentation as <strong>🎫 Needs Ticket</strong> for later follow-up.</li>
+          <li>Star (☆) tasks to pin them at the top as favorites.</li>
+          <li>Use <strong>Export JSON</strong> to save your session; <strong>Import JSON</strong> to restore it.</li>
+          <li>Click <strong>Print Report</strong> for an end-of-day summary (print to PDF from your browser).</li>
+        </ul>
+      </div>
+
+      <div class="info-section">
+        <h3>config.js</h3>
+        <p>Edit <code>config.js</code> in the same folder to pre-load your name, organization,
+          default favorites, custom tasks, and ticket system API settings (stub — not active in v1).</p>
+      </div>
+
+      <div class="info-section">
+        <h3>Ticket System (v1 Stub)</h3>
+        <p>The ticket-creation API integration is architected but not enabled in this revision.
+          Flag items as <em>Needs Ticket</em> and they will appear in the print report.
+          Set <code>ticketSystem.enabled = true</code> in <code>config.js</code> when ready to integrate.</p>
+      </div>
+    </div>
+
+  </section>
+</main>
+
+<!-- ── Log Entry Modal ────────────────────────────────────────────────────── -->
+<div
+  class="modal-overlay"
+  id="modalOverlay"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="modalTaskLabel"
+>
+  <div class="modal">
+    <h2 id="modalTaskLabel">Log Task</h2>
+    <span class="modal-cat-badge" id="modalCategory"></span>
+
+    <!-- Time -->
+    <div class="modal-field">
+      <label for="logTime">Time <span style="color:var(--danger)">*</span></label>
+      <input type="time" id="logTime" required aria-required="true">
+    </div>
+
+    <!-- Punch info banner (shown only for Clock In / Clock Out) -->
+    <div id="punchInfoBanner" class="punch-info-banner" style="display:none" role="note"></div>
+
+    <!-- Duration Slider (hidden for punch entries) -->
+    <div class="modal-field" id="durationField">
+      <label for="logDuration">Duration (0 = open-ended)</label>
+      <div class="duration-row">
+        <input
+          type="range"
+          id="logDuration"
+          min="0"
+          max="480"
+          step="5"
+          value="0"
+          aria-label="Duration in minutes"
+        >
+        <span class="duration-display" id="logDurationDisplay">0m (open-ended)</span>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="modal-field">
+      <label for="logNote">Notes (optional)</label>
+      <textarea
+        id="logNote"
+        placeholder="Brief description, ticket ref, etc."
+        maxlength="500"
+        rows="3"
+        aria-label="Entry notes"
+        spellcheck="true"
+      ></textarea>
+    </div>
+
+    <!-- Ticket Flag (shown only for ticketable tasks) -->
+    <div id="ticketFlagRow" class="ticket-flag-row" style="display:none">
+      <input type="checkbox" id="logNeedsTicket" aria-label="Flag as needing a work ticket">
+      <label for="logNeedsTicket">🎫 Flag as needing a work ticket</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="modalCancelBtn" type="button">Cancel</button>
+      <button class="btn btn-primary" id="modalConfirmBtn" type="button">Log Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast Container ────────────────────────────────────────────────────── -->
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
+
+<!-- Scripts — loaded in dependency order, no CDN -->
+<script src="config.js"></script>
+<script src="tasks.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
