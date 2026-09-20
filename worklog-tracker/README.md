@@ -206,7 +206,7 @@ Session files are standard JSON with the following structure:
 
 ## 📄 License
 
-MIT License — free to use, modify, and distribute.
+AI Generated code.  see root project description
 
 ---
 
