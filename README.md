@@ -1,48 +1,22 @@
-# InkPad Local — Milestone 16 Final Fixed
+# Security Timesavers
 
-This build fixes the `Cannot set properties of null (setting 'onclick')` startup error by ensuring every referenced UI ID exists and by using guarded event binding.
+## Disclaimer and License
+This is AI-generated code and is therefore considered public domain. While these scripts have been reviewed, as a best practice, you should review all code you intend to use. This project is provided "as is" with no warranty or any other promise.
 
-## Final Scope
+## Project Intent
+**Security Timesavers** is a collection of AI-generated tools designed to be completely offline and highly portable. Most modern devices have a web browser, and the vast majority of browsers can run these tools natively.
 
-OCR and handwriting recognition UI has been removed because automatic recognition engines were not implemented. Imported notebooks that contain `recognition.ocr` or `recognition.ink` metadata preserve that metadata in JSON for backward compatibility only.
+### The Problem
+Traditional scripting environments (PowerShell, Python, or Bash) are often:
+* **Prone to Environment Issues:** They frequently require complex development setups.
+* **Version Specific:** Tools can be extremely sensitive to the specific version of the language or libraries installed.
+* **Supply Chain Risks:** Reliance on external includes can introduce supply chain vulnerabilities.
 
-## Features
+### The Solution
+This project is an earnest attempt to create a set of security tools that "just work." By using standalone HTML and vanilla JavaScript, these utilities avoid the need for complex dependencies and external libraries.
 
-- Canvas handwriting with mouse, touch, or stylus
-- Pen, highlighter, and eraser
-- Multi-page notebook
-- Page duplicate, delete, reorder, and clear
-- Page titles, notes, and tags
-- Text objects
-- Object lock/hide controls
-- Search across page metadata and text objects
-- JSON bundle import/export
-- Autosave and recovery via localStorage
-- PNG export for current/all pages
-- Browser print preview and print-to-PDF workflow
-- No CDN libraries
-- No backend
-- No telemetry
-
-## Security Notes
-
-- Recognition UI disabled to avoid misleading non-functional capabilities.
-- Import file size cap: 15 MB.
-- JSON import schema migration and field normalization.
-- Text length caps for notebook/page/object fields.
-- UI uses DOM node creation and `textContent` for active user-controlled list rendering.
-- CSP meta tag restricts script execution to local self and disables object/embed execution.
-- No `eval()` or `new Function()`.
-- No remote requests or CDN dependencies.
-
-## Known Limitations
-
-- No automatic OCR.
-- No automatic handwriting recognition.
-- No collaboration or sync.
-- No encryption at rest.
-- PDF export uses the browser print dialog.
-
-## About the file:// warning
-
-Some browsers emit a warning that `file:` URLs are unique security origins. This warning is not the fatal app bug. The fatal issue was the missing-element JavaScript binding, fixed in this build.
+## Usage of most tools here:
+No installation or environment configuration is necessary. To use any tool:
+1. Download or clone the repository.
+2. Locate the desired `.html` file.
+3. Open the file in your preferred web browser.
