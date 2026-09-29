@@ -1,57 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STIX CaseFile Pro</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+  <title>STIX Palette v2 — Visual STIX 2.1 Composer</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div id="app">
-        <aside id="sidebar">
-            <h2>STIX Palette</h2>
-            <div class="search-container">
-                <input type="text" id="node-search" placeholder="Search nodes or types...">
-            </div>
-            <div class="modes">
-                <button id="btn-move" class="active">Move</button>
-                <button id="btn-link">Link</button>
-            </div>
-            
-            <div id="palette" class="palette-grid"></div>
-            
-            <hr>
-            <div class="actions">
-                <button class="btn-primary" id="export-button">Export STIX Bundle</button>
-                <button class="btn-secondary" id="load-button">Load STIX Bundle</button>
-                <button class="btn-graphic" id="export-graphic-button">Export PDF/SVG</button>
-                <input type="file" id="import-input" style="display:none" accept=".json">
-            </div>
-        </aside>
-        
-        <main id="workspace">
-            <svg id="canvas" width="100%" height="100%">
-                <defs>
-                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="22" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#888" />
-                    </marker>
-                </defs>
-                <g id="viewport-group">
-                    <g id="edges-group"></g>
-                    <g id="nodes-group"></g>
-                </g>
-            </svg>
-            <div class="canvas-hint">Middle-Click: Pan | Scroll: Zoom | Delete: Remove</div>
-        </main>
-
-        <div id="inspector" class="hidden">
-            <h3>Metadata</h3>
-            <div id="inspector-content"></div>
-            <button class="btn-close" id="close-inspector">Close</button>
-        </div>
+  <!-- ══════════════════════════════════════════ HEADER ══════════════════════════════════════════ -->
+  <header id="app-header">
+    <div id="header-left">
+      <span class="app-logo">⬡</span>
+      <span class="app-title">STIX Palette <span class="version-badge">v2.1</span></span>
     </div>
-    <script src="stix_library.js"></script>
-    <script src="app.js"></script>
+    <nav id="header-nav">
+      <button class="nav-btn" id="btn-import" title="Import STIX 2.1 JSON bundle">⬆ Import</button>
+      <button class="nav-btn" id="btn-export" title="Export STIX 2.1 JSON bundle">⬇ Export</button>
+      <button class="nav-btn" id="btn-export-stix2" title="Export as STIX 2.1 bundle">📦 Bundle</button>
+      <button class="nav-btn" id="btn-export-svg" title="Export canvas as SVG image">🖼 SVG</button>
+      <button class="nav-btn" id="btn-print-pdf" title="Print / Save as PDF">🖨 Print PDF</button>
+      <button class="nav-btn" id="btn-clear" title="Clear canvas">🗑 Clear</button>
+      <button class="nav-btn layout-btn" id="btn-layout-force" title="Force-directed layout">⚛ Force</button>
+      <button class="nav-btn layout-btn" id="btn-layout-radial" title="Radial layout">🔵 Radial</button>
+      <button class="nav-btn layout-btn" id="btn-layout-tree" title="Tree layout">🌳 Tree</button>
+      <button class="nav-btn layout-btn" id="btn-layout-grid" title="Grid layout">⊞ Grid</button>
+      <button class="nav-btn" id="btn-zoom-fit" title="Fit canvas to screen">⤢ Fit</button>
+      <button class="nav-btn" id="btn-toggle-gravity" title="Toggle gravity simulation">⟳ Gravity</button>
+    </nav>
+    <input type="file" id="file-import-input" accept=".json" style="display:none" />
+  </header>
+
+  <!-- ══════════════════════════════════════════ MAIN LAYOUT ══════════════════════════════════════════ -->
+  <div id="app-body">
+
+    <!-- LEFT PALETTE PANEL -->
+    <aside id="palette-panel">
+      <div class="panel-header">
+        <span>Object Palette</span>
+        <input type="text" id="palette-search" placeholder="Filter…" autocomplete="off" />
+      </div>
+      <div id="palette-sections"></div>
+    </aside>
+
+    <!-- CANVAS AREA -->
+    <main id="canvas-container">
+      <svg id="canvas" tabindex="0">
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#7ecfff" />
+          </marker>
+          <marker id="arrow-sighting" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#ffe082" />
+          </marker>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="2" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)" />
+          </filter>
+          <filter id="shadow-selected" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#7ecfff" />
+          </filter>
+        </defs>
+        <g id="canvas-root">
+          <g id="edges-layer"></g>
+          <g id="nodes-layer"></g>
+        </g>
+      </svg>
+      <!-- minimap -->
+      <canvas id="minimap" width="160" height="120" title="Minimap (click to pan)"></canvas>
+      <!-- zoom controls -->
+      <div id="zoom-controls">
+        <button id="btn-zoom-in">+</button>
+        <span id="zoom-label">100%</span>
+        <button id="btn-zoom-out">−</button>
+      </div>
+    </main>
+
+    <!-- RIGHT PROPERTIES PANEL -->
+    <aside id="props-panel">
+      <div class="panel-header">
+        <span id="props-title">Properties</span>
+        <button id="btn-close-props" title="Close">✕</button>
+      </div>
+      <div id="props-content">
+        <div class="empty-state">
+          <span>Click an object or relationship<br>to view and edit its properties.</span>
+        </div>
+      </div>
+      <div id="props-actions" style="display:none">
+        <button class="action-btn primary" id="btn-save-props">💾 Save</button>
+        <button class="action-btn danger" id="btn-delete-obj">🗑 Delete</button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════ MODALS ══════════════════════════════════════════ -->
+  <!-- Relationship Modal -->
+  <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true">
+    <div class="modal" id="modal-relationship">
+      <div class="modal-header">
+        <h3 id="modal-title">Create Relationship</h3>
+        <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+      </div>
+      <div class="modal-body" id="modal-body"></div>
+      <div class="modal-footer">
+        <button class="action-btn primary" id="modal-confirm">Confirm</button>
+        <button class="action-btn" id="modal-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notifications -->
+  <div id="toast-container" aria-live="polite"></div>
+
+  <script src="stix_schema.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
-
