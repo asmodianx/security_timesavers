@@ -1,35 +1,49 @@
 # Journalist Identity Exposure Mapper
 
-A standalone, offline-first identity-separation, operational-security, risk-register, and STIX 2.1 correlation tool for journalists and other people operating in high-risk environments.
+A standalone, offline-first identity-separation, operational-security, risk-assessment, relationship-visualization, and STIX 2.1 export tool for journalists and other people working in high-risk environments.
 
-The application helps identify where professional, personal, creative, public, research, and source-facing identities intersect through reused phone numbers, email addresses, physical addresses, social-media accounts, SaaS services, recovery accounts, activities, devices, and other identifiers.
+The application helps identify where professional, personal, creative, public, research, and source-facing identities intersect through communication methods, accounts, recovery paths, activities, risks, and shared identifiers.
 
-It is designed for situations where an identity crossover could expose location, routines, confidential sources, friends, family, or other information that may create a life-safety risk.
+It is designed for situations where identity crossover may expose location, routines, confidential sources, friends, family, or other information that could create a targeting or life-safety risk.
 
-## Key Features
+## Overview
+
+The tool combines five related capabilities in one local application:
+
+1. Persona and identity-boundary inventory
+2. Communication-channel and account mapping
+3. Work and life activity mapping
+4. Risk register and correlation analysis
+5. Interactive relationship visualization and STIX 2.1 export
+
+All processing occurs in the browser. The application has no server component, external JavaScript libraries, analytics, CDN resources, or required network connection.
+
+## Current Features
 
 ### Persona inventory
 
-Create distinct identity profiles such as:
+Create purpose-specific identities such as:
 
-- Work or reporting identity
-- Personal identity
-- Creative identity
-- Public-facing identity
-- Research identity
-- Source-facing identity
-- Other purpose-specific personas
+- Work or reporting persona
+- Personal persona
+- Creative persona
+- Public-facing persona
+- Research persona
+- Source-facing persona
+- Other specialized identities
 
-Each persona can include:
+Each persona can record:
 
+- Name
+- Category
 - Threat level
 - General region
-- Identity and biography clues
+- Identity or biography clues
 - Information that must remain separated
 
-### Communications and account inventory
+### Communication channels and accounts
 
-Track communication channels and identity-linked resources, including:
+Track resources that may disclose or correlate identities, including:
 
 - Telephone numbers
 - Email addresses
@@ -40,14 +54,17 @@ Track communication channels and identity-linked resources, including:
 - Domains and websites
 - Devices
 - Payment methods
-- Other identifying resources
+- Other identifiers
 
-Each entry can be associated with one or more personas and can record:
+Each entry can record:
 
+- Label
+- Resource type
 - Provider or platform
-- Identifier, address, alias, or handle
+- Address, number, handle, username, or identifier
+- Assigned personas
 - Recovery accounts
-- Public exposure level
+- Exposure level
 - Location exposure
 - Links to friends or family
 - Links to a legal identity
@@ -58,27 +75,34 @@ Each entry can be associated with one or more personas and can record:
 
 Document work and life activities and connect them to the personas and accounts involved.
 
-Activity risk factors include:
+Activity fields include:
 
+- Associated persona
+- Frequency
 - Base risk level
+- Linked communication channels and accounts
 - Location sensitivity
-- Travel or routine disclosure
+- Travel or routine exposure
 - Confidential-source involvement
 - Exposure of friends, family, or associates
 - Likely hostile-actor interest
+- Notes
 
-Examples include field reporting, source communication, border crossings, conference appearances, publishing, travel booking, creative work, and personal social activity.
+Example activities include field reporting, source communication, public appearances, border crossings, travel booking, publication, research, creative work, and personal social activity.
 
 ### Integrated risk register
 
-Create risks and associate them directly with personas, activities, and communication channels.
+Create risk records and associate each risk directly with affected personas, activities, and communication channels.
 
 Each risk record includes:
 
-- Title and category
-- Likelihood and impact
+- Risk title
+- Category
+- Likelihood
+- Impact
 - Inherent risk score
-- Residual likelihood and impact
+- Residual likelihood
+- Residual impact
 - Residual risk score
 - Status
 - Risk owner or responsible role
@@ -87,9 +111,9 @@ Each risk record includes:
 - Planned treatment
 - Exposed personas
 - Exposed activities
-- Exposed accounts and channels
+- Exposed channels and accounts
 
-Included risk categories cover:
+Risk categories include:
 
 - Life safety
 - Identity correlation
@@ -102,296 +126,439 @@ Included risk categories cover:
 - Operational risk
 - Other risks
 
-### Correlation and overlap warnings
+## Editing and Record Management
 
-The application analyzes the local inventory for identity-separation failures and related exposure. Examples include:
+Personas, channels and accounts, activities, and risks can all be edited after creation.
+
+Each inventory card provides:
+
+- **Edit** to reopen the complete record in its original form
+- **Remove** to delete the record after confirmation
+
+When editing a record:
+
+- Existing text, selections, flags, and relationships are restored into the form.
+- The form clearly changes to an edit state.
+- The submit action changes to **Save changes**.
+- **Cancel edit** returns the form to its add-record state without altering the saved record.
+- Saving immediately recalculates warnings, graph relationships, and STIX output.
+
+When a record is removed, dependent references are cleaned up automatically. For example:
+
+- Removing a persona removes its references from accounts and risks.
+- Activities assigned to a removed persona are removed.
+- Removing an account removes recovery, activity, and risk references to it.
+- Removing an activity removes corresponding risk references.
+- Removing a risk removes the risk record and its graph relationships.
+
+## Independent Relationship Selection
+
+Relationship fields use explicit checkbox pickers rather than native HTML multi-select controls.
+
+This applies to:
+
+- Personas assigned to an account
+- Recovery accounts
+- Accounts linked to an activity
+- Personas exposed to a risk
+- Activities exposed to a risk
+- Accounts exposed to a risk
+
+Each relationship can be selected or deselected independently with a normal click. Ctrl-click and Shift-click are not required. This avoids browser-dependent range selection and accidental over-selection.
+
+When a record is edited, its existing relationships are restored as checked items. Saving preserves only the relationships that remain checked.
+
+An account is prevented from saving itself as its own recovery account.
+
+## Interactive Relationship Canvas
+
+The application includes a standalone browser-canvas visualization of relationships among:
+
+- Personas
+- Channels and accounts
+- Activities
+- Risks
+
+### Color coding
+
+- Blue: personas
+- Green: accounts and communication channels
+- Yellow: activities
+- Red: risks
+
+### Full graph layout
+
+The default view organizes objects by type so broad identity and risk paths can be reviewed across the complete assessment.
+
+### Focused relationship layout
+
+Clicking a node:
+
+1. Centers the selected object.
+2. Arranges directly related objects around it.
+3. Places unrelated objects in an outer ring.
+4. Highlights the selected node.
+5. Displays the selected object's relationship list in a details panel.
+
+This focused view helps isolate a specific persona, account, activity, or risk from a dense graph.
+
+### Canvas controls
+
+The visualization supports:
+
+- Fit all
+- Clear focus
+- Zoom in
+- Zoom out
+- Mouse-wheel zoom
+- Node dragging
+- Optional warning-link display
+- Click-to-focus organization
+- Direct edit access from the selected-object panel
+- Responsive resizing
+
+Graph relationships include:
+
+- Persona assignment
+- Account recovery dependencies
+- Activity-to-persona relationships
+- Activity use of accounts
+- Risk exposure of personas
+- Risk exposure of activities
+- Risk exposure of accounts
+- Correlation-warning links
+
+## Correlation and Overlap Warnings
+
+The application recalculates correlation warnings whenever data is added, edited, imported, or removed.
+
+Examples include:
 
 - One account assigned to multiple personas
-- The same identifier reused across accounts
 - Recovery accounts bridging different personas
-- Discoverable accounts exposing location
-- High-risk personas linked to friends or family
-- Activities using cross-persona accounts
-- A single risk affecting multiple personas
+- A high residual risk affecting one or more identities
+- One risk affecting multiple personas
 - Risk-linked activities crossing persona boundaries
-- Life-safety risks with significant residual exposure
+- Shared channels creating an identity-correlation path
+- Life-safety risks with significant remaining exposure
 
-Warnings include a severity score, affected objects, and a suggested treatment or control.
+Each warning includes:
 
-The analysis is intended to support structured review. The absence of a warning does not prove that identities are unlinkable.
+- Warning type
+- Severity score
+- Affected objects
+- Relevant details
+
+The warning links can also be displayed in the relationship canvas.
+
+The absence of a warning does not prove that identities are anonymous, isolated, or unlinkable.
+
+## Risk Scoring
+
+The risk register uses a basic likelihood-impact model.
+
+### Inherent risk
+
+```text
+Inherent Risk = Likelihood × Impact
+```
+
+### Residual risk
+
+```text
+Residual Risk = Residual Likelihood × Residual Impact
+```
+
+Likelihood and impact values use a 1-to-5 scale, producing scores from 1 to 25.
+
+The automated warning score is a prioritization aid. It is not an objective prediction and should be reviewed against the journalist's actual threat model, operating environment, adversaries, and safety plan.
+
+## Native JSON Format
+
+The native JSON export preserves the application's complete editable state, including:
+
+- Personas
+- Channels and accounts
+- Recovery-account links
+- Activities
+- Risks
+- Internal relationship IDs
+- Controls and treatments
+- Application metadata
+
+Use native JSON for:
+
+- Backup
+- Transfer to another trusted browser or device
+- Continued editing
+- Preserving application-specific fields
+
+Native JSON imports are limited to 5 MB.
+
+The native format should be treated as the authoritative editable project format. STIX export is intended for interchange and visualization, not as the only project backup.
 
 ## STIX 2.1 Export
 
-The tool exports a STIX 2.1 bundle for graphing and correlation in compatible STIX tools, including the companion STIX Palette project.
+The application creates a relationship-oriented STIX 2.1 bundle for compatible visualization and correlation tools, including the related STIX Palette project.
 
 ### Object mapping
 
 - Personas become standard STIX `identity` objects.
-- Email addresses become standard `email-addr` cyber-observable objects.
-- Domains become standard `domain-name` cyber-observable objects.
-- Social-media, SaaS, and messaging accounts become standard `user-account` objects.
-- Physical addresses become standard `location` objects.
-- Telephone numbers become custom `x-phone-number` objects.
+- Email addresses become standard `email-addr` objects.
+- Domains become standard `domain-name` objects.
+- Supported accounts can become `user-account` objects.
+- Other communication resources use custom `x-identity-channel` objects.
 - Activities become custom `x-journalist-activity` objects.
-- Risk-register entries become custom `x-risk-record` objects.
-- Correlation and overlap warnings become standard STIX `note` objects.
+- Risks become custom `x-risk-record` objects.
+- Correlation findings become standard STIX `note` objects.
 
 ### Relationship mapping
 
-Exported relationships may include:
+Relationships may include:
 
 - `represents`
-- `uses`
-- `performed-under`
 - `recovered-by`
+- `performed-under`
+- `uses`
 - `has-risk`
 - `overlaps-with`
 
-Warning notes reference the affected personas, accounts, activities, and risks. This preserves the context needed to visualize why a warning was generated.
+Warning notes reference the affected STIX objects so the reason for a correlation warning remains visible in graph-oriented consumers.
 
-### STIX preflight validation
+### Deterministic identifiers
 
-Before export, the application performs local validation checks for:
+STIX identifiers are generated from the internal object identifiers. This helps the same local object retain a stable STIX identity across exports.
+
+### STIX preflight
+
+Before downloading a STIX bundle, the application performs local structural checks including:
 
 - Bundle structure
-- STIX object IDs and type-prefix agreement
-- UUID structure and variant
-- STIX 2.1 `spec_version`
-- Duplicate object IDs
-- RFC 3339 UTC timestamps
-- Required object properties
-- Relationship source and target references
-- Note object references
-- Unresolved references
-- Self-referential relationships
-- Custom-property interoperability warnings
+- Object ID and object-type agreement
+- Required relationship references
+- Resolution of relationship source and target references
+- Presence of object references on warning notes
 
-STIX export is blocked when the local preflight detects a mandatory structural error.
-
-The built-in validator is a defensive preflight and is not a replacement for the official OASIS STIX validator. For formal interoperability testing, validate exported bundles with the OASIS `cti-stix-validator` project and test them in the intended receiving platform.
-
-## Internal and Interchange Formats
-
-The tool maintains two separate data representations:
-
-### Native JSON
-
-The native format preserves the complete editable application state, including:
-
-- Personas
-- Channels and accounts
-- Recovery links
-- Activities
-- Risk-register records
-- Internal relationships
-- Controls and treatments
-
-Use this format for backups and continued editing in the application.
-
-### STIX 2.1 JSON
-
-The STIX format is intended for interchange, graphing, correlation, and visualization. It maps the internal assessment into standard and custom STIX objects and relationships.
-
-Do not use the STIX export as the only backup of the editable project.
+The built-in check is a defensive preflight, not a replacement for the official OASIS STIX validator. Validate exported bundles with the official validator before relying on interoperability with another platform.
 
 ## Security Design
 
-The application is intentionally built as a single standalone HTML file using vanilla JavaScript.
+The application is delivered as one standalone HTML file using vanilla JavaScript.
 
 Security controls include:
 
 - No CDN resources
-- No external JavaScript libraries
-- No network requests
+- No third-party JavaScript libraries
+- No required network access
 - No analytics or telemetry
 - No cloud synchronization
-- No `eval()` use
+- No `eval()`
 - No `innerHTML` rendering of user-controlled data
-- DOM construction with `textContent`
+- DOM construction using `textContent`
 - Hash-based Content Security Policy
 - No `unsafe-inline` CSP exception
-- Framing disabled through CSP
+- External connections disabled through CSP
 - Object loading disabled
+- Base-URI changes disabled
 - Form submission disabled
-- External connections disabled
-- Import size limit
-- Allowlisted native JSON schema
-- Input length and record-count limits
-- Control-character removal
-- Numeric and Boolean normalization
-- Visible validation and storage errors
-- Removal of stale references when linked records are deleted
+- Framing disabled
+- Native import size limit
+- Control-character removal from entered text
+- Confirmation before record deletion
+- Automatic stale-reference cleanup
 
 ## Important Security Warning
 
-This tool creates a consolidated map of identities, accounts, activities, risks, and sensitive relationships. That map may be more sensitive than any individual account record.
+This application creates a consolidated relationship graph of identities, accounts, activities, risks, and protective controls. A completed assessment may be more sensitive than any individual record used to create it.
 
-A completed inventory or STIX export could reveal:
+The application and its exports may reveal:
 
 - Hidden relationships between identities
-- Personal and professional contact paths
+- Personal and professional communication paths
 - Recovery-account dependencies
-- Home or travel information
+- Location and travel information
 - Source-handling patterns
 - Friends, family, and associate exposure
-- Existing security controls and gaps
+- Existing controls and remaining gaps
 - High-value targeting opportunities
 
 Recommended handling practices include:
 
-- Use the tool only on a trusted and fully patched device.
+- Use a trusted and fully patched device.
 - Use full-disk encryption.
-- Store exports in an encrypted container.
-- Avoid shared or managed browser profiles when inappropriate for the threat model.
+- Store native and STIX exports in an encrypted container.
+- Avoid inappropriate shared or synchronized browser profiles.
 - Do not upload completed assessments to unapproved cloud services.
-- Remove exports when no longer required.
-- Consider using a dedicated offline device for highly sensitive assessments.
-- Treat screenshots, browser backups, and exported JSON as sensitive records.
+- Remove exports when they are no longer required.
+- Consider a dedicated offline device for highly sensitive reviews.
+- Treat screenshots, browser backups, and exported files as sensitive records.
 
-Browser local storage is not encryption. Anyone with access to the browser profile or device may be able to recover stored application data.
+Browser local storage is not encryption. A person with access to the device or browser profile may be able to recover stored application data.
 
 ## Usage
 
 1. Download the HTML file.
-2. Open it in a modern browser.
-3. Define the identities or personas that should remain separated.
-4. Add communication methods, accounts, services, addresses, and devices.
-5. Connect each account to its intended persona or personas.
-6. Record recovery-account dependencies.
-7. Add work and life activities and connect their supporting accounts.
-8. Add risk-register entries and map them to exposed personas, activities, and accounts.
-9. Review correlation warnings and suggested treatments.
-10. Export the native JSON for an editable backup.
-11. Validate and export STIX 2.1 JSON for visualization or exchange.
+2. Open it in a current browser.
+3. Define the personas that should remain separated.
+4. Add telephone numbers, email addresses, physical addresses, accounts, services, and devices.
+5. Assign each channel or account to the appropriate persona.
+6. Record account-recovery dependencies.
+7. Add work and life activities.
+8. Link activities to the accounts they use.
+9. Add risks and link them to affected personas, activities, and accounts.
+10. Review correlation warnings.
+11. Open the relationship canvas to inspect the full graph.
+12. Click a node to focus and reorganize its direct relationships.
+13. Edit records to correct relationships or update controls.
+14. Export native JSON for backup and continued editing.
+15. Export and independently validate STIX 2.1 for visualization or interchange.
 
-No installation, server, package manager, or internet connection is required.
+No installation, web server, build process, package manager, or internet connection is required.
 
 ## Suggested Assessment Workflow
 
-### 1. Establish identity boundaries
+### 1. Define persona boundaries
 
-Define what must remain separate and why. Document the consequences if two personas are correlated.
+Document what must remain separate and the consequences if those boundaries fail.
 
 ### 2. Inventory observable identifiers
 
-Record phone numbers, email addresses, handles, domains, recovery methods, addresses, services, devices, and other identifiers that an investigator could discover.
+Record phone numbers, email addresses, handles, websites, recovery paths, physical addresses, services, devices, and payment-related identifiers.
 
 ### 3. Map activities
 
 Connect physical and online activities to the identities and infrastructure that support them.
 
-### 4. Record risks
+### 4. Register risks
 
-Describe the adverse event, affected objects, likelihood, impact, controls, and residual exposure.
+Document adverse events, exposed objects, likelihood, impact, existing controls, planned treatment, and residual exposure.
 
-### 5. Review correlation warnings
+### 5. Review warnings
 
-Focus first on life-safety findings, location exposure, family or source exposure, and recovery-account bridges.
+Prioritize life safety, location disclosure, family or source exposure, account recovery bridges, and risks spanning multiple personas.
 
-### 6. Apply treatments
+### 6. Explore the graph
 
-Possible treatments include removing an identity bridge, creating a persona-specific account, changing a recovery path, disabling contact discovery, delaying publication, removing metadata, or changing the supporting device or workflow.
+Use the full layout to identify broad patterns. Select high-risk nodes to isolate direct relationships and locate the shortest identity-crossover paths.
 
-### 7. Reassess residual risk
+### 7. Apply controls
 
-Update residual likelihood and impact after controls are applied.
+Possible controls include:
 
-### 8. Export carefully
+- Creating persona-specific accounts
+- Replacing shared recovery paths
+- Disabling contact discovery
+- Removing location metadata
+- Separating devices or browser profiles
+- Delaying publication
+- Reducing real-time posting
+- Changing payment or registration workflows
+- Restricting access to friends, family, or source information
 
-Use native JSON for continued assessment work and STIX 2.1 for graphing or correlation. Protect both formats according to the sensitivity of the information they contain.
+### 8. Reassess residual risk
 
-## Limitations
+Update the risk record after applying controls and review the graph and warnings again.
 
-- The application does not query social networks, data brokers, breach repositories, or OSINT services.
-- It does not prove anonymity or unlinkability.
-- It does not encrypt browser storage or exports.
-- It cannot detect all behavioral, biometric, linguistic, photographic, device, network, or financial correlations.
-- Risk scores are decision-support indicators, not objective predictions.
-- Custom STIX objects and relationship types may not be supported by every STIX consumer.
-- The local STIX validator does not replace independent validation with the official OASIS tooling.
-- The application is not an emergency-response service or a substitute for a professional threat assessment.
-
-## Privacy and Data Handling
-
-The application does not intentionally transmit data. All processing occurs in the browser.
-
-Data persists in browser local storage until it is removed through the application, browser controls, profile deletion, or other storage-management action. Native and STIX exports are written only when the user initiates a download.
-
-Review the source before use in a high-risk environment. Browser behavior, extensions, endpoint-management tools, backup software, and operating-system features may affect the actual privacy of locally stored information.
-
-## Compatibility
+## Browser Compatibility
 
 Use a current browser with support for:
 
 - Modern JavaScript
+- HTML Canvas
+- Pointer events
 - Web Crypto random-value generation
 - Local storage
 - FileReader
 - Blob downloads
 - Content Security Policy hashes
 
-The project does not require Node.js, Python, a web server, build tools, or third-party browser libraries.
+The application does not require Node.js, Python, a web server, or a browser extension.
 
-## Development Principles
+## Limitations
 
-Contributions should preserve the following requirements:
+- The tool does not query social networks, data brokers, breach repositories, or OSINT services.
+- It does not prove anonymity or unlinkability.
+- It does not encrypt browser storage or exports.
+- It cannot detect every behavioral, linguistic, photographic, biometric, network, device, or financial correlation.
+- Risk scores are decision-support indicators, not predictions.
+- Graph proximity represents recorded relationships, not geographic distance or proof of adversary knowledge.
+- Custom STIX objects and relationships may not be supported by every STIX consumer.
+- Local STIX checks do not replace the official OASIS validator.
+- The application is not an emergency-response service or a substitute for a professional threat assessment.
 
-- Offline-first behavior
-- No CDN or remote dependencies
-- No silent validation failures
-- No dynamic execution of imported content
+## Development Requirements
+
+Contributions should preserve:
+
+- Offline-first operation
+- A single-file deployment option
+- No CDN or remote runtime dependency
 - Safe DOM construction
-- Explicit schema validation and normalization
-- Backward-compatible native-data migration where practical
-- Separation of internal state from STIX interchange data
-- Deterministic STIX identifiers for stable graph correlation
-- Visible STIX validation errors before export
-- No reduction in CSP protections
+- No dynamic execution of imported content
+- Explicit native-state normalization
+- Stable object identifiers during editing
+- Cleanup of deleted relationship references
+- Separation of native state from STIX interchange data
+- Visible export-validation failures
+- CSP protection without `unsafe-inline`
+- Keyboard-accessible forms and controls
+- Independent checkbox-based relationship selection
+- Responsive graph rendering
 
 ## Testing Checklist
 
 Before publishing a change:
 
-- Confirm the HTML opens locally without network access.
-- Parse the embedded JavaScript with a JavaScript syntax checker.
-- Confirm the CSP script and style hashes match the embedded content.
-- Confirm there is no `innerHTML`, `eval()`, or `unsafe-inline` use.
-- Test native JSON export and import.
-- Test migration from an earlier native format.
-- Test deletion of linked personas, activities, accounts, and risks.
-- Test correlation warnings with cross-persona data.
-- Test STIX export with an empty project and a populated project.
+- Open the file locally with network access disabled.
+- Add, edit, cancel editing, and remove each object type.
+- Verify removal cleans dependent references.
+- Verify relationship checkboxes select independently without Ctrl or Shift.
+- Edit a record and confirm existing relationships are restored.
+- Test account recovery relationships.
+- Test risk relationships to personas, activities, and accounts.
+- Review the full graph layout.
+- Click each node type and verify focused organization.
+- Drag nodes and test zoom controls.
+- Toggle warning links.
+- Use the selected-object edit shortcut.
+- Export and re-import native JSON.
+- Export STIX from empty and populated projects.
 - Run the STIX bundle through the official OASIS validator.
-- Import the bundle into the intended STIX visualization tool.
-- Verify that custom objects and relationships are handled as expected.
+- Import STIX into the intended visualization tool.
+- Confirm CSP script and style hashes match.
+- Confirm there is no `innerHTML`, `eval()`, or `unsafe-inline` use.
 
 ## Repository Structure
-
-A minimal repository can use the following structure:
 
 ```text
 journalist_identity_mapper/
 ├── README.md
-└── journalist_identity_stix_mapper.html
+└── journalist_identity_stix_mapper_editable_graph.html
 ```
 
-## Related Project
+## Related Projects
 
-This application is designed to complement the STIX Palette tool in the Security Timesavers collection by producing a STIX 2.1 relationship graph containing identities, activities, accounts, risks, and correlation warnings.
+- [Security Timesavers](https://github.com/asmodianx/security_timesavers)
+- [STIX Palette](https://github.com/asmodianx/security_timesavers/tree/main/stix_palette)
+- [Risk Register](https://github.com/asmodianx/security_timesavers/tree/main/risk_register)
+- [OASIS STIX Validator](https://github.com/oasis-open/cti-stix-validator)
 
-- [Security Timesavers repository](https://github.com/asmodianx/security_timesavers)
-- [STIX Palette folder](https://github.com/asmodianx/security_timesavers/tree/main/stix_palette)
-- [Risk Register folder](https://github.com/asmodianx/security_timesavers/tree/main/risk_register)
-- [OASIS STIX validator](https://github.com/oasis-open/cti-stix-validator)
+## Privacy and Data Handling
+
+The application does not intentionally transmit assessment data. All processing occurs locally in the browser.
+
+Data remains in browser local storage until it is removed through the application, browser controls, profile deletion, or another storage-management action. Native and STIX files are created only when an export is initiated.
+
+Browser extensions, endpoint-management software, backup tools, synchronized profiles, operating-system features, and forensic access may affect the actual privacy of locally stored data.
 
 ## Disclaimer
 
-This project is provided as a decision-support and documentation tool. It is provided as-is, without warranty or any promise that it will identify every exposure, prevent identity correlation, or protect against surveillance, targeting, compromise, injury, or loss.
+This project is a decision-support and documentation tool. It is provided as-is, without warranty or any promise that it will identify every exposure, prevent identity correlation, or protect against surveillance, compromise, targeting, injury, or loss.
 
-Users are responsible for reviewing the code, validating exported data, protecting stored information, and determining whether the tool is appropriate for their threat model, legal obligations, organizational requirements, and operating environment.
+Users are responsible for reviewing the source, validating exported data, protecting stored information, and determining whether the tool is appropriate for their threat model, legal obligations, organizational requirements, and operating environment.
 
 For an immediate or credible threat to life or safety, follow an established safety or emergency plan and contact appropriate trusted assistance.
 
 ## License
 
-Add the repository's selected license here. If this tool is included in Security Timesavers, use the license and contribution terms adopted by that repository.
+Apply the license and contribution terms selected for the repository. If this project is included in Security Timesavers, use the license adopted by that repository.
