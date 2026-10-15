@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:security-timesavers:case:1.0",
+  "title": "Security Time Savers Case",
+  "type": "object",
+  "required": [
+    "format",
+    "format_version",
+    "case",
+    "entities",
+    "evidence"
+  ],
+  "properties": {
+    "format": {
+      "const": "security-timesavers-case"
+    },
+    "format_version": {
+      "enum": [
+        "1.0"
+      ]
+    },
+    "application": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "status",
+        "severity",
+        "created",
+        "modified"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "case_number": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "classification": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "created": {
+          "type": "string"
+        },
+        "modified": {
+          "type": "string"
+        },
+        "incident_start": {
+          "type": "string"
+        },
+        "discovered": {
+          "type": "string"
+        },
+        "contained": {
+          "type": "string"
+        },
+        "closed": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "description": "Reported | Triage | Analysis | Containment | Eradication | Recovery | Post-incident review | Closed | Reopened"
+        },
+        "responders": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "rootAttributes": {
+      "type": "array"
+    },
+    "entities": {
+      "type": "array"
+    },
+    "custody": {
+      "type": "array"
+    },
+    "events": {
+      "type": "array"
+    },
+    "indicators": {
+      "type": "array"
+    },
+    "relationships": {
+      "type": "array"
+    },
+    "hypotheses": {
+      "type": "array"
+    },
+    "information_gaps": {
+      "type": "array"
+    },
+    "findings": {
+      "type": "array"
+    },
+    "tasks": {
+      "type": "array"
+    },
+    "actions": {
+      "type": "array"
+    },
+    "decisions": {
+      "type": "array"
+    },
+    "contacts": {
+      "type": "array"
+    },
+    "obligations": {
+      "type": "array"
+    },
+    "notifications": {
+      "type": "array"
+    },
+    "sitreps": {
+      "type": "array"
+    },
+    "history": {
+      "type": "array"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "sha256"
+        ],
+        "properties": {
+          "kind": {
+            "description": "absent for hashed files; 'markdown-note' for authored notes",
+            "enum": [
+              "markdown-note"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown text; only for kind markdown-note. sha256 is over its UTF-8 bytes."
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "tab",
+          "body",
+          "created"
+        ],
+        "properties": {
+          "tab": {
+            "enum": [
+              "p1",
+              "p2",
+              "p3",
+              "p4",
+              "p5",
+              "p6",
+              "p7",
+              "p8"
+            ]
+          },
+          "phase_label": {
+            "type": "string"
+          },
+          "nist_phase": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string",
+            "description": "Markdown"
+          },
+          "author": {
+            "type": "string"
+          },
+          "created": {
+            "type": "string"
+          },
+          "modified": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "preparation": {
+      "type": "object"
+    },
+    "detection": {
+      "type": "object"
+    },
+    "categorization": {
+      "type": "object"
+    },
+    "retention": {
+      "type": "object"
+    },
+    "conclusion": {
+      "type": "object"
+    },
+    "extensions": {
+      "type": "object"
+    },
+    "lessons": {
+      "type": "object",
+      "properties": {
+        "improvements": {
+          "type": "array"
+        }
+      }
+    }
+  }
+}

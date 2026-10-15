@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data: blob:; media-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Incident Investigation Workbench</title>
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/print.css">
+</head>
+<body>
+<header class="head no-print">
+  <div>
+    <div class="brand">Incident Investigation Workbench</div>
+    <div class="muted"><span id="hdrCase">Untitled case</span> &middot; <span id="hdrPhase"></span> &middot; <span id="saveState">Autosave initialising</span></div>
+  </div>
+  <div class="row">
+    <button type="button" id="btnNew">New case</button>
+    <button type="button" id="btnOpen">Open case file&hellip;</button>
+    <button type="button" id="btnSaveFile" class="primary">Save case file</button>
+    <input class="sr" id="openFile" type="file" accept=".json,application/json">
+  </div>
+</header>
+
+<nav class="tabs no-print" id="tabs" aria-label="NIST incident response lifecycle">
+  <div class="phase"><span>Preparation</span><div><button type="button" class="tab active" data-tab="p1">1 Prepare</button></div></div>
+  <div class="phase"><span>Detection &amp; Analysis</span><div><button type="button" class="tab" data-tab="p2">2 Detect</button><button type="button" class="tab" data-tab="p3">3 Scope &amp; Timeline</button><button type="button" class="tab" data-tab="p4">4 Assess</button></div></div>
+  <div class="phase"><span>Containment, Eradication &amp; Recovery</span><div><button type="button" class="tab" data-tab="p5">5 Contain</button><button type="button" class="tab" data-tab="p6">6 Eradicate &amp; Recover</button></div></div>
+  <div class="phase cross"><span>Throughout</span><div><button type="button" class="tab" data-tab="p7">7 Communicate</button></div></div>
+  <div class="phase"><span>Post-Incident Activity</span><div><button type="button" class="tab" data-tab="p8">8 Close &amp; Improve</button></div></div>
+</nav>
+
+<main class="main">
+<section id="p1" class="panel active">
+  <p class="phase-label">Preparation &middot; CSF Govern / Identify / Protect</p>
+  <h2>1. Prepare</h2>
+  <p class="muted">Set up the case record, the people involved and what must be communicated. Everything is autosaved in this browser; use <b>Save case file</b> for a durable copy.</p>
+  <div class="card task"><h3>1.1 Case record</h3>
+    <div class="edit">
+      <label>Case title<input id="cTitle"></label>
+      <label>Case number<input id="cNumber" placeholder="e.g. INC-2026-1041"></label>
+      <label>Classification<input id="cClass"></label>
+      <label>Status<select id="cStatus"></select></label>
+      <label>Case owner<input id="cOwner"></label>
+      <label>Responders (comma separated)<input id="cResponders"></label>
+      <label>Incident start (earliest known activity)<input id="cStart" type="datetime-local"></label>
+      <label>Discovered (detection)<input id="cDiscovered" type="datetime-local"></label>
+      <label>Contained<input id="cContained" type="datetime-local"></label>
+      <label>Closed<input id="cClosed" type="datetime-local"></label>
+      <label class="wide">Tags (comma separated)<input id="cTags"></label>
+      <label class="wide">Description<textarea id="cDesc"></textarea></label>
+    </div>
+  </div>
+  <div class="card task"><h3>1.2 Response team and contacts</h3>
+    <p class="muted">Who works this case and who may need to be told. Contacts appear as choices when you log notifications (7.1).</p>
+    <div class="edit">
+      <label>Name<input id="pcName"></label>
+      <label>Role<select id="pcRole"><option>Incident handler</option><option>Incident lead</option><option>Technical contact / system owner</option><option>Management</option><option>Legal / counsel</option><option>Privacy / compliance</option><option>Public affairs / communications</option><option>Human resources</option><option>Law enforcement</option><option>Vendor / ISP</option><option>CSIRT / ISAC</option><option>Other</option></select></label>
+      <label>Organization / unit<input id="pcOrg"></label>
+      <label>Contact details<input id="pcMethod" placeholder="phone, email, out-of-band channel"></label>
+      <label class="wide">Notify when<input id="pcWhen" placeholder="e.g. Any High/Critical incident; any personal data involved"></label>
+    </div>
+    <button type="button" id="pcAdd" class="primary">Add contact</button>
+    <div class="scroll" id="pcList"></div>
+  </div>
+  <div class="card task"><h3>1.3 Communication plan and obligations</h3>
+    <p class="muted">Record the escalation path and any notification obligations (regulatory, contractual, policy). Deadlines are calculated from the Discovered time and tracked in 7.1.</p>
+    <div class="edit">
+      <label class="wide">Communication and escalation plan<textarea id="ppPlan" placeholder="e.g. Incident lead briefs CISO within 1 h for High/Critical; out-of-band channel if email may be compromised"></textarea></label>
+      <label class="wide">Systems and data in scope / critical assets<textarea id="ppScope"></textarea></label>
+    </div>
+    <h4>Notification obligations</h4>
+    <div class="edit">
+      <label>Obligation<input id="poName" placeholder="e.g. Breach notification to regulator"></label>
+      <label>Authority / recipient<input id="poAuthority"></label>
+      <label>Deadline (hours after discovery)<input id="poHours" type="number" min="0" placeholder="e.g. 72"></label>
+      <label>Applies when<input id="poTrigger" placeholder="e.g. personal data affected"></label>
+    </div>
+    <button type="button" id="poAdd" class="primary">Add obligation</button>
+    <div class="scroll" id="poList"></div>
+  </div>
+  <div class="card task"><h3>1.4 Lifecycle overview</h3><div id="cStats" class="stats"></div></div>
+  <div class="card task"><h3>1.5 Cases saved in this browser</h3>
+    <p class="notice">Browser storage is for convenience and recovery only. It is not a secure evidence repository.</p>
+    <div class="row"><select id="cLocalList" class="grow"></select><button type="button" id="cLocalOpen">Open</button><button type="button" id="cLocalDelete" class="danger">Delete</button><button type="button" id="cLocalClear" class="danger">Clear all</button></div>
+  </div>
+  <div class="card task"><h3>1.6 Diagnostics</h3>
+    <p class="muted">Runs the built-in hostile-input and native round-trip self-tests. Your case is not modified.</p>
+    <button type="button" id="cRunTests">Run self-tests</button><pre id="cTestOut"></pre>
+  </div>
+  <div class="card task notes-card"><h3>1.7 Phase notes<span id="n_p1_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p1_title"></label>
+      <label>Author<input id="n_p1_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p1_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p1_preview">Preview</button><button type="button" id="n_p1_add" class="primary">Add note</button><button type="button" id="n_p1_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p1_out"></div>
+    <div id="n_p1_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><span></span><button type="button" data-go="p2" class="primary">Next: Detect &rarr;</button></div>
+</section>
+
+<section id="p2" class="panel">
+  <p class="phase-label">Detection &amp; Analysis &middot; CSF Detect (DE.CM, DE.AE)</p>
+  <h2>2. Detect</h2>
+  <p class="muted">Capture how the activity was detected and collect the evidence and indicators. File contents are hashed locally and never stored in the case.</p>
+  <div class="card task"><h3>2.1 Record the initial report</h3>
+    <p class="muted">How the activity came to attention. Saved as you type.</p>
+    <div class="edit">
+      <label>Detection source<select id="drSource"><option value="">— select —</option><option>SIEM alert</option><option>EDR / antivirus alert</option><option>IDS / IPS alert</option><option>Email security alert</option><option>Log review</option><option>User report</option><option>Help desk ticket</option><option>Third party / vendor notice</option><option>Threat intelligence</option><option>Law enforcement notice</option><option>Other</option></select></label>
+      <label>Source detail<input id="drSourceDetail" placeholder="alert name, ticket number"></label>
+      <label>Reported by<input id="drBy"></label>
+      <label>Reported at<input id="drAt" type="datetime-local"></label>
+      <label>First detected at<input id="drDetected" type="datetime-local"></label>
+      <label class="wide">Initial description<textarea id="drDesc"></textarea></label>
+    </div>
+    <button type="button" id="drUseDiscovered">Use "first detected" as the case Discovered time</button>
+  </div>
+  <div class="card task"><h3>2.2 Register evidence files</h3>
+    <div class="edit">
+      <label class="wide">Evidence file(s)<input id="vFiles" type="file" multiple></label>
+      <label>Description<input id="vDesc"></label>
+      <label>Source system<input id="vSource" placeholder="e.g. Defender export, mail gateway"></label>
+      <label>Acquisition method<input id="vMethod"></label>
+      <label>Acquired by<input id="vBy"></label>
+      <label>Acquired at<input id="vAt" type="datetime-local"></label>
+      <label>Related entity<select id="vEntity"></select></label>
+    </div>
+    <button type="button" id="vAdd" class="primary">Hash and register</button>
+  </div>
+  <div class="card task"><h3>2.3 Write a Markdown note as evidence</h3>
+    <p class="muted">For observations that are evidence in their own right: interview notes, console output, what you saw on screen. The note is hashed and registered with a custody record like a file. Once registered its content is fixed, so record corrections as a new note.</p>
+    <div class="edit">
+      <label>Title<input id="enTitle" placeholder="e.g. Interview with user jdoe"></label>
+      <label>Author<input id="enAuthor"></label>
+      <label>Related entity<select id="enEntity"></select></label>
+      <label class="wide">Note (Markdown)<textarea id="enBody" class="md-input" placeholder="## What I observed&#10;- **14:02** user reported pop-up&#10;- ran `whoami /all`"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="enPreview">1. Preview</button><button type="button" id="enRegister" class="primary">2. Hash and register as evidence</button></div>
+    <div id="enOut"></div>
+  </div>
+  <div class="card task"><h3>2.4 Capture a screenshot as evidence (optional)</h3>
+    <p class="muted">Uses the browser screen-capture prompt. Some browsers block this when opened from a local file.</p>
+    <div class="row"><button type="button" id="vScreen">1. Choose screen or window</button><button type="button" id="vSnap">2. Capture frame and register</button></div>
+    <video id="vVideo" autoplay muted></video><canvas id="vCanvas" hidden></canvas>
+  </div>
+  <div class="card task"><h3>2.5 Record chain of custody</h3>
+    <div class="edit">
+      <label>Evidence<select id="kEvidence"></select></label>
+      <label>Action<select id="kAction"><option>acquired</option><option>imported</option><option>reviewed</option><option>copied</option><option>transferred</option><option>analyzed</option><option>exported</option><option>archived</option></select></label>
+      <label>Date/time<input id="kAt" type="datetime-local"></label>
+      <label>Person<input id="kPerson"></label>
+      <label>From<input id="kFrom"></label>
+      <label>To<input id="kTo"></label>
+      <label>Purpose<input id="kPurpose"></label>
+      <label>Notes<input id="kNotes"></label>
+    </div>
+    <button type="button" id="kAdd" class="primary">Record custody event</button>
+    <div class="scroll" id="kList"></div>
+  </div>
+  <div class="card task"><h3>2.6 Extract indicators from an artifact</h3>
+    <div class="edit">
+      <label>Artifact (.eml headers are parsed; other files yield name, size and SHA-256)<input id="xFile" type="file"></label>
+      <label>Add selected candidates to<select id="xTarget"></select></label>
+    </div>
+    <div class="row"><button type="button" id="xRun">1. Extract candidates</button><button type="button" id="xApply" class="primary">2. Add selected candidates</button></div>
+    <div id="xQueue"></div>
+  </div>
+  <div class="card task"><h3>2.7 Import external intelligence</h3>
+    <p class="muted">Accepts an OASIS STIX 2.0 bundle (2.1 accepted with warnings) or a MISP event JSON. Supported objects are merged into the current case.</p>
+    <input id="xiFile" type="file" accept=".json,.stix,application/json">
+    <div class="row"><button type="button" id="xiPreview">1. Validate and preview</button><button type="button" id="xiCommit" class="primary">2. Merge into case</button></div>
+    <pre id="xiOut"></pre>
+  </div>
+  <div class="card task"><h3>2.8 Local text utilities</h3>
+    <div class="edit">
+      <label class="wide">Input text<input id="uInput" placeholder="Paste a value, or pick an existing attribute below"></label>
+      <label>Or existing attribute<select id="uSource"></select></label>
+      <label>Add result to<select id="uTarget"></select></label>
+    </div>
+    <div class="row"><button type="button" data-util="defang">Defang</button><button type="button" data-util="refang">Refang</button><button type="button" data-util="urlencode">URL encode</button><button type="button" data-util="urldecode">URL decode</button><button type="button" data-util="b64e">Base64 encode</button><button type="button" data-util="b64d">Base64 decode</button></div>
+    <pre id="uOut"></pre><button type="button" id="uAdd">Add result as attribute</button>
+  </div>
+  <div class="card task"><h3>2.9 Evidence register</h3><div class="scroll" id="vList"></div><div id="vNoteView"></div></div>
+  <div class="card task notes-card"><h3>2.10 Phase notes<span id="n_p2_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p2_title"></label>
+      <label>Author<input id="n_p2_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p2_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p2_preview">Preview</button><button type="button" id="n_p2_add" class="primary">Add note</button><button type="button" id="n_p2_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p2_out"></div>
+    <div id="n_p2_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p1">&larr; Back</button><button type="button" data-go="p3" class="primary">Next: Scope &amp; timeline &rarr;</button></div>
+</section>
+
+<section id="p3" class="panel">
+  <p class="phase-label">Detection &amp; Analysis &middot; CSF Respond: Incident Analysis (RS.AN)</p>
+  <h2>3. Scope &amp; Timeline</h2>
+  <p class="muted">Identify what is affected, how the pieces relate, and reconstruct what happened when.</p>
+  <div class="card task"><h3>3.1 Add an entity</h3>
+    <div class="edit">
+      <label>Name / value<input id="eName" placeholder="e.g. WS-0123, jdoe, 192.0.2.10"></label>
+      <label>Type<select id="eType"></select></label>
+      <label>Confidence (0-100)<input id="eConfidence" type="number" min="0" max="100" value="50"></label>
+      <label>Tags<input id="eTags"></label>
+      <label class="wide">Description<textarea id="eDesc"></textarea></label>
+    </div>
+    <button type="button" id="eAdd" class="primary">Add entity</button>
+  </div>
+  <div class="card task"><h3>3.2 Review entities and attributes</h3>
+    <p class="muted">Expand an entity to edit it and its CTI attributes. Case-level attributes are not tied to an entity.</p>
+    <input id="eFilter" placeholder="Filter entities and attributes">
+    <div id="eList"></div>
+  </div>
+  <div class="card task"><h3>3.3 Relationships between entities</h3>
+    <div class="edit">
+      <label>Source entity<select id="rSource"></select></label>
+      <label>Relationship<input id="rType" value="related-to" list="rTypes"></label>
+      <label>Target entity<select id="rTarget"></select></label>
+      <label>Confidence (0-100)<input id="rConfidence" type="number" min="0" max="100" value="50"></label>
+      <label>First observed<input id="rFirst" type="datetime-local"></label>
+      <label>Last observed<input id="rLast" type="datetime-local"></label>
+    </div>
+    <datalist id="rTypes"><option value="related-to"><option value="communicates-with"><option value="authenticated-to"><option value="resolves-to"><option value="downloaded"><option value="executed-on"><option value="owned-by"><option value="uses"><option value="contains"></datalist>
+    <button type="button" id="rAdd" class="primary">Add relationship</button>
+    <div class="scroll" id="rList"></div>
+  </div>
+  <div class="card task"><h3>3.4 Add an event</h3>
+    <div class="edit">
+      <label>Date/time<input id="tAt" type="datetime-local" step="1"></label>
+      <label>Time zone of the value entered<select id="tTz"><option value="local">This computer's local time</option><option value="UTC">UTC</option></select></label>
+      <label>Event type<input id="tType" value="Observation" list="tTypes"></label>
+      <label>Source<input id="tSource" placeholder="e.g. Defender, firewall"></label>
+      <label>Entity<select id="tEntity"></select></label>
+      <label>Evidence<select id="tEvidence"></select></label>
+      <label>Confidence (0-100)<input id="tConfidence" type="number" min="0" max="100" value="50"></label>
+      <label>Tags<input id="tTags"></label>
+      <label class="wide">Description<textarea id="tDesc"></textarea></label>
+      <label class="wide">Notes<textarea id="tNotes"></textarea></label>
+    </div>
+    <datalist id="tTypes"><option value="Observation"><option value="Authentication"><option value="Process execution"><option value="Network connection"><option value="Email"><option value="File activity"><option value="Alert"><option value="Response action"></datalist>
+    <button type="button" id="tAdd" class="primary">Add event</button>
+  </div>
+  <div class="card task"><h3>3.5 Import events from CSV</h3>
+    <ol class="steps-list">
+      <li>Choose a CSV file with a header row.</li>
+      <li>Check how each column maps to a timeline field (a best guess is pre-selected).</li>
+      <li>Preview, then commit.</li>
+    </ol>
+    <div class="edit"><label>CSV file<input id="tCsv" type="file" accept=".csv,text/csv"></label><label>Time zone for values without an offset<select id="tCsvTz"><option value="UTC">UTC</option><option value="local">This computer's local time</option></select></label></div>
+    <div id="tMap" class="mapgrid"></div>
+    <div class="row"><button type="button" id="tPreview">Preview</button><button type="button" id="tCommit" class="primary">Commit events</button></div>
+    <pre id="tPreviewOut"></pre>
+  </div>
+  <div class="card task"><h3>3.6 Review the timeline</h3>
+    <div class="row"><input id="tFilter" class="grow" placeholder="Filter"><select id="tSort"><option value="asc">Oldest first</option><option value="desc">Newest first</option></select></div>
+    <div class="scroll tall" id="tList"></div>
+  </div>
+  <div class="card task notes-card"><h3>3.7 Phase notes<span id="n_p3_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p3_title"></label>
+      <label>Author<input id="n_p3_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p3_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p3_preview">Preview</button><button type="button" id="n_p3_add" class="primary">Add note</button><button type="button" id="n_p3_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p3_out"></div>
+    <div id="n_p3_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p2">&larr; Back</button><button type="button" data-go="p4" class="primary">Next: Assess &rarr;</button></div>
+</section>
+
+<section id="p4" class="panel">
+  <p class="phase-label">Detection &amp; Analysis &middot; CSF Respond: Incident Analysis (RS.AN), Incident Management (RS.MA)</p>
+  <h2>4. Assess</h2>
+  <p class="muted">Reason about what the evidence shows, then categorize, prioritize and declare. The workbench never decides which hypothesis is true.</p>
+  <div class="card task"><h3>4.1 State the analytical question</h3>
+    <label>Question<textarea id="aQuestion" placeholder="e.g. Was WS-0123 compromised, and if so how?"></textarea></label>
+  </div>
+  <div class="card task"><h3>4.2 List competing hypotheses</h3>
+    <div class="edit">
+      <label>Hypothesis<input id="aHTitle" placeholder="e.g. H1 Successful compromise"></label>
+      <label>Confidence<select id="aHConf"><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label class="wide">Description<textarea id="aHDesc"></textarea></label>
+      <label class="wide">Rationale / assumptions<textarea id="aHRat"></textarea></label>
+    </div>
+    <button type="button" id="aHAdd" class="primary">Add hypothesis</button>
+    <div class="scroll" id="aHList"></div>
+  </div>
+  <div class="card task"><h3>4.3 Assess evidence against each hypothesis</h3>
+    <div class="edit">
+      <label>Hypothesis<select id="aMHyp"></select></label>
+      <label>Evidence<select id="aMEvidence"></select></label>
+      <label>Assessment<select id="aMAssess"><option>Strongly Supports</option><option>Supports</option><option selected>Neutral</option><option>Contradicts</option><option>Strongly Contradicts</option><option>Unknown</option></select></label>
+      <label>Source reliability<select id="aMRel"><option>Unknown</option><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label>Evidence quality<select id="aMQual"><option>Unknown</option><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label>Relevance<select id="aMRelev"><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label class="wide">Reasoning<textarea id="aMReason"></textarea></label>
+    </div>
+    <button type="button" id="aMAdd" class="primary">Record assessment</button>
+    <h4>Matrix</h4><div class="scroll" id="aMatrix"></div>
+    <h4>Assessment detail</h4><div class="scroll" id="aMList"></div>
+  </div>
+  <div class="card task"><h3>4.4 Track information gaps</h3>
+    <div class="edit">
+      <label>Question<input id="aGQ"></label>
+      <label>Priority<select id="aGPri"><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></label>
+      <label>Related hypothesis<select id="aGHyp"></select></label>
+      <label>Source that could answer it<input id="aGSrc"></label>
+      <label>Owner<input id="aGOwner"></label>
+      <label>Status<select id="aGStatus"><option>Open</option><option>In Progress</option><option>Answered</option><option>Unable to Answer</option></select></label>
+      <label class="wide">Answer<textarea id="aGAns"></textarea></label>
+    </div>
+    <button type="button" id="aGAdd" class="primary">Add gap</button>
+    <div class="scroll" id="aGList"></div>
+  </div>
+  <div class="card task"><h3>4.5 Categorize, prioritize and declare</h3>
+    <p class="muted">Decide whether this is an incident and how urgently to respond. Impact categories follow NIST SP 800-61 Rev. 2.</p>
+    <div class="edit">
+      <label>Determination<select id="gDetermination"><option>Under assessment</option><option>Event — not an incident</option><option>Incident declared</option></select></label>
+      <label>Declared at<input id="gDeclared" type="datetime-local"></label>
+      <label>Attack vector<select id="gVector"><option value="">— select —</option><option>External / removable media</option><option>Attrition (brute force, DoS)</option><option>Web</option><option>Email</option><option>Impersonation / spoofing</option><option>Improper usage</option><option>Loss or theft of equipment</option><option>Other / unknown</option></select></label>
+      <label>Functional impact<select id="gFunctional"><option value="">— select —</option><option>None</option><option>Low — minimal effect on services</option><option>Medium — some critical services unavailable to some users</option><option>High — critical services unavailable to all users</option></select></label>
+      <label>Information impact<select id="gInformation"><option value="">— select —</option><option>None</option><option>Privacy breach (PII accessed or exfiltrated)</option><option>Proprietary breach</option><option>Integrity loss</option></select></label>
+      <label>Recoverability<select id="gRecover"><option value="">— select —</option><option>Regular — predictable with existing resources</option><option>Supplemented — predictable with added resources</option><option>Extended — unpredictable, added resources needed</option><option>Not recoverable</option></select></label>
+      <label>Severity<select id="gSeverity"><option>Informational</option><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select></label>
+      <label>Priority<select id="gPriority"><option>Low</option><option>Normal</option><option>High</option><option>Urgent</option></select></label>
+      <label class="wide">Rationale<textarea id="gRationale"></textarea></label>
+    </div>
+    <p class="muted" id="gHint"></p>
+  </div>
+  <div class="card task notes-card"><h3>4.6 Phase notes<span id="n_p4_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p4_title"></label>
+      <label>Author<input id="n_p4_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p4_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p4_preview">Preview</button><button type="button" id="n_p4_add" class="primary">Add note</button><button type="button" id="n_p4_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p4_out"></div>
+    <div id="n_p4_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p3">&larr; Back</button><button type="button" data-go="p5" class="primary">Next: Contain &rarr;</button></div>
+</section>
+
+<section id="p5" class="panel">
+  <p class="phase-label">Containment, Eradication &amp; Recovery &middot; CSF Respond: Incident Mitigation (RS.MI)</p>
+  <h2>5. Contain</h2>
+  <p class="muted">Record what needs fixing, decide the containment strategy, then plan and track containment. Actions are tracked here, not executed.</p>
+  <div class="card task"><h3>5.1 Record findings</h3>
+    <div class="edit">
+      <label>Title<input id="fTitle"></label>
+      <label>Category<input id="fCat"></label>
+      <label>Severity<select id="fSev"><option>Informational</option><option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option></select></label>
+      <label>Confidence<select id="fConf"><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label>Likelihood<select id="fLike"><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label>Owner<input id="fOwner"></label>
+      <label>Due date<input id="fDue" type="date"></label>
+      <label>Affected entity<select id="fEntity"></select></label>
+      <label>Supporting evidence<select id="fEvidence"></select></label>
+      <label class="wide">Description<textarea id="fDesc"></textarea></label>
+      <label class="wide">Risk<textarea id="fRisk"></textarea></label>
+      <label class="wide">Impact<textarea id="fImpact"></textarea></label>
+      <label class="wide">Recommendation<textarea id="fRec"></textarea></label>
+    </div>
+    <button type="button" id="fAdd" class="primary">Add finding</button>
+  </div>
+  <div class="card task"><h3>5.2 Decide strategy and record decisions</h3>
+    <div class="edit">
+      <label>Lifecycle phase<select id="aDPhase"><option>Detection &amp; Analysis</option><option selected>Containment</option><option>Eradication</option><option>Recovery</option><option>Post-incident</option></select></label><label>Decision maker<input id="aDMaker"></label>
+      <label>Related hypothesis<select id="aDHyp"></select></label>
+      <label>Supporting evidence<select id="aDEv"></select></label>
+      <label class="wide">Decision<textarea id="aDText"></textarea></label>
+      <label class="wide">Rationale<textarea id="aDRat"></textarea></label>
+      <label class="wide">Alternatives considered<textarea id="aDAlt"></textarea></label>
+      <label class="wide">Consequences<textarea id="aDCon"></textarea></label>
+    </div>
+    <button type="button" id="aDAdd" class="primary">Record decision</button>
+    <div class="scroll" id="aDList"></div>
+  </div>
+  <div class="card task"><h3>5.3 Containment actions</h3>
+    <p class="muted">Short-term actions that stop the damage spreading, e.g. isolate a host, disable an account, block an indicator.</p>
+    <div id="actContain"></div>
+  </div>
+  <div class="card task"><h3>5.4 Assign tasks</h3>
+    <div class="edit">
+      <label>Task<input id="kTTitle"></label>
+      <label>Owner<input id="kTOwner"></label>
+      <label>Priority<select id="kTPri"><option>Low</option><option selected>Normal</option><option>High</option><option>Critical</option></select></label>
+      <label>Due<input id="kTDue" type="date"></label>
+      <label>Related finding<select id="kTFinding"></select></label>
+      <label>Related entity<select id="kTEntity"></select></label>
+      <label class="wide">Description<textarea id="kTDesc"></textarea></label>
+    </div>
+    <button type="button" id="kTAdd" class="primary">Add task</button>
+  </div>
+  <div class="card task notes-card"><h3>5.5 Phase notes<span id="n_p5_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p5_title"></label>
+      <label>Author<input id="n_p5_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p5_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p5_preview">Preview</button><button type="button" id="n_p5_add" class="primary">Add note</button><button type="button" id="n_p5_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p5_out"></div>
+    <div id="n_p5_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p4">&larr; Back</button><button type="button" data-go="p6" class="primary">Next: Eradicate &amp; recover &rarr;</button></div>
+</section>
+
+<section id="p6" class="panel">
+  <p class="phase-label">Containment, Eradication &amp; Recovery &middot; CSF Respond (RS.MI), Recover (RC.RP)</p>
+  <h2>6. Eradicate &amp; Recover</h2>
+  <p class="muted">Remove the cause, restore normal operation, and confirm each step worked.</p>
+  <div class="card task"><h3>6.1 Eradication actions</h3>
+    <p class="muted">Remove the cause: malware, persistence, compromised credentials, exploited vulnerabilities.</p>
+    <div id="actErad"></div>
+  </div>
+  <div class="card task"><h3>6.2 Recovery actions</h3>
+    <p class="muted">Restore systems to normal operation and confirm they work, e.g. rebuild, restore from backup, re-enable access, heightened monitoring.</p>
+    <div id="actRecover"></div>
+  </div>
+  <div class="card task"><h3>6.3 Track status, validation and closure</h3>
+    <p class="muted">Change status directly in the tables. Use the notes fields to record how each item was verified.</p>
+    <p id="oSummary" class="notice"></p>
+    <h4>Findings</h4><div class="scroll" id="fList"></div>
+    <h4>Actions</h4><div class="scroll" id="oList"></div>
+    <h4>Tasks</h4><div class="scroll" id="kTList"></div>
+  </div>
+  <div class="card task notes-card"><h3>6.4 Phase notes<span id="n_p6_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p6_title"></label>
+      <label>Author<input id="n_p6_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p6_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p6_preview">Preview</button><button type="button" id="n_p6_add" class="primary">Add note</button><button type="button" id="n_p6_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p6_out"></div>
+    <div id="n_p6_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p5">&larr; Back</button><button type="button" data-go="p7" class="primary">Next: Communicate &rarr;</button></div>
+</section>
+
+<section id="p7" class="panel">
+  <p class="phase-label">Throughout the response &middot; CSF Respond (RS.CO), Recover (RC.CO)</p>
+  <h2>7. Communicate</h2>
+  <p class="muted">Keep stakeholders informed and meet notification obligations. Use this tab whenever you communicate, at any phase.</p>
+  <div class="card task"><h3>7.1 Log notifications and track obligations</h3>
+    <div class="edit">
+      <label>Recipient<input id="nTo" list="nContacts" placeholder="choose a contact or type a name"></label>
+      <label>Recipient type<select id="nType"><option>Internal management</option><option>Technical staff / system owner</option><option>Legal / counsel</option><option>Privacy / compliance</option><option>Affected users or individuals</option><option>Regulator</option><option>Law enforcement</option><option>CSIRT / ISAC / information sharing</option><option>Vendor / ISP</option><option>Insurer</option><option>Public / media</option><option>Other</option></select></label>
+      <label>Method<input id="nMethod" placeholder="phone, email, meeting, portal"></label>
+      <label>Notified at<input id="nAt" type="datetime-local"></label>
+      <label>Notified by<input id="nBy"></label>
+      <label>Fulfils obligation<select id="nObligation"></select></label>
+      <label class="wide">What was communicated<textarea id="nSummary"></textarea></label>
+    </div>
+    <datalist id="nContacts"></datalist>
+    <button type="button" id="nAdd" class="primary">Log notification</button>
+    <h4>Obligation status</h4><div class="scroll" id="nObList"></div>
+    <h4>Notification log</h4><div class="scroll" id="nList"></div>
+  </div>
+  <div class="card task"><h3>7.2 Write a situation report (SITREP)</h3>
+    <p id="rpSitState" class="muted"></p>
+    <div class="edit">
+      <label class="wide">Current situation<textarea id="rpSituation"></textarea></label>
+      <label class="wide">What happened<textarea id="rpWhat"></textarea></label>
+      <label>Confirmed facts<textarea id="rpConfirmed"></textarea></label>
+      <label>Unconfirmed / suspected<textarea id="rpUnconfirmed"></textarea></label>
+      <label>Affected assets / accounts<textarea id="rpAffected"></textarea></label>
+      <label>Business / operational impact<textarea id="rpImpact"></textarea></label>
+      <label>Completed actions<textarea id="rpDone"></textarea></label>
+      <label>Active actions<textarea id="rpActive"></textarea></label>
+      <label>Blockers<textarea id="rpBlockers"></textarea></label>
+      <label>Decisions required<textarea id="rpDecisions"></textarea></label>
+      <label>Current risk<textarea id="rpRisk"></textarea></label>
+      <label>Next steps<textarea id="rpNext"></textarea></label>
+      <label>Next update<input id="rpNextUpdate" type="datetime-local"></label>
+    </div>
+    <div class="row"><button type="button" id="rpLoadSit">Load latest SITREP into form</button><button type="button" id="rpSaveSit" class="primary">Save SITREP snapshot</button><button type="button" id="rpPrintSit">Print latest SITREP</button></div>
+  </div>
+  <div class="card task notes-card"><h3>7.3 Phase notes<span id="n_p7_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p7_title"></label>
+      <label>Author<input id="n_p7_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p7_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p7_preview">Preview</button><button type="button" id="n_p7_add" class="primary">Add note</button><button type="button" id="n_p7_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p7_out"></div>
+    <div id="n_p7_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p6">&larr; Back</button><button type="button" data-go="p8" class="primary">Next: Close &amp; improve &rarr;</button></div>
+</section>
+
+<section id="p8" class="panel">
+  <p class="phase-label">Post-Incident Activity &middot; CSF Identify: Improvement (ID.IM)</p>
+  <h2>8. Close &amp; Improve</h2>
+  <p class="muted">Conclude the case, learn from it, keep the evidence, produce reports, share indicators and sign the final record.</p>
+  <div class="card task"><h3>8.1 Record the conclusion</h3>
+    <div class="edit">
+      <label>Disposition<select id="rpDisp"><option>Unable to determine</option><option>Confirmed incident</option><option>Probable incident</option><option>Suspicious / inconclusive</option><option>Attempted activity</option><option>Benign</option><option>False positive</option></select></label>
+      <label>Confidence<select id="rpConf"><option>Low</option><option selected>Moderate</option><option>High</option></select></label>
+      <label class="wide">Justification<textarea id="rpNarr"></textarea></label>
+    </div>
+    <label class="inline"><input type="checkbox" id="rpCloseCase"> Also set status to Closed and record the closed time (if not already set)</label>
+    <button type="button" id="rpSaveConc" class="primary">Save conclusion</button>
+  </div>
+  <div class="card task"><h3>8.2 Lessons learned</h3>
+    <p class="muted">Hold the review soon after the incident. Saved as you type.</p>
+    <h4>Response metrics</h4><div id="lMetrics"></div>
+    <div class="edit">
+      <label>Review meeting<input id="lDate" type="datetime-local"></label>
+      <label>Participants<input id="lParticipants"></label>
+      <label class="wide">Root cause<textarea id="lRoot"></textarea></label>
+      <label class="wide">Contributing factors<textarea id="lFactors"></textarea></label>
+      <label class="wide">What went well<textarea id="lWell"></textarea></label>
+      <label class="wide">What should be improved<textarea id="lImprove"></textarea></label>
+    </div>
+    <h4>Improvement actions</h4>
+    <div class="edit">
+      <label>Improvement<input id="liItem" placeholder="e.g. Add MFA to VPN; update phishing playbook"></label>
+      <label>Area<select id="liArea"><option>Preparation / policy</option><option>Detection / monitoring</option><option>Protection / controls</option><option>Response process</option><option>Communication</option><option>Training</option><option>Other</option></select></label>
+      <label>Owner<input id="liOwner"></label>
+      <label>Due<input id="liDue" type="date"></label>
+    </div>
+    <button type="button" id="liAdd" class="primary">Add improvement</button>
+    <div class="scroll" id="liList"></div>
+  </div>
+  <div class="card task"><h3>8.3 Evidence retention</h3>
+    <p class="muted">Record where evidence is kept and for how long. The workbench stores hashes only, so this is where the original files live.</p>
+    <div class="edit">
+      <label>Storage location<input id="reLocation"></label>
+      <label>Custodian<input id="reCustodian"></label>
+      <label>Retention period<input id="rePeriod" placeholder="e.g. 3 years per records schedule"></label>
+      <label>Legal hold<select id="reHold"><option>No</option><option>Yes</option></select></label>
+      <label>Disposal / review date<input id="reDispose" type="date"></label>
+      <label class="wide">Notes<textarea id="reNotes"></textarea></label>
+    </div>
+  </div>
+  <div class="card task"><h3>8.4 Build and print a report</h3>
+    <div class="edit">
+      <label>Report<select id="rpType"><option value="executive">Executive report</option><option value="technical">Technical investigation report</option><option value="sitrep">SITREP (latest snapshot)</option><option value="evidence">Evidence manifest and custody</option><option value="findings">Findings and remediation</option><option value="lessons">Post-incident review (lessons learned)</option><option value="full">Full case report</option></select></label>
+      <label>Executive summary (executive report only)<textarea id="rpExec"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="rpBuild">1. Build report</button><button type="button" id="rpPrint" class="primary">2. Print / Save as PDF</button></div>
+  </div>
+  <article id="rpOutput" class="report-output"></article>
+  <div class="card task"><h3>8.5 Share indicators (STIX 2.0)</h3>
+    <p class="muted">Exports entities that map to STIX cyber-observables, their relationships, and indicators. Case-management records stay in the case file.</p>
+    <div class="row"><button type="button" id="xsBuild">1. Build and validate</button><button type="button" id="xsDownload" class="primary">2. Download bundle</button></div>
+    <pre id="xsOut"></pre>
+    <div class="row"><button type="button" id="xmDownload">Download MISP event JSON (CTI Workbench / MISP)</button></div>
+  </div>
+  <div class="card task"><h3>8.6 Sign the final case file</h3>
+    <p class="muted">Sign last, after the conclusion and lessons learned are recorded. Signing proves who produced the file and that it is unchanged; it does not encrypt it.</p>
+    <p id="sgCapability" class="notice"></p>
+    <h4>Step 1 — load your signing key</h4>
+    <p class="muted">Select an exported secret key file (<code>gpg --export-secret-keys --armor KEYID &gt; key.asc</code>, or binary <code>.gpg</code>). The key stays in memory only until signing finishes or you choose Forget key.</p>
+    <div class="edit">
+      <label>Secret key file<input id="sgKeyFile" type="file" accept=".asc,.gpg,.pgp,.key,.sec"></label>
+      <label>Passphrase<input id="sgPass" type="password" autocomplete="off"></label>
+    </div>
+    <div class="row"><button type="button" id="sgLoad">Load key</button><button type="button" id="sgForget" class="danger">Forget key</button></div>
+    <pre id="sgKeyInfo">No key loaded.</pre>
+    <p class="muted">Signs a snapshot of the case exactly as it is now. Download <b>both</b> files below; they belong together. Do not use a separately saved case file with this signature, because any later edit changes the bytes.</p>
+    <h4>Step 2 — sign</h4><button type="button" id="sgSign" class="primary">Sign case snapshot</button>
+    <pre id="sgResult"></pre>
+    <h4>Step 3 — download both files</h4>
+    <div class="row"><button type="button" id="sgDlJson" disabled>Download signed case (.json)</button><button type="button" id="sgDlSig" disabled>Download signature (.json.asc)</button></div>
+  
+  </div>
+  <div class="card task"><h3>8.7 Verify a signed case</h3>
+    <div class="edit">
+      <label>Case file (.json)<input id="vfJson" type="file" accept=".json,application/json"></label>
+      <label>Signature (.asc or .sig)<input id="vfSig" type="file" accept=".asc,.sig,.gpg"></label>
+      <label>Signer's public key (.asc or .gpg)<input id="vfKey" type="file" accept=".asc,.gpg,.pgp,.key,.pub"></label>
+    </div>
+    <button type="button" id="vfRun" class="primary">Verify</button>
+    <pre id="vfResult"></pre>
+    <p class="muted">Command-line equivalent: <code>gpg --verify case.json.asc case.json</code></p>
+  </div>
+  <div class="card task notes-card"><h3>8.8 Phase notes<span id="n_p8_count" class="muted"></span></h3>
+    <p class="muted">Add as many notes as you need for this phase. Markdown is supported: <code># heading</code>, <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, lists, <code>- [ ]</code> checklists, tables and <code>```</code> code blocks.</p>
+    <div class="edit">
+      <label>Title<input id="n_p8_title"></label>
+      <label>Author<input id="n_p8_author"></label>
+      <label class="wide">Note (Markdown)<textarea id="n_p8_body" class="md-input"></textarea></label>
+    </div>
+    <div class="row"><button type="button" id="n_p8_preview">Preview</button><button type="button" id="n_p8_add" class="primary">Add note</button><button type="button" id="n_p8_cancel" hidden>Cancel edit</button></div>
+    <div id="n_p8_out"></div>
+    <div id="n_p8_list" class="notes-list"></div>
+  </div>
+  <div class="wizard-nav no-print"><button type="button" data-go="p7">&larr; Back</button><span></span></div>
+</section>
+</main>
+
+<footer id="status" class="status no-print" role="status">Ready. Offline mode: network connections are blocked by the Content Security Policy.</footer>
+
+<script src="vendor/openpgp/openpgp.min.js" defer></script>
+<script src="js/util.js" defer></script>
+<script src="js/hardening.js" defer></script>
+<script src="js/model.js" defer></script>
+<script src="js/storage.js" defer></script>
+<script src="js/entities.js" defer></script>
+<script src="js/evidence.js" defer></script>
+<script src="js/timeline.js" defer></script>
+<script src="js/analysis.js" defer></script>
+<script src="js/response.js" defer></script>
+<script src="js/reporting.js" defer></script>
+<script src="js/prepare.js" defer></script>
+<script src="js/lifecycle.js" defer></script>
+<script src="js/notes.js" defer></script>
+<script src="js/exchange.js" defer></script>
+<script src="js/signing.js" defer></script>
+<script src="js/app.js" defer></script>
+</body>
+</html>
